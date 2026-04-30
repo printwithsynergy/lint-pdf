@@ -73,16 +73,24 @@ Their public props now take `items: readonly OverlayItem[]` /
 `findingsToOverlayItems(findings)` / `findingToOverlayItem(selectedFinding)`
 once at the call site.
 
-**Type-shaped `../../types` imports (still 9 files remaining inside
-`core/components/`)** — `PageInfo`, `LayerInfo`, `ColorSample`,
-`DensitometerSample`, `ViewerConfig`, `DEFAULT_DPI`,
-`THUMBNAIL_DPI`, `SEVERITY_COLORS`. These are LintPDF-domain
-types/constants currently defined in `src/types.ts`. Subsequent
-PRs will move them to `src/core/types/` (or replace
-`SEVERITY_COLORS` with a `ViewerServices.tokens` palette). The
-ESLint rule that flags `../../types` imports inside
-`core/components/` will be added in the PR that drives the count
-to zero.
+**Type-shaped `../../types` imports (0 files remaining inside
+`core/components/`)** — Phase 2 (PR #337) extracted `PageBox`,
+`PageInfo`, `DielineResult`, `LayerInfo`, `ColorSample`,
+`DensitometerChannel`, `DensitometerSample`, `ViewerCapabilityKey`,
+`PreflightSourceMode`, `ViewerConfig`, `DEFAULT_VIEWER_CONFIG`,
+`DEFAULT_DPI`, `THUMBNAIL_DPI`, `SEVERITY_COLORS` into
+`src/core/types/`. Re-exported from `src/types.ts` for back-compat
+so consumers outside `core/` (PdfViewer.tsx etc.) didn't need to
+update. The ESLint boundary rule was tightened to also flag
+`../../types` / `../../../types` imports anywhere under
+`src/core/`.
+
+Caveat: ESLint is not currently installed as a dev-dependency of
+`@lintpdf/viewer-shared` (the package has `typecheck` + `test`
+scripts but no `lint` script), so the boundary rule is documented
+but not actively enforced in CI today. Wiring ESLint
+(`@typescript-eslint/parser` + plugin + a `lint` script) is a
+separate workstream tracked outside this audit.
 
 #### Phase 2 abstraction primitives (in place)
 
