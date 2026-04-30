@@ -118,8 +118,8 @@ const defaultViewerServices: ViewerServices = {
   },
   annotations: {
     list: async () => [],
-    create: async (a) => a,
-    update: async (_id, patch) => patch,
+    getForPage: async () => null,
+    saveForPage: async () => {},
     remove: async () => {},
   },
   telemetry: noopTelemetry,

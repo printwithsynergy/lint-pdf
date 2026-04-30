@@ -180,16 +180,53 @@ export interface DensitometerService {
 }
 
 /**
- * Annotation CRUD interface. The viewer doesn't own annotation state —
- * it subscribes to a source via `AnnotationSourceProvider` and writes
- * back through this service.
+ * One annotation record exposed by `AnnotationService.list()` and
+ * `getForPage()`. `fabricJson` is the serialised Fabric.js canvas
+ * snapshot — opaque to `core/`, only the host + the canvas component
+ * inspect it.
+ *
+ * @public
+ */
+export interface AnnotationEntry {
+  id: string;
+  jobId: string;
+  pageNum: number;
+  authorEmail: string;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  fabricJson?: unknown;
+}
+
+/**
+ * Annotation source. Phase-2 shape replaces the speculative
+ * `list/create/update/remove` Protocol with concrete methods that
+ * match actual call sites: per-page upsert (canvas autosave),
+ * per-page load (canvas init), full list (sidebar thread), delete by
+ * id (sidebar thread).
+ *
+ * Hosts that don't expose annotations leave the no-op default
+ * (returns empty list / null). The `<AnnotationCanvas>` and
+ * `<AnnotationThread>` components both gracefully render their
+ * empty states.
  *
  * @public
  */
 export interface AnnotationService {
-  list(): Promise<ReadonlyArray<unknown>>;
-  create(annotation: unknown): Promise<unknown>;
-  update(id: string, patch: Partial<unknown>): Promise<unknown>;
+  /** List every annotation for the current job (every page, every author). */
+  list(): Promise<ReadonlyArray<AnnotationEntry>>;
+  /**
+   * Load the active author's saved drawing for one page. Returns
+   * `null` when nothing is saved yet (or the author isn't logged in).
+   */
+  getForPage(pageNum: number): Promise<AnnotationEntry | null>;
+  /**
+   * Upsert the active author's drawing for one page. Best-effort —
+   * the LintPDF impl swallows network errors so flaky connectivity
+   * doesn't block the user from continuing to draw.
+   */
+  saveForPage(pageNum: number, fabricJson: unknown): Promise<void>;
+  /** Delete a single annotation by id. */
   remove(id: string): Promise<void>;
 }
 

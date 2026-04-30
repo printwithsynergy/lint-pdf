@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnnotationTool } from "./AnnotationToolbar";
-import { useViewerHost } from "../host";
+import { useViewerHost, useViewerServices } from "../host";
 
 interface AnnotationCanvasProps {
   jobId: string;
@@ -22,7 +22,7 @@ interface HistoryState {
 }
 
 export function AnnotationCanvas({
-  jobId,
+  jobId: _jobId,
   pageNum,
   width,
   height,
@@ -31,7 +31,8 @@ export function AnnotationCanvas({
   onSavingChange,
   onHistoryChange,
 }: AnnotationCanvasProps) {
-  const { apiBase, readOnly } = useViewerHost();
+  const { readOnly } = useViewerHost();
+  const { annotations } = useViewerServices();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
 
   const fabricRef = useRef<any>(null);
@@ -42,24 +43,17 @@ export function AnnotationCanvas({
   // ── Helpers ──────────────────────────────────────────────────
 
   const saveToApi = useCallback(
-  
+
     async (canvas: any) => {
       if (readOnly) return;
       onSavingChange?.(true);
       try {
-        const fabricJson = canvas.toJSON();
-        await fetch(`${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}/${pageNum}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fabricJson }),
-        });
-      } catch {
-        // silent — auto-save is best-effort
+        await annotations.saveForPage(pageNum, canvas.toJSON());
       } finally {
         onSavingChange?.(false);
       }
     },
-    [apiBase, jobId, pageNum, readOnly, onSavingChange],
+    [annotations, pageNum, readOnly, onSavingChange],
   );
 
   const debouncedSave = useCallback(
@@ -137,28 +131,19 @@ export function AnnotationCanvas({
       });
       fabricRef.current = canvas;
 
-      // Load existing annotations from the API
-      try {
-        const resp = await fetch(
-          `${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}/${pageNum}`,
-        );
-        if (resp.ok) {
-          const annotations = await resp.json();
-          if (annotations.length > 0) {
-            // Use the first annotation's fabricJson (per-author upsert model)
-            const first = annotations[0];
-            if (first.fabricJson) {
-              await new Promise<void>((resolve) => {
-                canvas.loadFromJSON(first.fabricJson, () => {
-                  canvas.renderAll();
-                  resolve();
-                });
-              });
-            }
-          }
-        }
-      } catch {
-        // ignore load errors
+      // Load existing annotations through the AnnotationService.
+      // getForPage returns null on no-saved-drawing or any error,
+      // so the canvas falls back to a blank slate.
+      const saved = await annotations.getForPage(pageNum);
+      if (saved?.fabricJson) {
+        await new Promise<void>((resolve) => {
+          // fabricJson is opaque to `core/`; the canvas component
+          // is the only place that knows it's a Fabric.js JSON.
+          canvas.loadFromJSON(saved.fabricJson as Record<string, unknown>, () => {
+            canvas.renderAll();
+            resolve();
+          });
+        });
       }
 
       // Seed history
@@ -188,7 +173,7 @@ export function AnnotationCanvas({
     };
     // Only init once per page
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId, pageNum]);
+  }, [pageNum]);
 
   // ── Resize canvas when dimensions change ─────────────────────
 
