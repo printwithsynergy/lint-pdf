@@ -5,6 +5,24 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from lintpdf.analyzers.finding import Severity
+from lintpdf.plugin import AnalyzerContext
+
+
+def _ctx(document: MagicMock, ai_config: dict | None) -> AnalyzerContext:
+    """Build an AnalyzerContext mirroring what the orchestrator passes.
+
+    Phase 2 alpha-stream batch 2 migrated BrandPaletteAnalyzer from
+    legacy analyze() to analyze_v2(ctx); ai_config now flows through
+    ctx.config["ai_config"] as a plain dict (or None) and the analyzer
+    reconstitutes it via `_reconstitute_ai_config` to preserve
+    attribute-access semantics.
+    """
+    return AnalyzerContext(
+        document=document,
+        events=[],
+        pdf_bytes=b"fake_pdf",
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
 
 
 class TestBrandPaletteAnalyzer:
@@ -12,9 +30,6 @@ class TestBrandPaletteAnalyzer:
 
     @staticmethod
     def test_no_palette_configured_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
-        ai_config = MagicMock()
-        ai_config.brand_palette = None
-
         with (
             patch(
                 "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
@@ -30,7 +45,7 @@ class TestBrandPaletteAnalyzer:
             )
 
             analyzer = BrandPaletteAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf", ai_config=ai_config)
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, {"brand_palette": None}))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_BRAND_001"
@@ -39,9 +54,6 @@ class TestBrandPaletteAnalyzer:
 
     @staticmethod
     def test_empty_palette_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
-        ai_config = MagicMock()
-        ai_config.brand_palette = []
-
         with (
             patch(
                 "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
@@ -57,7 +69,7 @@ class TestBrandPaletteAnalyzer:
             )
 
             analyzer = BrandPaletteAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf", ai_config=ai_config)
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, {"brand_palette": []}))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_BRAND_001"
@@ -73,9 +85,7 @@ class TestBrandPaletteAnalyzer:
             )
 
             analyzer = BrandPaletteAnalyzer()
-            findings = analyzer.analyze(
-                minimal_semantic_doc, [], b"fake_pdf", ai_config=MagicMock()
-            )
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, {}))
 
         assert findings == []
 
@@ -96,16 +106,13 @@ class TestBrandPaletteAnalyzer:
             )
 
             analyzer = BrandPaletteAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf", ai_config=None)
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, None))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_BRAND_001"
 
     @staticmethod
     def test_findings_have_ai_source(minimal_semantic_doc: MagicMock) -> None:
-        ai_config = MagicMock()
-        ai_config.brand_palette = None
-
         with (
             patch(
                 "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
@@ -121,7 +128,7 @@ class TestBrandPaletteAnalyzer:
             )
 
             analyzer = BrandPaletteAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf", ai_config=ai_config)
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, {"brand_palette": None}))
 
         for f in findings:
             assert f.source == "ai"
