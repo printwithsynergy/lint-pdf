@@ -2,19 +2,36 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import MagicMock
 
 from lintpdf.analyzers.finding import Severity
+from lintpdf.plugin.protocol import AnalyzerContext
+
+
+def _ctx(
+    document: Any,
+    events: list[Any] | None = None,
+    pdf_bytes: bytes = b"",
+    ai_config: dict[str, Any] | None = None,
+) -> AnalyzerContext:
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
 
 
 def _doc_with_layers(
     layer_names: list[str] | None = None,
     spot_color_names: list[str] | None = None,
     industry_type: str | None = None,
-) -> tuple[MagicMock, MagicMock | None]:
+) -> tuple[MagicMock, dict[str, Any] | None]:
     """Create a SemanticDocument mock with specified layers and spot colors.
 
-    Returns (doc, ai_config).
+    Returns (doc, ai_config_dict).
     """
     doc = MagicMock()
     doc.page_count = 1
@@ -46,10 +63,9 @@ def _doc_with_layers(
 
     doc.pages = [page]
 
-    ai_config = None
+    ai_config: dict[str, Any] | None = None
     if industry_type:
-        ai_config = MagicMock()
-        ai_config.industry_type = industry_type
+        ai_config = {"industry_type": industry_type}
 
     return doc, ai_config
 
@@ -65,7 +81,7 @@ class TestDielineByNameAnalyzer:
 
         doc, ai_config = _doc_with_layers(layer_names=["Dieline", "Artwork"])
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf", ai_config=ai_config))
 
         assert len(findings) == 1
         f = findings[0]
@@ -83,7 +99,7 @@ class TestDielineByNameAnalyzer:
 
         doc, ai_config = _doc_with_layers(spot_color_names=["CutContour"])
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf", ai_config=ai_config))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DIE_001"
@@ -97,7 +113,7 @@ class TestDielineByNameAnalyzer:
 
         doc, _ = _doc_with_layers(layer_names=["DIE LINE"])
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DIE_001"
@@ -110,7 +126,7 @@ class TestDielineByNameAnalyzer:
 
         doc, _ = _doc_with_layers(layer_names=["Cut"])
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
 
@@ -122,7 +138,7 @@ class TestDielineByNameAnalyzer:
 
         doc, _ = _doc_with_layers(layer_names=["Crease Lines"])
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
 
@@ -135,7 +151,7 @@ class TestDielineByNameAnalyzer:
 
         doc, ai_config = _doc_with_layers(industry_type="packaging")
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf", ai_config=ai_config))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DIE_002"
@@ -160,7 +176,7 @@ class TestDielineByNameAnalyzer:
             industry_type="packaging",
         )
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf", ai_config=ai_config))
 
         assert len(findings) == 1
         f = findings[0]
@@ -178,7 +194,7 @@ class TestDielineByNameAnalyzer:
 
         doc, _ = _doc_with_layers()
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DIE_003"
@@ -195,7 +211,7 @@ class TestDielineByNameAnalyzer:
             spot_color_names=["CutContour"],
         )
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
         f = findings[0]
@@ -213,7 +229,7 @@ class TestDielineByNameAnalyzer:
             spot_color_names=["CutContour"],
         )
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
 
@@ -237,7 +253,7 @@ class TestDielineByNameAnalyzer:
 
         doc, _ = _doc_with_layers(layer_names=["Dieline"])
         analyzer = DielineByNameAnalyzer()
-        findings = analyzer.analyze(doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(doc, pdf_bytes=b"fake_pdf"))
 
         for f in findings:
             assert f.source == "ai"
@@ -278,7 +294,7 @@ class TestTextIndicatorDielineDetection:
         )
 
         doc = _doc_with_text("(TEAR ACROSS) Tj artwork content")
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         assert any(f.inspection_id == "AI_DIE_001" for f in findings)
         assert not any(f.inspection_id == "AI_DIE_002" for f in findings)
 
@@ -289,7 +305,7 @@ class TestTextIndicatorDielineDetection:
         )
 
         doc = _doc_with_text("(DÉCHIRER ICI) Tj")
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         assert any(f.inspection_id == "AI_DIE_001" for f in findings)
 
     @staticmethod
@@ -299,7 +315,7 @@ class TestTextIndicatorDielineDetection:
         )
 
         doc = _doc_with_text("(TEAR HERE) Tj")
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         assert any(f.inspection_id == "AI_DIE_001" for f in findings)
 
     @staticmethod
@@ -309,7 +325,7 @@ class TestTextIndicatorDielineDetection:
         )
 
         doc = _doc_with_text("(OPEN HERE) Tj")
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         assert any(f.inspection_id == "AI_DIE_001" for f in findings)
 
     @staticmethod
@@ -321,7 +337,7 @@ class TestTextIndicatorDielineDetection:
         )
 
         doc = _doc_with_text("Plain marketing copy with no dieline indicators.")
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         # Either AI_DIE_002 (packaging) or AI_DIE_005 (non-packaging) is
         # acceptable; the key is that AI_DIE_001 does NOT fire.
         assert not any(f.inspection_id == "AI_DIE_001" for f in findings)
@@ -335,7 +351,7 @@ class TestTextIndicatorDielineDetection:
         )
 
         doc = _doc_with_text("(Tear-jerker special offer inside) Tj")
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         assert not any(f.inspection_id == "AI_DIE_001" for f in findings)
 
     @staticmethod
@@ -350,7 +366,7 @@ class TestTextIndicatorDielineDetection:
         # Build a doc with both a Cutting spot and a TEAR callout.
         doc, _ = _doc_with_layers(layer_names=[], spot_color_names=["Cutting"])
         doc.pages[0].content_stream = b"(TEAR ACROSS) Tj"
-        findings = DielineByNameAnalyzer().analyze(doc, [], b"")
+        findings = DielineByNameAnalyzer().analyze_v2(_ctx(doc, pdf_bytes=b""))
         die_001 = [f for f in findings if f.inspection_id == "AI_DIE_001"]
         assert len(die_001) == 1
         # Both sources should appear in the message.
