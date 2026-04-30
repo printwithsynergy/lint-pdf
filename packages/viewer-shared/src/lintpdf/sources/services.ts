@@ -20,6 +20,7 @@ import {
   noopTelemetry,
 } from "../../core/plugin/services";
 import type { ViewerServices } from "../../core/plugin/services";
+import type { ColorSample, DensitometerSample } from "../../core/types";
 
 /**
  * Build the LintPDF SaaS-flavoured services for the given viewer
@@ -58,6 +59,45 @@ export function createLintPDFViewerServices(args: {
     separations: {
       getChannelImageUrl: ({ pageNum, channelName, dpi }) =>
         `${apiBase}/pages/${pageNum}/channel/${encodeURIComponent(channelName)}?dpi=${dpi}`,
+    },
+    colorSample: {
+      sampleAt: async ({ pageNum, pdfX, pdfY, dpi = 300 }) => {
+        try {
+          const resp = await fetch(
+            `${apiBase}/pages/${pageNum}/sample?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=${dpi}`,
+          );
+          if (!resp.ok) return null;
+          return (await resp.json()) as ColorSample;
+        } catch {
+          return null;
+        }
+      },
+    },
+    densitometer: {
+      sampleAt: async ({ pageNum, pdfX, pdfY, dpi = 300, tacLimit }) => {
+        let resp: Response;
+        try {
+          resp = await fetch(
+            `${apiBase}/pages/${pageNum}/densitometer` +
+              `?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=${dpi}&tac_limit=${tacLimit}`,
+          );
+        } catch {
+          throw new Error("Network error");
+        }
+        if (resp.ok) {
+          return (await resp.json()) as DensitometerSample;
+        }
+        if (resp.status === 422) {
+          const body = await resp
+            .json()
+            .catch(() => ({ detail: "No separations" }));
+          throw new Error(
+            (body as { detail?: string }).detail ??
+              "No separations available for this page.",
+          );
+        }
+        throw new Error(`Sampling failed (${resp.status})`);
+      },
     },
     tacHeatmap: {
       getHeatmapImageUrl: ({ pageNum, dpi, tacLimit }) =>
