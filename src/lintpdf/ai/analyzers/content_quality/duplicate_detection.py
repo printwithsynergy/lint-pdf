@@ -53,19 +53,20 @@ class DuplicateDetectionAnalyzer(BaseAIAnalyzer):
         self,
         ctx: AnalyzerContext,
     ) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
-        # only via render_all_pages. ai_config + document + events
-        # were declared but never used; dropped.
+        # Phase 2 beta-stream: render routed through ctx.services.renderer.
         pdf_bytes = ctx.pdf_bytes
 
         if not _HAS_IMAGEHASH or not _HAS_PIL:
             logger.debug("imagehash or Pillow not installed — skipping duplicate detection")
             return []
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.renderer is None:
+            logger.debug("duplicate_detection: ctx.services.renderer unavailable, skipping")
+            return []
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=150)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=150)
         except RuntimeError:
             logger.debug("PDF rendering backend unavailable — skipping duplicate detection")
             return []
