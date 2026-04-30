@@ -1,125 +1,29 @@
-src/lintpdf/ai/analyzers/barcode/barcode_content.py:16:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_content.py:191:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py:17:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py:188:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_decode.py:14:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_decode.py:78:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py:147:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py:14:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/pharma_serialization.py:140:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/pharma_serialization.py:15:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/qr_human_readable.py:150:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/qr_human_readable.py:16:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/qr_validation.py:120:TenantAIConfig
-src/lintpdf/ai/analyzers/barcode/qr_validation.py:15:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:14:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:19:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:33:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:52:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:14:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:19:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:33:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:65:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:20:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:30:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:85:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:20:TenantAIConfig
 src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:30:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:65:TenantAIConfig
-src/lintpdf/ai/analyzers/color_compliance/brand_palette.py:176:TenantAIConfig
-src/lintpdf/ai/analyzers/color_compliance/brand_palette.py:17:TenantAIConfig
-src/lintpdf/ai/analyzers/color_compliance/dieline_by_color_name.py:18:TenantAIConfig
-src/lintpdf/ai/analyzers/color_compliance/dieline_by_color_name.py:62:TenantAIConfig
-src/lintpdf/ai/analyzers/color_compliance/wcag_contrast.py:109:TenantAIConfig
-src/lintpdf/ai/analyzers/color_compliance/wcag_contrast.py:17:TenantAIConfig
-src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py:18:TenantAIConfig
-src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py:59:TenantAIConfig
-src/lintpdf/ai/analyzers/content_quality/language_detection.py:115:TenantAIConfig
-src/lintpdf/ai/analyzers/content_quality/language_detection.py:18:TenantAIConfig
-src/lintpdf/ai/analyzers/content_quality/spell_check.py:19:TenantAIConfig
-src/lintpdf/ai/analyzers/content_quality/spell_check.py:83:TenantAIConfig
-src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py:190:TenantAIConfig
-src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py:19:TenantAIConfig
-src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py:230:TenantAIConfig
 src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:25:TenantAIConfig
 src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:68:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:87:TenantAIConfig
 src/lintpdf/ai/analyzers/document_classification/file_classification.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/document_classification/file_classification.py:25:TenantAIConfig
 src/lintpdf/ai/analyzers/document_classification/file_classification.py:35:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/document_classification/file_classification.py:54:TenantAIConfig
-src/lintpdf/ai/analyzers/file_comparison/version_diff.py:164:TenantAIConfig
-src/lintpdf/ai/analyzers/file_comparison/version_diff.py:18:TenantAIConfig
-src/lintpdf/ai/analyzers/file_comparison/version_diff.py:64:TenantAIConfig
 src/lintpdf/ai/analyzers/image_analysis/image_quality.py:14:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/image_analysis/image_quality.py:24:TenantAIConfig
 src/lintpdf/ai/analyzers/image_analysis/image_quality.py:34:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/image_analysis/image_quality.py:53:TenantAIConfig
 src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:14:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:24:TenantAIConfig
 src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:34:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:53:TenantAIConfig
 src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:14:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:24:TenantAIConfig
 src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:52:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:71:TenantAIConfig
 src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:25:TenantAIConfig
 src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:35:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:54:TenantAIConfig
 src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:25:TenantAIConfig
 src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:38:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:73:TenantAIConfig
-src/lintpdf/ai/analyzers/nlp_interfaces/nl_preflight_profile.py:22:TenantAIConfig
-src/lintpdf/ai/analyzers/nlp_interfaces/nl_preflight_profile.py:47:TenantAIConfig
-src/lintpdf/ai/analyzers/nlp_interfaces/nl_report_interpret.py:21:TenantAIConfig
-src/lintpdf/ai/analyzers/nlp_interfaces/nl_report_interpret.py:46:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:100:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:122:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:129:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:164:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:23:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:93:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py:9:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/alcohol.py:108:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/alcohol.py:30:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/cannabis.py:30:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/cannabis.py:93:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/cosmetics.py:31:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/cosmetics.py:87:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py:178:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py:27:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py:120:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py:23:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/fda_otc.py:12:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/fda_otc.py:31:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py:115:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py:24:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/organic.py:12:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/organic.py:38:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py:25:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py:97:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/tobacco.py:144:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/tobacco.py:31:TenantAIConfig
-src/lintpdf/ai/analyzers/regulatory_compliance/tobacco.py:65:TenantAIConfig
 src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:14:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:24:TenantAIConfig
 src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:37:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:61:TenantAIConfig
-src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:148:TenantAIConfig
 src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:18:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:28:TenantAIConfig
 src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:64:from lintpdf.ai.gpu_client
 src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:15:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:20:TenantAIConfig
 src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:76:from lintpdf.ai.gpu_client
-src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:95:TenantAIConfig
-src/lintpdf/ai/analyzers/text_analysis/text_as_outlines.py:25:TenantAIConfig
-src/lintpdf/ai/analyzers/text_analysis/text_as_outlines.py:85:TenantAIConfig
 src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:165:from lintpdf.api.database
-src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:18:TenantAIConfig
-src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:266:TenantAIConfig

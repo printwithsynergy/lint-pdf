@@ -28,7 +28,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+    from lintpdf.ai.types import AIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -84,7 +84,7 @@ class CosmeticsLabelingAnalyzer(BaseAIAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
         pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
+        ai_config: AIConfig = None,
     ) -> list[Finding]:
         # Industry gate. The 2026-04-27 Opus audit flagged 4 false
         # positives on Nutrops dietary-supplement labels where this

@@ -28,7 +28,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+    from lintpdf.ai.types import AIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -62,7 +62,7 @@ class TobaccoWarningAnalyzer(BaseAIAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
         pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
+        ai_config: AIConfig = None,
     ) -> list[Finding]:
         text = _collect_text(document)
         if not _TOBACCO_KEYWORDS.search(text) or not _WARNING_PHRASES.search(text):
@@ -141,7 +141,7 @@ class TobaccoWarningAnalyzer(BaseAIAnalyzer):
         return (x0, y0, x1, y1)
 
 
-def _resolve_threshold(ai_config: TenantAIConfig | None) -> float:  # type: ignore[name-defined]
+def _resolve_threshold(ai_config: AIConfig) -> float:
     if ai_config is None:
         return _DEFAULT_MIN_FRACTION
     raw = getattr(ai_config, "tobacco_warning_min_fraction", None)

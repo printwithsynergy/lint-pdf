@@ -22,7 +22,7 @@ from lintpdf.analyzers.text_metrics import (
 )
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+    from lintpdf.ai.types import AIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -94,7 +94,7 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
         pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
+        ai_config: AIConfig = None,
     ) -> list[Finding]:
         # Category gate: pharma rules do not apply to food /
         # supplement / cosmetic / pet-food products regulated under

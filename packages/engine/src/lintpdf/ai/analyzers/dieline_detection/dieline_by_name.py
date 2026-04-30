@@ -16,7 +16,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+    from lintpdf.ai.types import AIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -187,7 +187,7 @@ def _extract_spot_color_names(document: SemanticDocument) -> list[str]:  # skipc
     return spot_names
 
 
-def _is_packaging_file(document: SemanticDocument, ai_config: TenantAIConfig | None) -> bool:
+def _is_packaging_file(document: SemanticDocument, ai_config: AIConfig) -> bool:
     """Heuristic to determine if the file is packaging artwork.
 
     Checks industry type from config and document characteristics.
@@ -227,7 +227,7 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
         pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
+        ai_config: AIConfig = None,
     ) -> list[Finding]:
         findings: list[Finding] = []
         detected_dielines: list[dict[str, Any]] = []
