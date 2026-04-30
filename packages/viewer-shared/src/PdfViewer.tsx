@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
 import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
+import { ViewerServicesContext } from "./core/host";
+import { createLintPDFViewerServices } from "./lintpdf/sources/services";
 import { PageCanvas } from "./core/components/PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./core/components/PageNavigator";
@@ -631,6 +633,15 @@ export function PdfViewer({
   const canvasHeight = currentPageInfo ? Math.round(currentPageInfo.height_pts * ptsToPixels * (zoom / 100)) : 0;
 
   const ctxValue = { apiBase, jobApiBase, readOnly };
+  // Phase-2 ViewerServices wiring: core/ components consume the
+  // host's URL builders + adapters through services.X.Y(...) instead
+  // of constructing URLs from apiBase directly. The adapter lives in
+  // src/lintpdf/sources/services so the LintPDF-specific URL shapes
+  // stay out of core/.
+  const services = useMemo(
+    () => createLintPDFViewerServices({ apiBase, jobApiBase }),
+    [apiBase, jobApiBase],
+  );
 
   // Determine what to render in the left panel
   const renderLeftPanel = () => {
@@ -828,6 +839,7 @@ export function PdfViewer({
 
   return (
     <ViewerApiContext.Provider value={ctxValue}>
+    <ViewerServicesContext.Provider value={services}>
     <div className={`flex h-[calc(100vh-4rem)] flex-col ${config.dark_mode ? "dark bg-neutral-900" : ""}`}>
       {/* Verdict bar */}
       <VerdictBar jobId={jobId} config={config} />
@@ -1391,6 +1403,7 @@ export function PdfViewer({
         </div>
       );
     })()}
+    </ViewerServicesContext.Provider>
     </ViewerApiContext.Provider>
   );
 }

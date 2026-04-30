@@ -54,16 +54,27 @@ inside `core/components/`)** — Phase 2 split this in two stages:
   (PdfViewer, ViewerToolbar, AnnotationLayer, etc.) keep working
   without changes. Both names point at the same React context
   object.
-- **Stage 2 (next PRs)** — replace `apiBase`-based URL string
-  building (`${apiBase}/pages/.../tile?dpi=...`,
-  `${apiBase}/layers`, etc.) with `services.pageImages.getPageImageUrl(...)`,
-  `services.annotations.list()`, etc. Requires expanding
-  `ViewerServices` from its current 5-protocol surface
-  (pageImages, annotations, telemetry, i18n, tokens) to also
-  cover layers, separations, tac-heatmap, color-sampling, and
-  densitometer reads. Each new sub-service lands together with
-  the component(s) that consume it, with a snapshot test per
-  component.
+- **Stage 2 (PR #338, in progress)** — replaces `apiBase`-based URL
+  string building with `services.X.Y(...)` calls. PR #338 makes
+  `PageImageService.getPageImageUrl` synchronous (returns `string`,
+  was `Promise<string>`); ships the `createLintPDFViewerServices`
+  factory in `src/lintpdf/sources/services.ts`; adds
+  `ViewerServicesContext` + `useViewerServices()` to `core/host`;
+  wires the provider into `PdfViewer.tsx`; and migrates
+  `PageNavigator` + `PageCanvas` (the 2 of 11 components that build
+  page-tile URLs) to call `pageImages.getPageImageUrl(...)`.
+
+  Subsequent PRs expand `ViewerServices` to also cover layers,
+  separations, tac-heatmap, color-sampling, and densitometer reads,
+  migrating the remaining 9 components in lockstep:
+  - `LayerCanvas`, `LayerPanel` → new `LayerService`
+  - `SeparationCanvas` → new `SeparationService`
+  - `TACHeatmapOverlay` → new `TACHeatmapService`
+  - `ColorPickerTool` → new `ColorSampleService`
+  - `DensitometerTool` → new `DensitometerService`
+  - `AnnotationCanvas`, `AnnotationThread` → expand the existing
+    `AnnotationService` with concrete LintPDF impl
+  - `MobileDrawer` → new `ReportsService`
 
 **`ViewerFinding[]` consumers (0 files remaining)** — both
 `PageNavigator` (PR #334) and `PageCanvas` (PR #335) have migrated.

@@ -17,14 +17,23 @@ import { fireEvent, render } from "@testing-library/react";
 
 import { PageNavigator } from "../../src/core/components/PageNavigator";
 import { ViewerApiContext } from "../../src/types";
+import { ViewerServicesContext } from "../../src/core/host";
+import { createLintPDFViewerServices } from "../../src/lintpdf/sources/services";
 import type { OverlayItem } from "../../src/core/plugin/types";
 import type { PageInfo } from "../../src/types";
+
+const testServices = createLintPDFViewerServices({
+  apiBase: "/api/test",
+  jobApiBase: "/api/test/job",
+});
 
 const wrap = (ui: React.ReactNode) => (
   <ViewerApiContext.Provider
     value={{ apiBase: "/api/test", jobApiBase: "/api/test/job", readOnly: false }}
   >
-    {ui}
+    <ViewerServicesContext.Provider value={testServices}>
+      {ui}
+    </ViewerServicesContext.Provider>
   </ViewerApiContext.Provider>
 );
 
@@ -137,7 +146,7 @@ describe("PageNavigator", () => {
     expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
-  it("builds thumbnail URLs from the ViewerApiContext apiBase", () => {
+  it("builds thumbnail URLs through the ViewerServices.pageImages adapter", () => {
     const { getByAltText } = render(
       wrap(
         <PageNavigator

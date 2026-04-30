@@ -19,14 +19,23 @@ import { render } from "@testing-library/react";
 
 import { PageCanvas } from "../../src/core/components/PageCanvas";
 import { ViewerApiContext } from "../../src/types";
+import { ViewerServicesContext } from "../../src/core/host";
+import { createLintPDFViewerServices } from "../../src/lintpdf/sources/services";
 import type { OverlayItem } from "../../src/core/plugin/types";
 import type { PageInfo } from "../../src/types";
+
+const testServices = createLintPDFViewerServices({
+  apiBase: "/api/test",
+  jobApiBase: "/api/test/job",
+});
 
 const wrap = (ui: React.ReactNode) => (
   <ViewerApiContext.Provider
     value={{ apiBase: "/api/test", jobApiBase: "/api/test/job", readOnly: false }}
   >
-    {ui}
+    <ViewerServicesContext.Provider value={testServices}>
+      {ui}
+    </ViewerServicesContext.Provider>
   </ViewerApiContext.Provider>
 );
 
