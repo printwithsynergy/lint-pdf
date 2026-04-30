@@ -1,0 +1,46 @@
+src/lintpdf/ai/analyzers/barcode/barcode_content.py:196:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py:195:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/barcode/barcode_decode.py:80:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py:152:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/barcode/pharma_serialization.py:154:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/barcode/qr_human_readable.py:159:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/barcode/qr_validation.py:125:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:31:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:55:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:89:from lintpdf.ai.text_mask
+src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:103:from lintpdf.ai.text_mask
+src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:31:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:67:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:29:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:96:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:104:from lintpdf.ai.text_mask
+src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:28:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:67:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py:65:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:66:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:93:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/document_classification/file_classification.py:33:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/document_classification/file_classification.py:52:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/file_comparison/version_diff.py:189:from lintpdf.api.storage
+src/lintpdf/ai/analyzers/file_comparison/version_diff.py:89:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/image_analysis/image_quality.py:32:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/image_analysis/image_quality.py:54:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:32:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:51:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:50:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:72:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:33:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:58:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:37:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:35:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:66:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:170:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:64:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:100:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:74:from lintpdf.ai.types import get_gpu_client
+src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:163:from lintpdf.ai.types import get_db_session
+src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:164:from lintpdf.api.models
+src/lintpdf/analyzers/advanced_color_analyzer.py:66:from lintpdf.ai.rendering
+src/lintpdf/analyzers/barcode.py:571:from lintpdf.ai.rendering
+src/lintpdf/analyzers/dieline.py:858:from lintpdf.ai.dieline_claude
+src/lintpdf/analyzers/legend.py:137:from lintpdf.ai.legend_claude
