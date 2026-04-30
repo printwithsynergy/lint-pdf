@@ -639,8 +639,8 @@ export function PdfViewer({
   // src/lintpdf/sources/services so the LintPDF-specific URL shapes
   // stay out of core/.
   const services = useMemo(
-    () => createLintPDFViewerServices({ apiBase, jobApiBase }),
-    [apiBase, jobApiBase],
+    () => createLintPDFViewerServices({ apiBase, jobApiBase, jobId }),
+    [apiBase, jobApiBase, jobId],
   );
 
   // Determine what to render in the left panel

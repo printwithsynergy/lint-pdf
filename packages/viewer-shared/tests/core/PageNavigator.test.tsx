@@ -25,6 +25,7 @@ import type { PageInfo } from "../../src/types";
 const testServices = createLintPDFViewerServices({
   apiBase: "/api/test",
   jobApiBase: "/api/test/job",
+  jobId: "job-1",
 });
 
 const wrap = (ui: React.ReactNode) => (

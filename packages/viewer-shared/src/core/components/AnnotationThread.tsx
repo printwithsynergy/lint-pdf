@@ -1,17 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useViewerHost } from "../host";
-
-interface AnnotationEntry {
-  id: string;
-  jobId: string;
-  pageNum: number;
-  authorEmail: string;
-  authorName: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { AnnotationEntry } from "../plugin/services";
+import { useViewerHost, useViewerServices } from "../host";
 
 interface AnnotationThreadProps {
   jobId: string;
@@ -20,27 +11,23 @@ interface AnnotationThreadProps {
 }
 
 export function AnnotationThread({
-  jobId,
+  jobId: _jobId,
   currentUserEmail,
   onJumpToPage,
 }: AnnotationThreadProps) {
-  const { apiBase, readOnly } = useViewerHost();
+  const { readOnly } = useViewerHost();
+  const { annotations: annotationService } = useViewerServices();
   const [annotations, setAnnotations] = useState<AnnotationEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const resp = await fetch(`${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}`);
-      if (resp.ok) {
-        const data = await resp.json();
-        setAnnotations(data);
-      }
-    } catch {
-      // ignore
+      const data = await annotationService.list();
+      setAnnotations([...data]);
     } finally {
       setLoading(false);
     }
-  }, [apiBase, jobId]);
+  }, [annotationService]);
 
   useEffect(() => {
     load();
@@ -48,19 +35,10 @@ export function AnnotationThread({
 
   const handleDelete = useCallback(
     async (annotationId: string) => {
-      try {
-        const resp = await fetch(
-          `${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}/${annotationId}`,
-          { method: "DELETE" },
-        );
-        if (resp.ok || resp.status === 204) {
-          setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
-        }
-      } catch {
-        // ignore
-      }
+      await annotationService.remove(annotationId);
+      setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
     },
-    [apiBase, jobId],
+    [annotationService],
   );
 
   if (loading) {

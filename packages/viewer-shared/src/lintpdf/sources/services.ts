@@ -19,20 +19,35 @@ import {
   noopI18n,
   noopTelemetry,
 } from "../../core/plugin/services";
-import type { ViewerServices } from "../../core/plugin/services";
+import type {
+  AnnotationEntry,
+  ViewerServices,
+} from "../../core/plugin/services";
 import type { ColorSample, DensitometerSample } from "../../core/types";
 
 /**
  * Build the LintPDF SaaS-flavoured services for the given viewer
  * session. `apiBase` is the viewer-scoped path (e.g.,
  * `/api/lintpdf/viewer/{jobId}` or `/api/lintpdf/viewer/public/{token}`)
- * — same value `useViewerHost()` exposes today.
+ * — same value `useViewerHost()` exposes today. `jobId` lets the
+ * annotations endpoints (which sit at `/api/lintpdf/annotations/{jobId}`,
+ * not under `/viewer/`) build their base URL without
+ * apiBase.replace() acrobatics in every call site.
  */
 export function createLintPDFViewerServices(args: {
   apiBase: string;
   jobApiBase: string;
+  jobId: string;
 }): ViewerServices {
-  const { apiBase } = args;
+  const { apiBase, jobId } = args;
+  // Annotations live at /api/lintpdf/annotations/{jobId} regardless of
+  // whether the viewer is in authenticated or public-token mode. The
+  // existing components recovered this URL by stripping /viewer/...
+  // off apiBase; the factory does that once instead.
+  const annotationsBase = apiBase.replace(
+    /\/viewer\/.*$/,
+    `/annotations/${jobId}`,
+  );
   return {
     pageImages: {
       getPageImageUrl: ({ pageNum, dpi }) =>
@@ -128,13 +143,48 @@ export function createLintPDFViewerServices(args: {
         }
       },
     },
-    // Annotations / telemetry / i18n / tokens stay on the OSS no-op
-    // defaults until subsequent PRs land their LintPDF impls.
     annotations: {
-      list: async () => [],
-      create: async (a) => a,
-      update: async (_id, patch) => patch,
-      remove: async () => {},
+      list: async () => {
+        try {
+          const resp = await fetch(annotationsBase);
+          if (!resp.ok) return [];
+          const data = (await resp.json()) as ReadonlyArray<unknown>;
+          return Array.isArray(data) ? (data as ReadonlyArray<AnnotationEntry>) : [];
+        } catch {
+          return [];
+        }
+      },
+      getForPage: async (pageNum) => {
+        try {
+          const resp = await fetch(`${annotationsBase}/${pageNum}`);
+          if (!resp.ok) return null;
+          const data = (await resp.json()) as ReadonlyArray<AnnotationEntry>;
+          return Array.isArray(data) && data.length > 0 ? (data[0] ?? null) : null;
+        } catch {
+          return null;
+        }
+      },
+      saveForPage: async (pageNum, fabricJson) => {
+        // Best-effort — autosave on a flaky connection should not crash
+        // the canvas. The user is still drawing locally; the next save
+        // will pick up the snapshot.
+        try {
+          await fetch(`${annotationsBase}/${pageNum}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fabricJson }),
+          });
+        } catch {
+          /* swallow */
+        }
+      },
+      remove: async (id) => {
+        try {
+          await fetch(`${annotationsBase}/${id}`, { method: "DELETE" });
+        } catch {
+          /* swallow */
+        }
+      },
     },
     telemetry: noopTelemetry,
     i18n: noopI18n,

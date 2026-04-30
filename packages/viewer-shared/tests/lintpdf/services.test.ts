@@ -14,6 +14,7 @@ describe("createLintPDFViewerServices", () => {
   const services = createLintPDFViewerServices({
     apiBase: "/api/lintpdf/viewer/job-1",
     jobApiBase: "/api/lintpdf/jobs/job-1",
+    jobId: "job-1",
   });
 
   describe("pageImages", () => {
@@ -326,11 +327,123 @@ describe("createLintPDFViewerServices", () => {
     });
   });
 
-  describe("annotations / telemetry / i18n / tokens", () => {
-    it("annotations.list resolves to an empty array (no-op default)", async () => {
-      expect(await services.annotations.list()).toEqual([]);
+  describe("annotations", () => {
+    const ANNO_BASE = "/api/lintpdf/annotations/job-1";
+
+    it("list fetches the annotations base URL and returns the JSON array", async () => {
+      const fake = [
+        {
+          id: "a1",
+          jobId: "job-1",
+          pageNum: 1,
+          authorEmail: "a@b.com",
+          authorName: null,
+          createdAt: "2026-04-30",
+          updatedAt: "2026-04-30",
+        },
+      ];
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(fake), { status: 200 }),
+        );
+      const result = await services.annotations.list();
+      expect(fetchSpy).toHaveBeenCalledWith(ANNO_BASE);
+      expect(result).toEqual(fake);
+      fetchSpy.mockRestore();
     });
 
+    it("list returns [] on non-2xx (silent swallow)", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("nope", { status: 500 }));
+      expect(await services.annotations.list()).toEqual([]);
+      fetchSpy.mockRestore();
+    });
+
+    it("list returns [] on network error", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValueOnce(new TypeError("fail"));
+      expect(await services.annotations.list()).toEqual([]);
+      fetchSpy.mockRestore();
+    });
+
+    it("getForPage returns the first entry from the per-page response", async () => {
+      const fake = [
+        {
+          id: "a1",
+          jobId: "job-1",
+          pageNum: 3,
+          authorEmail: "a@b.com",
+          authorName: null,
+          createdAt: "2026-04-30",
+          updatedAt: "2026-04-30",
+          fabricJson: { version: "6.0.0" },
+        },
+      ];
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(fake), { status: 200 }),
+        );
+      const result = await services.annotations.getForPage(3);
+      expect(fetchSpy).toHaveBeenCalledWith(`${ANNO_BASE}/3`);
+      expect(result?.id).toBe("a1");
+      fetchSpy.mockRestore();
+    });
+
+    it("getForPage returns null when the response array is empty", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("[]", { status: 200 }));
+      expect(await services.annotations.getForPage(3)).toBeNull();
+      fetchSpy.mockRestore();
+    });
+
+    it("getForPage returns null on non-2xx (silent swallow)", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("nope", { status: 500 }));
+      expect(await services.annotations.getForPage(3)).toBeNull();
+      fetchSpy.mockRestore();
+    });
+
+    it("saveForPage POSTs the fabricJson to /annotations/{job}/{page}", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("ok", { status: 200 }));
+      await services.annotations.saveForPage(7, { foo: "bar" });
+      expect(fetchSpy).toHaveBeenCalledWith(`${ANNO_BASE}/7`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fabricJson: { foo: "bar" } }),
+      });
+      fetchSpy.mockRestore();
+    });
+
+    it("saveForPage swallows network errors (best-effort autosave)", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValueOnce(new TypeError("fail"));
+      // Should not throw.
+      await services.annotations.saveForPage(1, {});
+      fetchSpy.mockRestore();
+    });
+
+    it("remove DELETEs /annotations/{job}/{annotationId}", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response(null, { status: 204 }));
+      await services.annotations.remove("a1");
+      expect(fetchSpy).toHaveBeenCalledWith(`${ANNO_BASE}/a1`, {
+        method: "DELETE",
+      });
+      fetchSpy.mockRestore();
+    });
+  });
+
+  describe("telemetry / i18n / tokens", () => {
     it("telemetry.track is a no-op (does not throw)", () => {
       expect(() =>
         services.telemetry.track("evt", { foo: "bar" }),
