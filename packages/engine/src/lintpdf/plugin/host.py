@@ -31,6 +31,7 @@ from lintpdf.plugin.services import (
     Services,
     noop_cost_cap,
     noop_metering,
+    noop_storage,
     noop_tenants,
     noop_verapdf,
 )
@@ -66,6 +67,7 @@ class _SaasServices:
     verapdf_client: Any
     database: Any
     tenants: Any
+    storage: Any
 
 
 def default_services_for_saas() -> Services:
@@ -90,6 +92,7 @@ def default_services_for_saas() -> Services:
     verapdf_client = _wrap_verapdf()
     database = _wrap_database()
     tenants = _wrap_tenants()
+    storage = _wrap_storage()
 
     return _SaasServices(  # type: ignore[return-value]
         metering=metering,
@@ -100,6 +103,7 @@ def default_services_for_saas() -> Services:
         verapdf_client=verapdf_client,
         database=database,
         tenants=tenants,
+        storage=storage,
     )
 
 
@@ -171,7 +175,7 @@ def _wrap_llm_client() -> Any:
 
 def _wrap_renderer() -> Any:
     try:
-        from lintpdf.ai.rendering import render_page_to_image
+        from lintpdf.ai.rendering import render_all_pages, render_page_to_image
     except ImportError:
         logger.info("lintpdf.ai.rendering unavailable")
         return None
@@ -179,6 +183,14 @@ def _wrap_renderer() -> Any:
     class _RendererWrap:
         def render_page(self, *, pdf_bytes: bytes, page_num: int, dpi: int) -> bytes:
             return render_page_to_image(pdf_bytes, page_num, dpi)
+
+        def render_page_to_image(
+            self, pdf_bytes: bytes, page_num: int = 1, dpi: int = 150
+        ) -> bytes:
+            return render_page_to_image(pdf_bytes, page_num, dpi)
+
+        def render_all_pages(self, pdf_bytes: bytes, dpi: int = 150) -> list[bytes]:
+            return render_all_pages(pdf_bytes, dpi=dpi)
 
     return _RendererWrap()
 
@@ -219,6 +231,27 @@ def _wrap_database() -> Any:
             return _db.SessionLocal()
 
     return _DatabaseWrap()
+
+
+def _wrap_storage() -> Any:
+    try:
+        from lintpdf.api.storage import get_storage_backend
+    except ImportError:
+        logger.info("lintpdf.api.storage unavailable; using no-op")
+        return noop_storage()
+
+    class _StorageWrap:
+        def download(self, file_id: str) -> bytes | None:
+            try:
+                backend = get_storage_backend()
+                data = backend.download(str(file_id))
+                if data and isinstance(data, bytes):
+                    return data
+            except Exception as exc:
+                logger.debug("storage.download(%s) failed: %s", file_id, exc)
+            return None
+
+    return _StorageWrap()
 
 
 def _wrap_tenants() -> Any:
