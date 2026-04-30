@@ -25,6 +25,11 @@ export default [
               message:
                 "core/ cannot import from sibling lintpdf/ subpackage. Cross the boundary the other way (lintpdf depends on core), never both ways.",
             },
+            {
+              group: ["../../types", "../../../types"],
+              message:
+                "core/ cannot import from src/types.ts (LintPDF-flavoured). Use core/types (generic shapes), core/host (React context), or core/plugin/types (OverlayItem etc.) instead.",
+            },
           ],
         },
       ],
