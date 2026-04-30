@@ -150,110 +150,31 @@ def _apply_western_electric_rules(  # skipcq: PY-R1000
 
 
 def _query_historical_data(tenant_id: Any, services: Any) -> list[dict[str, Any]] | None:
-    """Query historical job quality data for the tenant.
+    """Fetch historical job quality data for the tenant via the
+    TenantsService Protocol.
 
-    Fetches completed jobs from the database and computes per-job finding
-    counts to build the time series needed for SPC analysis.
-
-    Returns None if ``services.database`` or the SaaS-only ``Job``/
-    ``JobFinding`` models aren't available (OSS host case).
+    Phase 3a moved the SaaS-only Job/JobFinding query into the host
+    bridge (lintpdf.plugin.host._wrap_tenants.get_historical_quality_data)
+    so this analyzer no longer imports lintpdf.api.models directly.
+    OSS hosts wire the TenantsService stub to return None and the
+    analyzer self-skips.
     """
-    if services is None or getattr(services, "database", None) is None:
+    if services is None or getattr(services, "tenants", None) is None:
         logger.debug(
-            "submission_quality_spc: ctx.services.database unavailable — tenant_id=%s",
+            "submission_quality_spc: ctx.services.tenants unavailable — tenant_id=%s",
             tenant_id,
         )
         return None
 
     try:
-        from sqlalchemy import func, text
-
-        from lintpdf.api.models import Job, JobFinding, JobStatus
-    except ImportError:
-        logger.debug(
-            "Database models not available for SPC historical query — tenant_id=%s", tenant_id
-        )
-        return None
-
-    try:
-        db = services.database.session()
-    except (RuntimeError, AttributeError):
-        logger.debug("Database session not initialized — tenant_id=%s", tenant_id)
-        return None
-
-    try:
-        # Subquery: per-job finding counts grouped by severity
-        (
-            db.query(
-                JobFinding.job_id,
-                func.count(JobFinding.id).label("finding_count"),
-                func.sum(
-                    func.cast(
-                        JobFinding.severity == "error",
-                        (db.bind.dialect.name != "sqlite" and text("INTEGER")) or text("INT"),
-                    )
-                ).label("error_count_raw"),
-                func.sum(
-                    func.cast(
-                        JobFinding.severity == "warning",
-                        (db.bind.dialect.name != "sqlite" and text("INTEGER")) or text("INT"),
-                    )
-                ).label("warning_count_raw"),
-            )
-            .group_by(JobFinding.job_id)
-            .subquery()
-        )
-
-        # Simpler approach: just get completed jobs and count findings separately
-        jobs = (
-            db.query(Job)
-            .filter(
-                Job.tenant_id == str(tenant_id),
-                Job.status.in_([JobStatus.COMPLETE, JobStatus.FAILED]),
-            )
-            .order_by(Job.created_at.desc())
-            .limit(100)
-            .all()
-        )
-
-        if not jobs:
-            return None
-
-        results: list[dict[str, Any]] = []
-        for job in jobs:
-            # Count findings per job
-            counts = (
-                db.query(
-                    func.count(JobFinding.id).label("total"),
-                    func.count(func.nullif(JobFinding.severity != "error", True)).label("errors"),
-                    func.count(func.nullif(JobFinding.severity != "warning", True)).label(
-                        "warnings"
-                    ),
-                )
-                .filter(JobFinding.job_id == job.id)
-                .one()
-            )
-
-            results.append(
-                {
-                    "job_id": str(job.id),
-                    "created_at": job.created_at.isoformat() if job.created_at else None,
-                    "status": job.status.value if hasattr(job.status, "value") else str(job.status),
-                    "finding_count": counts.total or 0,
-                    "error_count": counts.errors or 0,
-                    "warning_count": counts.warnings or 0,
-                }
-            )
-
-        return results if results else None
-
+        return services.tenants.get_historical_quality_data(str(tenant_id))
     except Exception:
         logger.debug(
-            "Failed to query historical data for SPC — tenant_id=%s", tenant_id, exc_info=True
+            "submission_quality_spc: get_historical_quality_data(%s) failed",
+            tenant_id,
+            exc_info=True,
         )
         return None
-    finally:
-        db.close()
 
 
 @register_ai_analyzer

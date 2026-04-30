@@ -286,6 +286,88 @@ def _wrap_tenants() -> Any:
                 return ent.model_dump()
             return ent.dict() if hasattr(ent, "dict") else dict(ent)
 
+        def get_historical_quality_data(
+            self, tenant_id: str, *, limit: int = 100
+        ) -> list[dict[str, Any]] | None:
+            """SaaS-host implementation of TenantsService.get_historical_quality_data.
+
+            Returns None on any failure (DB unavailable, model import
+            failure, query exception). Phase 3a moved this query out of
+            the analyzer body so trend_analysis/submission_quality_spc.py
+            no longer imports lintpdf.api.models directly — closing the
+            last eta6 violation.
+            """
+            try:
+                from sqlalchemy import func
+
+                from lintpdf.api import database as _db
+                from lintpdf.api.models import Job, JobFinding, JobStatus
+            except ImportError as exc:
+                logger.debug(
+                    "get_historical_quality_data(%s): SaaS DB modules unavailable (%s)",
+                    tenant_id,
+                    exc,
+                )
+                return None
+
+            try:
+                db = _db.SessionLocal()
+            except (RuntimeError, AttributeError) as exc:
+                logger.debug("get_historical_quality_data(%s): no DB session (%s)", tenant_id, exc)
+                return None
+
+            try:
+                jobs = (
+                    db.query(Job)
+                    .filter(
+                        Job.tenant_id == str(tenant_id),
+                        Job.status.in_([JobStatus.COMPLETE, JobStatus.FAILED]),
+                    )
+                    .order_by(Job.created_at.desc())
+                    .limit(limit)
+                    .all()
+                )
+                if not jobs:
+                    return None
+
+                results: list[dict[str, Any]] = []
+                for job in jobs:
+                    counts = (
+                        db.query(
+                            func.count(JobFinding.id).label("total"),
+                            func.count(func.nullif(JobFinding.severity != "error", True)).label(
+                                "errors"
+                            ),
+                            func.count(func.nullif(JobFinding.severity != "warning", True)).label(
+                                "warnings"
+                            ),
+                        )
+                        .filter(JobFinding.job_id == job.id)
+                        .one()
+                    )
+                    results.append(
+                        {
+                            "job_id": str(job.id),
+                            "created_at": job.created_at.isoformat() if job.created_at else None,
+                            "status": job.status.value
+                            if hasattr(job.status, "value")
+                            else str(job.status),
+                            "finding_count": counts.total or 0,
+                            "error_count": counts.errors or 0,
+                            "warning_count": counts.warnings or 0,
+                        }
+                    )
+                return results if results else None
+            except Exception:
+                logger.debug(
+                    "get_historical_quality_data(%s) query failed",
+                    tenant_id,
+                    exc_info=True,
+                )
+                return None
+            finally:
+                db.close()
+
     return _TenantsWrap()
 
 
