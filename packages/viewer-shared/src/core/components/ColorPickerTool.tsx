@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { ColorSample } from "./types";
-import { useViewerApi } from "./types";
+import type { ColorSample } from "../../types";
+import { useViewerApi } from "../../types";
 
 interface ColorPickerToolProps {
   jobId: string;

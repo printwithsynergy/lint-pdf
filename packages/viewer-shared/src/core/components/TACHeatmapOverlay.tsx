@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DEFAULT_DPI, useViewerApi } from "./types";
+import { DEFAULT_DPI, useViewerApi } from "../../types";
 
 /** Per-text-run TAC reading, as returned by ``/tac-heatmap/runs``.
  *

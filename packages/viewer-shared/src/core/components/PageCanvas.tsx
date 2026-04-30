@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PageInfo, ViewerFinding } from "./types";
-import { DEFAULT_DPI, SEVERITY_COLORS, useViewerApi } from "./types";
+import type { PageInfo, ViewerFinding } from "../../types";
+import { DEFAULT_DPI, SEVERITY_COLORS, useViewerApi } from "../../types";
 
 interface PageCanvasProps {
   jobId: string;
