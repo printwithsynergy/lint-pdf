@@ -632,7 +632,9 @@ class PreflightOrchestrator:
 
             ai_config_dict: dict[str, Any] | None = None
             if ai_config_for_analyzers is not None:
-                if hasattr(ai_config_for_analyzers, "dict"):
+                if hasattr(ai_config_for_analyzers, "model_dump"):
+                    ai_config_dict = ai_config_for_analyzers.model_dump()
+                elif hasattr(ai_config_for_analyzers, "dict"):
                     ai_config_dict = ai_config_for_analyzers.dict()
                 else:
                     try:
