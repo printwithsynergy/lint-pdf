@@ -6,6 +6,7 @@ import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
 import { PageCanvas } from "./core/components/PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./core/components/PageNavigator";
+import { findingsToOverlayItems } from "./lintpdf/sources/finding-overlay";
 import { ViewerToolbar } from "./ViewerToolbar";
 import { SeparationPanel } from "./SeparationPanel";
 import { SeparationCanvas } from "./core/components/SeparationCanvas";
@@ -264,6 +265,15 @@ export function PdfViewer({
     for (const f of findings) counts[f.severity]++;
     return counts;
   }, [findings]);
+  // Phase-2 abstraction: PageNavigator (and, in subsequent PRs,
+  // PageCanvas) consume the generic OverlayItem shape rather than
+  // ViewerFinding directly. The conversion is the one point in the
+  // viewer that bridges LintPDF-domain findings → core-namespace
+  // overlay items.
+  const overlayItems = useMemo(
+    () => findingsToOverlayItems(findings),
+    [findings],
+  );
   const findingsSummaryThisPage = useMemo(() => {
     const counts = { error: 0, warning: 0, advisory: 0 };
     for (const f of findings) {
@@ -732,8 +742,7 @@ export function PdfViewer({
                   <PageNavigator
                     pages={pages}
                     currentPage={currentPage}
-                    findings={findings}
-                    jobId={jobId}
+                    items={overlayItems}
                     onPageChange={setCurrentPage}
                     horizontal
                   />
