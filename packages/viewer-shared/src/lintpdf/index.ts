@@ -16,4 +16,9 @@ export type {
   ViewerFinding,
 } from "./types";
 
+export {
+  findingToOverlayItem,
+  findingsToOverlayItems,
+} from "./sources/finding-overlay";
+
 export { registerLintPDFPlugins } from "./register";
