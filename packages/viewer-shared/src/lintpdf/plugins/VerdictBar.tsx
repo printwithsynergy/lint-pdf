@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { VerdictState, ViewerConfig } from "./types";
-import { useViewerApi } from "./types";
+import type { VerdictState, ViewerConfig } from "../../types";
+import { useViewerApi } from "../../types";
 
 interface VerdictBarProps {
   jobId: string;

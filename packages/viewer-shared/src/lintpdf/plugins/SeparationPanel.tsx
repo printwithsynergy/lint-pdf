@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { DielineResult, SwatchClassification } from "./types";
-import { useViewerApi } from "./types";
+import type { DielineResult, SwatchClassification } from "../../types";
+import { useViewerApi } from "../../types";
 
 interface SeparationChannel {
   name: string;

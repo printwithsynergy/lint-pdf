@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ZoomControls } from "./core/components/ZoomControls";
-import type { ViewerCapabilityKey, ViewerConfig } from "./types";
-import { DEFAULT_VIEWER_CONFIG, FILLABLE_CAPABILITIES, useViewerApi } from "./types";
+import { ZoomControls } from "../../core/components/ZoomControls";
+import type { ViewerCapabilityKey, ViewerConfig } from "../../types";
+import { DEFAULT_VIEWER_CONFIG, FILLABLE_CAPABILITIES, useViewerApi } from "../../types";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";

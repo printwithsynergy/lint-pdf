@@ -131,14 +131,22 @@ Subsequent PRs do the file-by-file migration. The
 pattern; each migrated component lands with an equivalent snapshot
 in the same PR.
 
-### LintPDF-flavoured (11) — Phase 2 wraps as plugins in `src/lintpdf/plugins/`
+### LintPDF-flavoured (10) — moved to `src/lintpdf/plugins/` in PR #344
 
-### LintPDF-flavoured (11) — Phase 2 wraps as plugins in `src/lintpdf/plugins/`
+`FindingsPanel`, `ViewerToolbar`, `AnnotationLayer`, `VerdictBar`,
+`ApprovalChainPanel`, `ComparisonPanel`, `SeparationPanel`,
+`ShareDialog`, `UpgradePrompt`, `AuditChip` — relocated via
+`git mv` so blame survives. Their public component identity stays
+React; future PRs wrap them as `Plugin` objects (manifest +
+`mount(ctx)`) for the `registerLintPDFPlugins()` registry.
 
-`PdfViewer` (58K monolith — Phase 2 thins to a host shell + plugin
-slots), `FindingsPanel`, `ViewerToolbar`, `AnnotationLayer`,
-`VerdictBar`, `ApprovalChainPanel`, `ComparisonPanel`,
-`SeparationPanel`, `ShareDialog`, `UpgradePrompt`, `AuditChip`.
+`PdfViewer` (the 58K orchestrator) deliberately stays at
+`src/PdfViewer.tsx` — it's the host shell, not a plugin. Phase 2's
+"refactor `PdfViewer.tsx` into a thin shell + plugin slots" item
+is tracked separately.
+
+`useTileWarming.ts` stays at `src/` flat (it's a hook, not a
+component, and the LintPDF/core line is fuzzier for hooks).
 
 Hardcoded API paths surfaced in audit (Phase 2 replaces with
 `services.*` calls):

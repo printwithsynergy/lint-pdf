@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { ComparisonState } from "./types";
-import { useViewerApi } from "./types";
+import type { ComparisonState } from "../../types";
+import { useViewerApi } from "../../types";
 
 interface ComparisonPanelProps {
   jobId: string;
