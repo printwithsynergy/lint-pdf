@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { isSaasMode } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "Regulatory Compliance — LintPDF",
   description:
     "Automated regulatory compliance for packaging: FDA Nutrition Facts, EU Food Information, GHS/CLP Chemical Labels, and Pharmaceutical Packaging.",
 };
+
+const SAAS = isSaasMode();
 
 const regulations = [
   {
@@ -339,24 +342,27 @@ export default function CompliancePage() {
         </section>
       ))}
 
-      {/* CTA */}
-      <section className="bg-brand-50/50 py-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">
-            Request Access to AI Compliance Features
-          </h2>
-          <p className="text-slate-500 max-w-2xl mx-auto mb-8">
-            AI Compliance inspections are in invite-only alpha. Contact us to
-            discuss your regulatory requirements and get early access.
-          </p>
-          <a
-            href="mailto:sales@lintpdf.com?subject=AI%20Compliance%20Access%20Request"
-            className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5 inline-block"
-          >
-            Request Access
-          </a>
-        </div>
-      </section>
+      {/* CTA — SaaS-only. AI Compliance inspections are an invite-only
+          alpha SaaS feature, not part of the OSS engine. */}
+      {SAAS && (
+        <section className="bg-brand-50/50 py-16">
+          <div className="mx-auto max-w-4xl px-6 text-center">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Request Access to AI Compliance Features
+            </h2>
+            <p className="text-slate-500 max-w-2xl mx-auto mb-8">
+              AI Compliance inspections are in invite-only alpha. Contact us
+              to discuss your regulatory requirements and get early access.
+            </p>
+            <a
+              href="mailto:sales@lintpdf.com?subject=AI%20Compliance%20Access%20Request"
+              className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5 inline-block"
+            >
+              Request Access
+            </a>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
