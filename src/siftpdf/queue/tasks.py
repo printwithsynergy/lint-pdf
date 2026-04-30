@@ -295,7 +295,7 @@ def _auto_generate_reports(
         token_brand_mode = "profile"
         token_brand_profile_id = tenant_obj.default_brand_profile_id
     else:
-        token_brand_mode = "siftpdf"
+        token_brand_mode = "lintpdf"
         token_brand_profile_id = None
 
     report_base_url = settings.report_base_url

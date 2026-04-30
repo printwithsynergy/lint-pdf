@@ -25,7 +25,7 @@ class TestCeleryAppCreation:
 
     @staticmethod
     def test_creates_app(celery_app) -> None:
-        assert celery_app.main == "siftpdf"
+        assert celery_app.main == "lintpdf"
 
     @staticmethod
     def test_json_serializer(celery_app) -> None:

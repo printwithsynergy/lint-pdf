@@ -783,7 +783,7 @@ class BrandingDefaultsRequest(_BaseModel):
     a ``brand_profile_id`` must be provided. ``lintpdf`` clears both.
     """
 
-    mode: str  # "anonymous" | "profile" | "siftpdf"
+    mode: str  # "anonymous" | "profile" | "lintpdf"
     brand_profile_id: str | None = None
 
 
@@ -806,7 +806,7 @@ async def get_tenant_branding_defaults(
     elif tenant.default_brand_profile_id is not None:
         mode = "profile"
     else:
-        mode = "siftpdf"
+        mode = "lintpdf"
     return BrandingDefaultsResponse(
         mode=mode,
         unbranded_by_default=tenant.unbranded_by_default,
@@ -836,7 +836,7 @@ async def set_tenant_branding_defaults(
     * ``lintpdf`` — fall back to LintPDF's built-in branding (clears both).
     """
     mode = (request.mode or "").strip().lower()
-    if mode not in {"anonymous", "profile", "siftpdf"}:
+    if mode not in {"anonymous", "profile", "lintpdf"}:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="mode must be one of: anonymous, profile, siftpdf.",
@@ -845,7 +845,7 @@ async def set_tenant_branding_defaults(
     if mode == "anonymous":
         tenant.unbranded_by_default = True
         tenant.default_brand_profile_id = None
-    elif mode == "siftpdf":
+    elif mode == "lintpdf":
         tenant.unbranded_by_default = False
         tenant.default_brand_profile_id = None
     else:  # profile
@@ -885,7 +885,7 @@ async def set_tenant_branding_defaults(
     elif tenant.default_brand_profile_id is not None:
         resolved_mode = "profile"
     else:
-        resolved_mode = "siftpdf"
+        resolved_mode = "lintpdf"
 
     return BrandingDefaultsResponse(
         mode=resolved_mode,

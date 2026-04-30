@@ -37,7 +37,7 @@ class TestHealthResponse:
     def test_defaults() -> None:
         h = HealthResponse(status="ok")
         assert h.status == "ok"
-        assert h.service == "siftpdf"
+        assert h.service == "lintpdf"
 
     @staticmethod
     def test_custom_service() -> None:

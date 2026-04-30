@@ -1108,7 +1108,7 @@ async def get_viewer_config(
         default=None,
         description=(
             "Branding override: 'anonymous' (strip all branding), "
-            "'siftpdf' (LintPDF default), or a BrandProfile UUID."
+            "'lintpdf' (LintPDF default), or a BrandProfile UUID."
         ),
     ),
     tenant: Tenant = Depends(get_current_tenant),
@@ -2339,8 +2339,8 @@ async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
     brand_param: str | None = None
     if record.brand_mode == "anonymous":
         brand_param = "anonymous"
-    elif record.brand_mode == "siftpdf":
-        brand_param = "siftpdf"
+    elif record.brand_mode == "lintpdf":
+        brand_param = "lintpdf"
     elif record.brand_mode == "profile" and record.brand_profile_id:
         brand_param = str(record.brand_profile_id)
 

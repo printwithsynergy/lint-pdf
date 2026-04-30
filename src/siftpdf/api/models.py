@@ -44,7 +44,7 @@ class BrandProfileType(enum.StrEnum):
     """Brand profile type."""
 
     CUSTOM = "custom"
-    LINTPDF = "siftpdf"
+    LINTPDF = "lintpdf"
     NONE = "none"
 
 

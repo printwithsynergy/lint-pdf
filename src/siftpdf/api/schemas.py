@@ -949,14 +949,14 @@ class HealthResponse(BaseModel):
     """Service health check response."""
 
     status: str
-    service: str = "siftpdf"
+    service: str = "lintpdf"
 
 
 class StatusResponse(BaseModel):
     """Detailed service status."""
 
     status: str
-    service: str = "siftpdf"
+    service: str = "lintpdf"
     version: str = "0.1.0"
     database: str = "unknown"
     redis: str = "unknown"

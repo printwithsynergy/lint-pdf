@@ -48,7 +48,7 @@ class TestParseBrandParam:
 
     @staticmethod
     def test_lintpdf_aliases() -> None:
-        for raw in ("siftpdf", "LintPDF", "default"):
+        for raw in ("lintpdf", "LintPDF", "default"):
             mode, pid = parse_brand_param(raw)
             assert mode is BrandMode.LINTPDF
             assert pid is None
@@ -73,7 +73,7 @@ class TestAnonymousHelpers:
         assert ctx.anonymous is True
         assert ctx.logo_url is None
         # Footer must not reference LintPDF or the tenant.
-        assert ctx.footer_text is None or "siftpdf" not in ctx.footer_text.lower()
+        assert ctx.footer_text is None or "lintpdf" not in ctx.footer_text.lower()
 
     @staticmethod
     def test_build_anonymous_filename_uses_short_id() -> None:
@@ -198,7 +198,7 @@ class TestSharePdfFilenameAnonymity:
             tenant_id=PLACEHOLDER_TENANT_ID,
             token="branded-token-001",
             format="pdf",
-            brand_mode="siftpdf",
+            brand_mode="lintpdf",
         )
         db_session.add(token)
         db_session.commit()

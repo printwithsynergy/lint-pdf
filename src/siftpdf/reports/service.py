@@ -246,7 +246,7 @@ class BrandMode(StrEnum):
     """
 
     ANONYMOUS = "anonymous"
-    LINTPDF = "siftpdf"
+    LINTPDF = "lintpdf"
     PROFILE = "profile"
 
 
@@ -260,7 +260,7 @@ def parse_brand_param(raw: str | None) -> tuple[BrandMode | None, str | None]:
     Accepted values:
 
     * ``"anonymous"`` / ``"none"`` / ``"unbranded"`` → anonymous mode
-    * ``"siftpdf"`` / ``"default"`` → LintPDF default branding
+    * ``"lintpdf"`` / ``"default"`` → LintPDF default branding
     * a UUID string → a specific :class:`BrandProfile`
     """
     if raw is None:
@@ -270,7 +270,7 @@ def parse_brand_param(raw: str | None) -> tuple[BrandMode | None, str | None]:
         return None, None
     if token in {"anonymous", "none", "unbranded"}:
         return BrandMode.ANONYMOUS, None
-    if token in {"siftpdf", "default"}:
+    if token in {"lintpdf", "default"}:
         return BrandMode.LINTPDF, None
     # Any other value is treated as a brand profile ID (UUID);
     # the caller is responsible for validating/parsing it.
@@ -402,7 +402,7 @@ def _branding_from_profile(profile: Any, default_lintpdf: BrandingContext) -> Br
     the broker use case).
     """
     profile_type = getattr(profile, "profile_type", None)
-    if profile_type in (None, "none", "siftpdf"):
+    if profile_type in (None, "none", "lintpdf"):
         return default_lintpdf
     name = getattr(profile, "name", None) or default_lintpdf.name
     logo = getattr(profile, "logo_url", None) or default_lintpdf.logo_url

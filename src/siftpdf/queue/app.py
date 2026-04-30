@@ -17,7 +17,7 @@ def create_celery_app(broker_url: str) -> Celery:
     Returns:
         Configured Celery application instance.
     """
-    app = Celery("siftpdf", broker=broker_url)
+    app = Celery("lintpdf", broker=broker_url)
 
     app.conf.update(
         result_backend=broker_url,

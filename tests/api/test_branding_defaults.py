@@ -22,7 +22,7 @@ class TestGetBrandingDefaults:
         resp = client.get(ROUTE)
         assert resp.status_code == 200
         body = resp.json()
-        assert body["mode"] == "siftpdf"
+        assert body["mode"] == "lintpdf"
         assert body["unbranded_by_default"] is False
         assert body["default_brand_profile_id"] is None
 
@@ -64,10 +64,10 @@ class TestPatchBrandingDefaults:
         t.unbranded_by_default = True
         db_session.commit()
 
-        resp = client.patch(ROUTE, json={"mode": "siftpdf"})
+        resp = client.patch(ROUTE, json={"mode": "lintpdf"})
         assert resp.status_code == 200
         body = resp.json()
-        assert body["mode"] == "siftpdf"
+        assert body["mode"] == "lintpdf"
         assert body["unbranded_by_default"] is False
         assert body["default_brand_profile_id"] is None
 
