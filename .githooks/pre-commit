@@ -38,6 +38,21 @@ if ((${#ENGINE_FILES[@]})); then
   (cd "$REPO_ROOT" && ruff check "${ENGINE_FILES[@]}") || FAIL=1
   echo "🔍 [engine] ruff format --check (${#ENGINE_FILES[@]} staged file(s))..."
   (cd "$REPO_ROOT" && ruff format --check "${ENGINE_FILES[@]}") || FAIL=1
+
+  # ── Track A tripwire guards ─────────────────────────────────────────────
+  # check_engine_purity.sh and check_openapi_descriptions.py both run a
+  # cheap full-tree scan against a checked-in baseline counter. They
+  # only fire when an engine file is staged so non-engine commits stay
+  # fast. A scan that goes UP fails the commit; DOWN prints a "lock in
+  # the improvement" hint but does not fail.
+  if [ -x "$REPO_ROOT/packages/engine/scripts/check_engine_purity.sh" ]; then
+    echo "🔍 [engine] purity guard..."
+    (cd "$REPO_ROOT/packages/engine" && bash scripts/check_engine_purity.sh) || FAIL=1
+  fi
+  if [ -f "$REPO_ROOT/packages/engine/scripts/check_openapi_descriptions.py" ]; then
+    echo "🔍 [engine] openapi-descriptions guard..."
+    (cd "$REPO_ROOT/packages/engine" && python3 scripts/check_openapi_descriptions.py) || FAIL=1
+  fi
 fi
 
 # ── Python: Inference — scoped ruff check + format on STAGED files only. ──
