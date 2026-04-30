@@ -11,9 +11,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
+    from lintpdf.plugin.protocol import AnalyzerContext
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +68,11 @@ class BarcodeDecode(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
+        # only. document + events + ai_config declared but never used.
+        pdf_bytes = ctx.pdf_bytes
+
         if not (_HAS_PYZBAR and _HAS_PIL):
             logger.debug("barcode_decode: pyzbar or Pillow not available — skipping")
             return []
