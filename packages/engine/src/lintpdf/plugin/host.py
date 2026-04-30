@@ -239,6 +239,8 @@ def _wrap_tenants() -> Any:
                 return None
             # Normalise to plain dict so plugins don't depend on
             # the SaaS-side TenantAIConfig type.
+            if hasattr(cfg, "model_dump"):
+                return cfg.model_dump()
             return cfg.dict() if hasattr(cfg, "dict") else dict(cfg)
 
         def get_entitlements(self, tenant_id: str) -> dict[str, Any]:
@@ -247,6 +249,8 @@ def _wrap_tenants() -> Any:
             except Exception as exc:
                 logger.debug("get_entitlements(%s) failed: %s", tenant_id, exc)
                 return {}
+            if hasattr(ent, "model_dump"):
+                return ent.model_dump()
             return ent.dict() if hasattr(ent, "dict") else dict(ent)
 
     return _TenantsWrap()
