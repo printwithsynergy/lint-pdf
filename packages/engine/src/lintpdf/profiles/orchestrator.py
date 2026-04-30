@@ -634,8 +634,19 @@ class PreflightOrchestrator:
             if ai_config_for_analyzers is not None:
                 if hasattr(ai_config_for_analyzers, "model_dump"):
                     ai_config_dict = ai_config_for_analyzers.model_dump()
-                elif hasattr(ai_config_for_analyzers, "dict"):
+                elif hasattr(ai_config_for_analyzers, "dict") and callable(
+                    ai_config_for_analyzers.dict
+                ):
                     ai_config_dict = ai_config_for_analyzers.dict()
+                elif hasattr(ai_config_for_analyzers, "__dict__"):
+                    # Plain object with attributes (e.g. detached shim,
+                    # SimpleNamespace test fixture) — read instance attrs
+                    # directly. Skip private / dunder names.
+                    ai_config_dict = {
+                        k: v
+                        for k, v in vars(ai_config_for_analyzers).items()
+                        if not k.startswith("_")
+                    }
                 else:
                     try:
                         ai_config_dict = dict(ai_config_for_analyzers)
