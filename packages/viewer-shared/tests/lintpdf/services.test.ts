@@ -169,6 +169,163 @@ describe("createLintPDFViewerServices", () => {
     });
   });
 
+  describe("colorSample", () => {
+    it("sampleAt returns the parsed JSON on 2xx", async () => {
+      const fake = { x: 100, y: 200, rgb: [255, 0, 0], hex: "#ff0000", tac: 100 };
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(fake), { status: 200 }),
+        );
+      const result = await services.colorSample.sampleAt({
+        pageNum: 1,
+        pdfX: 100.456,
+        pdfY: 200.123,
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/lintpdf/viewer/job-1/pages/1/sample?x=100.5&y=200.1&dpi=300",
+      );
+      expect(result).toEqual(fake);
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt honors a custom dpi when provided", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+      await services.colorSample.sampleAt({
+        pageNum: 1,
+        pdfX: 0,
+        pdfY: 0,
+        dpi: 150,
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/lintpdf/viewer/job-1/pages/1/sample?x=0.0&y=0.0&dpi=150",
+      );
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt returns null on non-2xx (silent swallow)", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("nope", { status: 500 }));
+      const result = await services.colorSample.sampleAt({
+        pageNum: 1,
+        pdfX: 0,
+        pdfY: 0,
+      });
+      expect(result).toBeNull();
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt returns null on network error", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValueOnce(new TypeError("fail"));
+      const result = await services.colorSample.sampleAt({
+        pageNum: 1,
+        pdfX: 0,
+        pdfY: 0,
+      });
+      expect(result).toBeNull();
+      fetchSpy.mockRestore();
+    });
+  });
+
+  describe("densitometer", () => {
+    it("sampleAt returns the parsed JSON on 2xx", async () => {
+      const fake = {
+        x: 100,
+        y: 200,
+        dpi: 300,
+        channels: [{ name: "Cyan", percent: 50 }],
+        tac: 50,
+        tac_limit: 300,
+        limit_exceeded: false,
+      };
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(fake), { status: 200 }),
+        );
+      const result = await services.densitometer.sampleAt({
+        pageNum: 1,
+        pdfX: 100.456,
+        pdfY: 200.123,
+        tacLimit: 300,
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/lintpdf/viewer/job-1/pages/1/densitometer?x=100.5&y=200.1&dpi=300&tac_limit=300",
+      );
+      expect(result).toEqual(fake);
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt throws the engine's detail on 422", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ detail: "Custom: no CMYK" }), {
+            status: 422,
+          }),
+        );
+      await expect(
+        services.densitometer.sampleAt({
+          pageNum: 1,
+          pdfX: 0,
+          pdfY: 0,
+          tacLimit: 300,
+        }),
+      ).rejects.toThrow("Custom: no CMYK");
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt falls back to friendly message when 422 body lacks detail", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("not json", { status: 422 }));
+      await expect(
+        services.densitometer.sampleAt({
+          pageNum: 1,
+          pdfX: 0,
+          pdfY: 0,
+          tacLimit: 300,
+        }),
+      ).rejects.toThrow("No separations");
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt throws 'Sampling failed (NNN)' on other non-2xx", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("err", { status: 503 }));
+      await expect(
+        services.densitometer.sampleAt({
+          pageNum: 1,
+          pdfX: 0,
+          pdfY: 0,
+          tacLimit: 300,
+        }),
+      ).rejects.toThrow("Sampling failed (503)");
+      fetchSpy.mockRestore();
+    });
+
+    it("sampleAt throws 'Network error' on fetch rejection", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValueOnce(new TypeError("nope"));
+      await expect(
+        services.densitometer.sampleAt({
+          pageNum: 1,
+          pdfX: 0,
+          pdfY: 0,
+          tacLimit: 300,
+        }),
+      ).rejects.toThrow("Network error");
+      fetchSpy.mockRestore();
+    });
+  });
+
   describe("annotations / telemetry / i18n / tokens", () => {
     it("annotations.list resolves to an empty array (no-op default)", async () => {
       expect(await services.annotations.list()).toEqual([]);
