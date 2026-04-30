@@ -11,13 +11,12 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any
 
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
@@ -187,7 +186,7 @@ def _extract_spot_color_names(document: SemanticDocument) -> list[str]:  # skipc
     return spot_names
 
 
-def _is_packaging_file(document: SemanticDocument, ai_config: AIConfig) -> bool:
+def _is_packaging_file(document: SemanticDocument, ai_config: Any) -> bool:
     """Heuristic to determine if the file is packaging artwork.
 
     Checks industry type from config and document characteristics.
@@ -222,13 +221,17 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(  # skipcq: PY-R1000
+    def analyze_v2(  # skipcq: PY-R1000
         self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
+        ctx: AnalyzerContext,
     ) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + ai_config (.industry_type). Reconstituted via
+        # _reconstitute_ai_config to preserve attribute access.
+        document = ctx.document
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         findings: list[Finding] = []
         detected_dielines: list[dict[str, Any]] = []
 
