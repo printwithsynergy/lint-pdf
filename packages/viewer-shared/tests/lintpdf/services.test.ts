@@ -71,6 +71,104 @@ describe("createLintPDFViewerServices", () => {
     });
   });
 
+  describe("separations", () => {
+    it("returns a synchronous channel-image URL with percent-encoded channel name", () => {
+      const url = services.separations.getChannelImageUrl({
+        pageNum: 2,
+        channelName: "Pantone Reflex Blue C",
+        dpi: 150,
+      });
+      expect(url).toBe(
+        "/api/lintpdf/viewer/job-1/pages/2/channel/Pantone%20Reflex%20Blue%20C?dpi=150",
+      );
+    });
+
+    it("encodes process-ink channel names that don't need percent-encoding", () => {
+      const url = services.separations.getChannelImageUrl({
+        pageNum: 1,
+        channelName: "Cyan",
+        dpi: 150,
+      });
+      expect(url).toBe("/api/lintpdf/viewer/job-1/pages/1/channel/Cyan?dpi=150");
+    });
+  });
+
+  describe("tacHeatmap", () => {
+    it("returns a synchronous heatmap-image URL with dpi + tacLimit", () => {
+      const url = services.tacHeatmap.getHeatmapImageUrl({
+        pageNum: 4,
+        dpi: 150,
+        tacLimit: 280,
+      });
+      expect(url).toBe(
+        "/api/lintpdf/viewer/job-1/pages/4/tac-heatmap?dpi=150&tac_limit=280",
+      );
+    });
+
+    it("listRuns fetches /tac-heatmap/runs and returns the runs array", async () => {
+      const fakeRuns = [
+        { x0: 10, y0: 20, x1: 30, y1: 40, mean_tac: 250, limit: 300, exceeds: false },
+        { x0: 50, y0: 60, x1: 70, y1: 80, mean_tac: 320, limit: 300, exceeds: true },
+      ];
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ runs: fakeRuns }), { status: 200 }),
+        );
+      const result = await services.tacHeatmap.listRuns({
+        pageNum: 2,
+        dpi: 150,
+        tacLimit: 300,
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/lintpdf/viewer/job-1/pages/2/tac-heatmap/runs?dpi=150&tac_limit=300",
+      );
+      expect(result).toEqual(fakeRuns);
+      fetchSpy.mockRestore();
+    });
+
+    it("listRuns returns [] (non-fatal) on non-2xx response", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response("nope", { status: 500 }));
+      const result = await services.tacHeatmap.listRuns({
+        pageNum: 1,
+        dpi: 150,
+        tacLimit: 300,
+      });
+      expect(result).toEqual([]);
+      fetchSpy.mockRestore();
+    });
+
+    it("listRuns returns [] (non-fatal) on network error", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+      const result = await services.tacHeatmap.listRuns({
+        pageNum: 1,
+        dpi: 150,
+        tacLimit: 300,
+      });
+      expect(result).toEqual([]);
+      fetchSpy.mockRestore();
+    });
+
+    it("listRuns tolerates a missing runs field (returns [])", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({}), { status: 200 }),
+        );
+      const result = await services.tacHeatmap.listRuns({
+        pageNum: 1,
+        dpi: 150,
+        tacLimit: 300,
+      });
+      expect(result).toEqual([]);
+      fetchSpy.mockRestore();
+    });
+  });
+
   describe("annotations / telemetry / i18n / tokens", () => {
     it("annotations.list resolves to an empty array (no-op default)", async () => {
       expect(await services.annotations.list()).toEqual([]);
