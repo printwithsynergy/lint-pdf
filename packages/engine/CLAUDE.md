@@ -58,7 +58,9 @@ override `analyze_v2` directly and skip the legacy method.
 `scripts/check_engine_purity.sh` is the tripwire — it counts existing
 violations (baseline: 125) and fails CI when the count goes UP. Down-
 counts (Phase 2 migrations) are encouraged; regenerate the baseline
-with the script's hint after a clean migration commit.
+with the script's hint after a clean migration commit. The hook in
+`.githooks/pre-commit` runs this guard automatically whenever any
+`packages/engine/*.py` file is staged.
 
 **Capability rule**: if two plugins read the same shared work
 (rendered page image, OCR text regions), wrap it as a `Capabilities`
@@ -89,9 +91,10 @@ and `/redoc` surface to API consumers; missing descriptions silently
 ship a worse developer experience.
 
 `scripts/check_openapi_descriptions.py` enforces the rule with a
-baseline counter (initial: 19 undescribed fields). New fields fail
-the build unless described; the existing 19 stay until Phase 2
-backfills them.
+baseline counter (current: 0 — Phase 2 closed the 19-field backlog).
+New fields without `description=` fail the build. The hook in
+`.githooks/pre-commit` runs this guard automatically whenever any
+`packages/engine/*.py` file is staged.
 
 Other rules:
 
