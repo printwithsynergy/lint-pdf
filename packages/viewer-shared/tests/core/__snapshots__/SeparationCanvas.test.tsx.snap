@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SeparationCanvas > renders a canvas at the given width/height 1`] = `
+<canvas
+  class="absolute left-0 top-0"
+  height="792"
+  style="width: 612px; height: 792px;"
+  width="612"
+/>
+`;
