@@ -1,0 +1,232 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ZoomControls > renders compact dark mode at 75% 1`] = `
+<div
+  class="flex items-center gap-0.5"
+>
+  <button
+    class="rounded p-1 text-xs text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40"
+    title="Zoom out"
+  >
+    −
+  </button>
+  <select
+    class="rounded border border-white/10 bg-white/[0.04] px-1 py-0.5 text-xs text-white outline-none"
+  >
+    <option
+      value="25"
+    >
+      25
+      %
+    </option>
+    <option
+      value="50"
+    >
+      50
+      %
+    </option>
+    <option
+      value="75"
+    >
+      75
+      %
+    </option>
+    <option
+      value="100"
+    >
+      100
+      %
+    </option>
+    <option
+      value="125"
+    >
+      125
+      %
+    </option>
+    <option
+      value="150"
+    >
+      150
+      %
+    </option>
+    <option
+      value="200"
+    >
+      200
+      %
+    </option>
+    <option
+      value="300"
+    >
+      300
+      %
+    </option>
+    <option
+      value="400"
+    >
+      400
+      %
+    </option>
+  </select>
+  <button
+    class="rounded p-1 text-xs text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40"
+    title="Zoom in"
+  >
+    +
+  </button>
+</div>
+`;
+
+exports[`ZoomControls > renders compact mode at 100% 1`] = `
+<div
+  class="flex items-center gap-0.5"
+>
+  <button
+    class="rounded p-1 text-xs hover:bg-muted disabled:opacity-40"
+    title="Zoom out"
+  >
+    −
+  </button>
+  <select
+    class="rounded border px-1 py-0.5 text-xs"
+  >
+    <option
+      value="25"
+    >
+      25
+      %
+    </option>
+    <option
+      value="50"
+    >
+      50
+      %
+    </option>
+    <option
+      value="75"
+    >
+      75
+      %
+    </option>
+    <option
+      value="100"
+    >
+      100
+      %
+    </option>
+    <option
+      value="125"
+    >
+      125
+      %
+    </option>
+    <option
+      value="150"
+    >
+      150
+      %
+    </option>
+    <option
+      value="200"
+    >
+      200
+      %
+    </option>
+    <option
+      value="300"
+    >
+      300
+      %
+    </option>
+    <option
+      value="400"
+    >
+      400
+      %
+    </option>
+  </select>
+  <button
+    class="rounded p-1 text-xs hover:bg-muted disabled:opacity-40"
+    title="Zoom in"
+  >
+    +
+  </button>
+</div>
+`;
+
+exports[`ZoomControls > renders default mode at 100% 1`] = `
+<div
+  class="flex items-center gap-1"
+>
+  <button
+    class="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
+    title="Zoom out"
+  >
+    −
+  </button>
+  <select
+    class="rounded border px-1 py-1 text-sm"
+  >
+    <option
+      value="25"
+    >
+      25
+      %
+    </option>
+    <option
+      value="50"
+    >
+      50
+      %
+    </option>
+    <option
+      value="75"
+    >
+      75
+      %
+    </option>
+    <option
+      value="100"
+    >
+      100
+      %
+    </option>
+    <option
+      value="125"
+    >
+      125
+      %
+    </option>
+    <option
+      value="150"
+    >
+      150
+      %
+    </option>
+    <option
+      value="200"
+    >
+      200
+      %
+    </option>
+    <option
+      value="300"
+    >
+      300
+      %
+    </option>
+    <option
+      value="400"
+    >
+      400
+      %
+    </option>
+  </select>
+  <button
+    class="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
+    title="Zoom in"
+  >
+    +
+  </button>
+</div>
+`;
