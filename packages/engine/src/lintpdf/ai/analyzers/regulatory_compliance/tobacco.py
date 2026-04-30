@@ -23,12 +23,12 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -57,13 +57,16 @@ class TobaccoWarningAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + events + ai_config (.tobacco_warning_min_fraction).
+        # Reconstituted via _reconstitute_ai_config. pdf_bytes
+        # declared but never used.
+        document = ctx.document
+        events = ctx.events
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         text = _collect_text(document)
         if not _TOBACCO_KEYWORDS.search(text) or not _WARNING_PHRASES.search(text):
             return []
@@ -141,7 +144,7 @@ class TobaccoWarningAnalyzer(BaseAIAnalyzer):
         return (x0, y0, x1, y1)
 
 
-def _resolve_threshold(ai_config: AIConfig) -> float:
+def _resolve_threshold(ai_config: object) -> float:
     if ai_config is None:
         return _DEFAULT_MIN_FRACTION
     raw = getattr(ai_config, "tobacco_warning_min_fraction", None)

@@ -18,6 +18,18 @@ from lintpdf.ai.analyzers.regulatory_compliance.ghs_clp import GhsClpAnalyzer
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc_with_text(text: str) -> SemanticDocument:
     page = SemanticPage(
         page_num=1,
@@ -38,7 +50,7 @@ def test_prop65_warning_alone_does_not_trigger_ghs_003() -> None:
         "lead, known to the State of California to cause cancer. For "
         "more information go to www.P65Warnings.ca.gov."
     )
-    findings = GhsClpAnalyzer().analyze(_doc_with_text(text), [], pdf_bytes=b"")
+    findings = GhsClpAnalyzer().analyze_v2(_ctx(_doc_with_text(text), events=[], pdf_bytes=b""))
     ghs003 = [f for f in findings if f.inspection_id == "AI_GHS_003"]
     assert ghs003 == []
 
@@ -49,7 +61,7 @@ def test_real_h_statement_still_triggers_even_alongside_prop65() -> None:
     CLP-regulated regardless of whether the signal words are
     suppressed as Prop 65."""
     text = "WARNING: Proposition 65 cancer warning. DANGER. Causes serious eye damage. H318."
-    findings = GhsClpAnalyzer().analyze(_doc_with_text(text), [], pdf_bytes=b"")
+    findings = GhsClpAnalyzer().analyze_v2(_ctx(_doc_with_text(text), events=[], pdf_bytes=b""))
     ghs003 = [f for f in findings if f.inspection_id == "AI_GHS_003"]
     assert len(ghs003) == 1
     # The H-statement is CLP-specific and carries the finding; the
@@ -64,6 +76,6 @@ def test_clp_warning_without_prop65_still_triggers() -> None:
     anchor anywhere on the page still fires — the filter only
     suppresses signal words that are actually near Prop 65 text."""
     text = "WARNING: Causes skin irritation. Avoid contact with eyes."
-    findings = GhsClpAnalyzer().analyze(_doc_with_text(text), [], pdf_bytes=b"")
+    findings = GhsClpAnalyzer().analyze_v2(_ctx(_doc_with_text(text), events=[], pdf_bytes=b""))
     ghs003 = [f for f in findings if f.inspection_id == "AI_GHS_003"]
     assert len(ghs003) == 1
