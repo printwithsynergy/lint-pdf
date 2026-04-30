@@ -55,6 +55,13 @@ dependencies = [
     # the base deps so the audit path works without the heavy ``ai``
     # extra being installed.
     "anthropic>=0.30.0",
+    # Phase 4 Stage C: siftpdf is the OSS preflight engine extracted from
+    # this repo (thinkneverland/sift-pdf). Installed alongside the local
+    # `lintpdf` package without removing it — Stage D swaps `lintpdf`
+    # imports to a thin re-export shim over siftpdf, Stage E deletes the
+    # local source. Private repo install requires GITHUB_TOKEN at build
+    # time (see Dockerfile builder stage).
+    "siftpdf @ git+https://github.com/thinkneverland/sift-pdf.git@main",
 ]
 
 [project.optional-dependencies]

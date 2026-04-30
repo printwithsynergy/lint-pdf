@@ -401,6 +401,9 @@ importers:
 
   packages/viewer-shared:
     dependencies:
+      '@thinkneverland/loupe-pdf':
+        specifier: git+https://github.com/thinkneverland/loupe-pdf.git#main
+        version: git+https://github.com/thinkneverland/loupe-pdf.git#85fc0597f276316aa2db85607ced6bc14051b6f0(fabric@6.9.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       fabric:
         specifier: ^6.0.0
         version: 6.9.1
@@ -2973,6 +2976,17 @@ packages:
       '@types/react':
         optional: true
       '@types/react-dom':
+        optional: true
+
+  '@thinkneverland/loupe-pdf@git+https://github.com/thinkneverland/loupe-pdf.git#85fc0597f276316aa2db85607ced6bc14051b6f0':
+    resolution: {commit: 85fc0597f276316aa2db85607ced6bc14051b6f0, repo: https://github.com/thinkneverland/loupe-pdf.git, type: git}
+    version: 0.1.0
+    peerDependencies:
+      fabric: ^6.0.0
+      react: ^19.0.0
+      react-dom: ^19.0.0
+    peerDependenciesMeta:
+      fabric:
         optional: true
 
   '@thinkneverland/pixie-dust-api-keys@1.2.1':
@@ -9766,6 +9780,13 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
+
+  '@thinkneverland/loupe-pdf@git+https://github.com/thinkneverland/loupe-pdf.git#85fc0597f276316aa2db85607ced6bc14051b6f0(fabric@6.9.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+    optionalDependencies:
+      fabric: 6.9.1
 
   '@thinkneverland/pixie-dust-api-keys@1.2.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:

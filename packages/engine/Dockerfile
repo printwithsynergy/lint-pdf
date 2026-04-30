@@ -3,9 +3,12 @@ FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Install build dependencies for pikepdf (QPDF) and WeasyPrint
+# Install build dependencies for pikepdf (QPDF) and WeasyPrint.
+# git is needed because the `siftpdf` dep is a git+https reference
+# (see pyproject.toml — Phase 4 Stage C).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
     libqpdf-dev \
     pkg-config \
     libpango-1.0-0 \
@@ -16,8 +19,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY packages/engine/pyproject.toml .
+# GITHUB_TOKEN is required to clone the private thinkneverland/sift-pdf
+# repo. Railway passes it as a build arg (configured via
+# `railway variables --set "GITHUB_TOKEN=..."` on the engine service).
+# Until visibility flips public, this is mandatory at build time.
+ARG GITHUB_TOKEN
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+    if [ -n "$GITHUB_TOKEN" ]; then \
+        git config --global url."https://oauth2:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"; \
+    fi && \
+    pip install --no-cache-dir . && \
+    git config --global --unset url."https://oauth2:${GITHUB_TOKEN}@github.com/".insteadOf || true
 
 # Stage 2: Runtime
 FROM python:3.12-slim-bookworm AS runtime

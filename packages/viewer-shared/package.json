@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "fabric": "^6.0.0",
-    "lucide-react": "^0.469.0"
+    "lucide-react": "^0.469.0",
+    "@thinkneverland/loupe-pdf": "git+https://github.com/thinkneverland/loupe-pdf.git#main"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
