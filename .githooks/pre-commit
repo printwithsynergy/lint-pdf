@@ -18,7 +18,7 @@ while IFS= read -r f; do
   case "$f" in
     packages/engine/*.py)       ENGINE_FILES+=("$f") ;;
     packages/inference/*.py)    INFERENCE_FILES+=("$f") ;;
-    packages/web/*|packages/plugin/*|packages/stripe/*|packages/app/*)
+    packages/web/*|packages/plugin/*|packages/stripe/*|packages/app/*|packages/viewer-shared/*)
       [[ "$f" == *.ts || "$f" == *.tsx || "$f" == *.js || "$f" == *.jsx ]] && NODE_FILES+=("$f")
       ;;
   esac
