@@ -25,7 +25,19 @@ cd "$(dirname "$0")/.."
 
 # Banned SaaS modules — analyzers must reach these via ctx.services.*
 # or ctx.config instead of a direct import.
+#
+# Two cohorts:
+#
+# 1. Alpha-stream targets — already at zero on main. Future PRs that
+#    re-introduce these violations fail CI.
+#
+# 2. Beta-stream targets — added 2026-04-30 with a non-zero baseline.
+#    Each beta-stream PR migrates one category and the count
+#    decreases. The final beta-stream commit drops the floor to zero
+#    + flips the η6 tripwire on permanently. Until then, the
+#    floor-not-ceiling counter prevents accidental new violations.
 BANNED=(
+    # Cohort 1 — alpha-stream targets (zero violations on main today)
     "from lintpdf.tenants"
     "from lintpdf.audit.metering"
     "from lintpdf.audit.cost"
@@ -35,6 +47,16 @@ BANNED=(
     "from lintpdf.ai.gpu_client"
     "from lintpdf.conformance.verapdf_client"
     "TenantAIConfig"
+    # Cohort 2 — beta-stream targets (non-zero baseline; counts down
+    # as beta-stream lands)
+    "from lintpdf.ai.rendering"
+    "from lintpdf.ai.dieline_claude"
+    "from lintpdf.ai.legend_claude"
+    "from lintpdf.ai.text_mask"
+    "from lintpdf.ai.types import get_db_session"
+    "from lintpdf.ai.types import get_gpu_client"
+    "from lintpdf.api.models"
+    "from lintpdf.api.storage"
 )
 
 # Paths that must stay SaaS-free.
