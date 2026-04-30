@@ -24,7 +24,7 @@ numReplicas = 1
 # service is running, both workers consume from `ai_heavy` — Celery
 # distributes across workers automatically, and the dedicated service
 # is free to have a larger per-worker concurrency for AI load.
-startCommand = "sh -c 'celery -A siftpdf.queue.worker worker --beat --schedule=/tmp/celerybeat-schedule --loglevel=info --queues=default,priority,ai_heavy --pool=threads --concurrency=${CELERY_DEFAULT_CONCURRENCY:-8}'"
+startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --beat --schedule=/tmp/celerybeat-schedule --loglevel=info --queues=default,priority,ai_heavy --pool=threads --concurrency=${CELERY_DEFAULT_CONCURRENCY:-8}'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 # Allow in-flight Celery tasks to finish (Celery worker drains on SIGTERM).

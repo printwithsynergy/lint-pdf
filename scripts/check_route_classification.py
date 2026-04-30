@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 # Where the route source files live.
-ROUTES_DIR = Path(__file__).parent.parent / "src" / "siftpdf" / "api" / "routes"
+ROUTES_DIR = Path(__file__).parent.parent / "src" / "lintpdf" / "api" / "routes"
 
 # Where the baseline lives.
 BASELINE_FILE = Path(__file__).parent / "route_classification_baseline.txt"
@@ -83,7 +83,7 @@ def read_baseline() -> int:
 def write_baseline(count: int) -> None:
     BASELINE_FILE.write_text(
         "# Route classification baseline (Q4-B / Phase 2).\n"
-        "# Number of route files in packages/engine/src/siftpdf/api/routes/\n"
+        "# Number of route files in packages/engine/src/lintpdf/api/routes/\n"
         "# that declare tags=['x:saas-only', ...].\n"
         "#\n"
         "# Regenerate with `python scripts/check_route_classification.py\n"

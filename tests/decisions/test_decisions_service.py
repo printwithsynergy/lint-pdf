@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from siftpdf.api.models import (
+from lintpdf.api.models import (
     Base,
     Job,
     JobFinding,
@@ -18,8 +18,8 @@ from siftpdf.api.models import (
     Tenant,
     TenantPlan,
 )
-from siftpdf.decisions import service
-from siftpdf.decisions.models import Decision
+from lintpdf.decisions import service
+from lintpdf.decisions.models import Decision
 
 if TYPE_CHECKING:
     from collections.abc import Generator

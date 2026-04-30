@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from siftpdf.webhooks.pixie_dust import (
+from lintpdf.webhooks.pixie_dust import (
     format_pixie_dust_error,
     format_pixie_dust_payload,
     format_usage_section,

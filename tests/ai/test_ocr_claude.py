@@ -7,8 +7,8 @@ deterministic shape-conversion helpers.
 
 from __future__ import annotations
 
-from siftpdf.ai.ocr_claude import ocr_result_to_json
-from siftpdf.ai.ocr_types import OCRPage, OCRTextBlock
+from lintpdf.ai.ocr_claude import ocr_result_to_json
+from lintpdf.ai.ocr_types import OCRPage, OCRTextBlock
 
 
 class TestOcrResultToJson:

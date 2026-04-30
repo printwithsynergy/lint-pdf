@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.page_geometry import PageGeometryAnalyzer
-from siftpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
-from siftpdf.semantic.graphics_state import TransformationMatrix
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.page_geometry import PageGeometryAnalyzer
+from lintpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document(

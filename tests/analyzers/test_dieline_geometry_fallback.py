@@ -19,7 +19,7 @@ from io import BytesIO
 import pikepdf
 import pytest
 
-from siftpdf.analyzers.dieline import detect_dieline
+from lintpdf.analyzers.dieline import detect_dieline
 
 
 def _build_pdf(content_stream: str, width: float = 612.0, height: float = 792.0) -> bytes:

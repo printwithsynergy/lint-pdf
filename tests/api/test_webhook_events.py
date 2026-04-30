@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from siftpdf.api.models import (
+from lintpdf.api.models import (
     Job,
     JobStatus,
     ViewerAnnotation,
@@ -84,7 +84,7 @@ class TestEmitEventPersistsDelivery:
         ep2 = _seed_webhook(db_session, events=["job.completed"])  # only subscribes to one
         _seed_webhook(db_session, events=["approval.chain.started"])  # should skip
 
-        from siftpdf.webhooks.events import emit_event
+        from lintpdf.webhooks.events import emit_event
 
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "job.completed", {"hi": 1})
         db_session.commit()
@@ -103,7 +103,7 @@ class TestEmitEventPersistsDelivery:
             assert r.attempt_count == 0
 
     def test_no_subscribers_persists_nothing(self, client: TestClient, db_session: Session) -> None:
-        from siftpdf.webhooks.events import emit_event
+        from lintpdf.webhooks.events import emit_event
 
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"x": 1})
         db_session.commit()
@@ -134,7 +134,7 @@ class TestJobStateChangedEvent:
         )
         db_session.commit()
 
-        from siftpdf.webhooks.events import fire_job_state_changed
+        from lintpdf.webhooks.events import fire_job_state_changed
 
         fire_job_state_changed(db_session, job, job.tenant_id, reason="unit-test")
         db_session.commit()
@@ -155,7 +155,7 @@ class TestReplayDelivery:
         self, client: TestClient, db_session: Session
     ) -> None:
         ep = _seed_webhook(db_session)
-        from siftpdf.webhooks.events import emit_event
+        from lintpdf.webhooks.events import emit_event
 
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"k": "v"})
         db_session.commit()
@@ -182,7 +182,7 @@ class TestReplayDelivery:
 
     def test_replay_409_on_inactive_endpoint(self, client: TestClient, db_session: Session) -> None:
         ep = _seed_webhook(db_session)
-        from siftpdf.webhooks.events import emit_event
+        from lintpdf.webhooks.events import emit_event
 
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"k": 1})
         db_session.commit()
@@ -202,7 +202,7 @@ class TestListDeliveries:
     def test_filters_by_webhook_and_event(self, client: TestClient, db_session: Session) -> None:
         ep_a = _seed_webhook(db_session)
         _seed_webhook(db_session)
-        from siftpdf.webhooks.events import emit_event
+        from lintpdf.webhooks.events import emit_event
 
         # 3 events for ep_a, 1 for ep_b
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"n": 1})
@@ -235,7 +235,7 @@ class TestKnownEventsCatalog:
         """Guard against a typo silently firing an unlisted event name."""
         import inspect
 
-        from siftpdf.webhooks import events as evt_mod
+        from lintpdf.webhooks import events as evt_mod
 
         # Just introspect the module docstring -- not a behavioural test,
         # but catches name drift quickly if someone adds a helper with a
@@ -357,8 +357,8 @@ class TestRetentionSweep:
         # don't need a live Celery worker.
         # Patch the source module that sweep_webhook_deliveries imports
         # from so the task sees our in-memory test session.
-        from siftpdf.api import database as _dbmod
-        from siftpdf.queue import tasks as qt
+        from lintpdf.api import database as _dbmod
+        from lintpdf.queue import tasks as qt
 
         original_get = _dbmod.get_db_session
         _dbmod.get_db_session = lambda: db_session  # type: ignore[assignment]
@@ -416,8 +416,8 @@ class TestRetentionSweep:
 
         # Patch the source module that sweep_webhook_deliveries imports
         # from so the task sees our in-memory test session.
-        from siftpdf.api import database as _dbmod
-        from siftpdf.queue import tasks as qt
+        from lintpdf.api import database as _dbmod
+        from lintpdf.queue import tasks as qt
 
         original_get = _dbmod.get_db_session
         _dbmod.get_db_session = lambda: db_session  # type: ignore[assignment]

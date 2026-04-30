@@ -16,8 +16,8 @@ import io
 import pikepdf
 import pytest
 
-from siftpdf.api.routes.viewer import _ocg_cache_suffix
-from siftpdf.rendering import OCGError, _apply_ocg_overrides
+from lintpdf.api.routes.viewer import _ocg_cache_suffix
+from lintpdf.rendering import OCGError, _apply_ocg_overrides
 
 # ── Fixtures ─────────────────────────────────────────────────
 

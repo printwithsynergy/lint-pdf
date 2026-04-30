@@ -1,4 +1,4 @@
-"""Unit tests for ``siftpdf.warming.registry``.
+"""Unit tests for ``lintpdf.warming.registry``.
 
 Scope stays tight — we don't actually cold-start a Modal
 container in CI. Instead we verify:
@@ -18,8 +18,8 @@ import time
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from siftpdf.warming import registry
-from siftpdf.warming.registry import (
+from lintpdf.warming import registry
+from lintpdf.warming.registry import (
     WARMERS,
     WarmSpec,
     ensure_warm,

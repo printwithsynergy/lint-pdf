@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import random
 
-from siftpdf.analyzers.barcode import _looks_like_2d_barcode
+from lintpdf.analyzers.barcode import _looks_like_2d_barcode
 
 
 def _grid_fills(

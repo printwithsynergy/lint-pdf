@@ -1,7 +1,7 @@
 """Substrate-aware ICC profile loader tests.
 
-Exercises :func:`siftpdf.epm.icc.load_profile` and
-:func:`siftpdf.epm.icc.is_in_gamut_for_profile` using synthetic
+Exercises :func:`lintpdf.epm.icc.load_profile` and
+:func:`lintpdf.epm.icc.is_in_gamut_for_profile` using synthetic
 profiles built via ``PIL.ImageCms.createProfile`` so the tests stay
 self-contained — no checked-in .icc binaries.
 """
@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 from PIL import ImageCms
 
-from siftpdf.epm import icc
+from lintpdf.epm import icc
 
 if TYPE_CHECKING:
     from pathlib import Path

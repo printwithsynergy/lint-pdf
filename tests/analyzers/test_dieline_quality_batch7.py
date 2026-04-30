@@ -9,8 +9,8 @@ import io
 
 import pikepdf
 
-from siftpdf.analyzers.dieline_quality import check_dieline_quality
-from siftpdf.analyzers.finding import Severity
+from lintpdf.analyzers.dieline_quality import check_dieline_quality
+from lintpdf.analyzers.finding import Severity
 
 
 def _make_sep_cs(spot_name: str, pdf: pikepdf.Pdf) -> pikepdf.Array:

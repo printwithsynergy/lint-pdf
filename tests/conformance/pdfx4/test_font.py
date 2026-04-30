@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.conformance.pdfx4._font import validate_fonts
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._font import validate_fonts
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(font_resources: dict[str, Any] | None = None) -> SemanticDocument:

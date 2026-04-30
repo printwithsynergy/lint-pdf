@@ -31,7 +31,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column(
             "profile_type",
-            sa.Enum("custom", "siftpdf", "none", name="brandprofiletype"),
+            sa.Enum("custom", "lintpdf", "none", name="brandprofiletype"),
             nullable=False,
             server_default="custom",
         ),

@@ -1,6 +1,6 @@
 # Plugin API — engine analyzer protocol
 
-Phase 1 deliverable for the LintPDF / SiftPDF / LoupePDF brand split (see
+Phase 1 deliverable for the LintPDF / LintPDF / LoupePDF brand split (see
 the root `CLAUDE.md` "Brand stack + repo split" section). This document
 describes the analyzer plugin contract introduced under
 `packages/engine/src/lintpdf/plugin/`.
@@ -42,13 +42,13 @@ Three flavours map to the three tiers in the manifest.
 ### CPU plugin (deterministic engine analyzer)
 
 ```python
-from siftpdf.analyzers.finding import Finding, Severity
-from siftpdf.plugin import Analyzer, AnalyzerContext, PluginManifest, Tier
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.plugin import Analyzer, AnalyzerContext, PluginManifest, Tier
 
 
 class HairlineAnalyzer:
     manifest = PluginManifest(
-        id="siftpdf.geometry.hairline",
+        id="lintpdf.geometry.hairline",
         version="1.0.0",
         tier=Tier.CPU,
         declared_check_ids=("LPDF_STROKE_001", "LPDF_STROKE_002"),
@@ -70,7 +70,7 @@ preflight job, in the same Worker process as the orchestrator.
 ```python
 class BarcodeOrientationAnalyzer:
     manifest = PluginManifest(
-        id="siftpdf.barcode.orientation",
+        id="lintpdf.barcode.orientation",
         version="1.0.0",
         tier=Tier.GPU,
         requires_capabilities=("page_images",),
@@ -96,7 +96,7 @@ consumer plugin — no double-rendering.
 ```python
 class LegendInterpretAnalyzer:
     manifest = PluginManifest(
-        id="siftpdf.legend.interpret",
+        id="lintpdf.legend.interpret",
         version="1.0.0",
         tier=Tier.EXTERNAL_AI,
         requires_capabilities=("page_images",),
@@ -132,7 +132,7 @@ both worlds.
 
 | Capability | Protocol | Wraps |
 |---|---|---|
-| `page_images` | `PageImageProvider.get_page_image(page_num, dpi)` | `siftpdf.ai.rendering.render_page_to_image` |
+| `page_images` | `PageImageProvider.get_page_image(page_num, dpi)` | `lintpdf.ai.rendering.render_page_to_image` |
 | `text_regions` | `TextRegionProvider.get_text_regions(page_num, dpi)` | `gpu_client.detect_outlines` |
 | `content_stream_events` | `ContentStreamEventProvider.get_events(page_num)` | reserved for on-demand re-parse |
 
@@ -143,14 +143,14 @@ if one plugin wants it, it's an internal helper.*
 
 | Service | Protocol | Hosted impl wraps | OSS no-op |
 |---|---|---|---|
-| `metering` | `MeteringService.record_usage(...)` | `siftpdf.audit.metering.record_usage` | `noop_metering()` |
-| `cost_cap` | `CostCapService.check_or_raise(...)` | `siftpdf.ai.cost_cap.check_cap_or_raise` | `noop_cost_cap()` |
-| `gpu_client` | `GPUClient.detect_outlines(...)` | `siftpdf.ai.gpu_client.get_gpu_client()` | `None` |
+| `metering` | `MeteringService.record_usage(...)` | `lintpdf.audit.metering.record_usage` | `noop_metering()` |
+| `cost_cap` | `CostCapService.check_or_raise(...)` | `lintpdf.ai.cost_cap.check_cap_or_raise` | `noop_cost_cap()` |
+| `gpu_client` | `GPUClient.detect_outlines(...)` | `lintpdf.ai.gpu_client.get_gpu_client()` | `None` |
 | `llm_client` | `LLMClient.complete(...)` | (Phase 2 — analyzers use Anthropic SDK directly today) | `None` |
-| `renderer` | `Renderer.render_page(...)` | `siftpdf.ai.rendering.render_page_to_image` | `None` |
-| `verapdf_client` | `VeraPDFClient.is_configured() / .validate(...)` | `siftpdf.conformance.verapdf_client` | `noop_verapdf()` (skip advisory) |
-| `database` | `DatabaseService.session()` | `siftpdf.api.database.SessionLocal` | `None` |
-| `tenants` | `TenantsService.get_ai_config(...) / .get_entitlements(...)` | `siftpdf.tenants.config_resolver / .entitlements` | `noop_tenants()` |
+| `renderer` | `Renderer.render_page(...)` | `lintpdf.ai.rendering.render_page_to_image` | `None` |
+| `verapdf_client` | `VeraPDFClient.is_configured() / .validate(...)` | `lintpdf.conformance.verapdf_client` | `noop_verapdf()` (skip advisory) |
+| `database` | `DatabaseService.session()` | `lintpdf.api.database.SessionLocal` | `None` |
+| `tenants` | `TenantsService.get_ai_config(...) / .get_entitlements(...)` | `lintpdf.tenants.config_resolver / .entitlements` | `noop_tenants()` |
 
 The `default_services_for_saas()` factory in `lintpdf/plugin/host.py`
 constructs a hosted-LintPDF Services bundle by lazy-importing each
@@ -160,12 +160,12 @@ the no-op stubs.
 ## Discovery
 
 ```python
-from siftpdf.plugin import discover_all
+from lintpdf.plugin import discover_all
 
 plugins = discover_all()  # entry points + legacy decorator registry
 ```
 
-- Entry points: `[project.entry-points."siftpdf.plugins"]` in any
+- Entry points: `[project.entry-points."lintpdf.plugins"]` in any
   installed package's pyproject.toml. Each entry resolves to a class
   or factory returning an `Analyzer`.
 - Legacy fallback: every `@register_ai_analyzer` instance is wrapped
@@ -178,8 +178,8 @@ plugins = discover_all()  # entry points + legacy decorator registry
 |---|---|
 | **1** *(current)* | Protocol + Services + Capabilities + LegacyAIAdapter + base-class `analyze_v2` default impl + tripwire CI guards. Existing analyzers run unchanged. |
 | 2 | Migrate every analyzer in `analyzers/` and `ai/analyzers/` to override `analyze_v2` directly and read services / capabilities / config from the context. Delete legacy `analyze()` and the decorator registry. Backfill `Field(..., description=...)` for the existing schema-field backlog. |
-| 3 | Repo extraction: engine moves to `thinkneverland/sift-pdf` and the Python package renames `lintpdf` → `siftpdf`. Entry-point group renames to `siftpdf.plugins`. SaaS depends on `siftpdf` as an external package. |
-| 4 | OSS flip. Apache-2.0 license headers. v1.0 SemVer. SiftPDF docs site. |
+| 3 | Repo extraction: engine moves to `thinkneverland/sift-pdf` and the Python package renames `lintpdf` → `lintpdf`. Entry-point group renames to `lintpdf.plugins`. SaaS depends on `lintpdf` as an external package. |
+| 4 | OSS flip. Apache-2.0 license headers. v1.0 SemVer. LintPDF docs site. |
 
 ## Testing the contract
 

@@ -10,9 +10,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from siftpdf.ai.cost_cap import CAP_TOGGLE_ID, CostCapExceededError
-from siftpdf.ai.explain import explain_finding
-from siftpdf.tenants.toggle_models import (
+from lintpdf.ai.cost_cap import CAP_TOGGLE_ID, CostCapExceededError
+from lintpdf.ai.explain import explain_finding
+from lintpdf.tenants.toggle_models import (
     ToggleOverride,
     ToggleScope,
 )
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 def _make_finding(db, *, tenant_id, job_id=None):
-    from siftpdf.api.models import Job, JobFinding, JobStatus
+    from lintpdf.api.models import Job, JobFinding, JobStatus
 
     if job_id is None:
         job = Job(
@@ -74,7 +74,7 @@ def _enable_cap(db, tenant_id, *, monthly_cap_cents):
 
 
 def _add_usage(db, tenant_id, cost_cents):
-    from siftpdf.api.models import AIUsageLog
+    from lintpdf.api.models import AIUsageLog
 
     db.add(
         AIUsageLog(
@@ -105,7 +105,7 @@ def test_explain_returns_cache_when_present(db_session: Session, monkeypatch):
     db_session.commit()
 
     # Ensure a Claude call would error out — proving we never reach it.
-    import siftpdf.ai.explain as explain_mod
+    import lintpdf.ai.explain as explain_mod
 
     monkeypatch.setattr(
         explain_mod,
@@ -311,7 +311,7 @@ def test_route_404_for_invalid_uuid(client: TestClient):
 
 def test_route_404_when_finding_belongs_to_other_tenant(client: TestClient, db_session: Session):
     """Cross-tenant: a finding owned by another tenant must 404 for us."""
-    from siftpdf.api.models import Tenant, TenantPlan
+    from lintpdf.api.models import Tenant, TenantPlan
 
     foreign_id = uuid.uuid4()
     db_session.add(

@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from siftpdf.profiles.registry import ProfileRegistry
-from siftpdf.profiles.resolver import _tenant_qualifies
+from lintpdf.profiles.registry import ProfileRegistry
+from lintpdf.profiles.resolver import _tenant_qualifies
 
 
 @dataclass
@@ -129,14 +129,14 @@ class TestSystemTestProfile:
 class TestIsAdminRequest:
     @staticmethod
     def test_no_header_returns_false() -> None:
-        from siftpdf.api.auth import is_admin_request
+        from lintpdf.api.auth import is_admin_request
 
         assert is_admin_request(None) is False
         assert is_admin_request("") is False
 
     @staticmethod
     def test_wrong_key_returns_false() -> None:
-        from siftpdf.api.auth import is_admin_request
+        from lintpdf.api.auth import is_admin_request
 
         # Without an admin key configured we expect False (no leak).
         # When configured but mismatched we also expect False.

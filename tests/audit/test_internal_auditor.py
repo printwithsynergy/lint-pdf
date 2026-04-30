@@ -1,4 +1,4 @@
-"""Unit tests for ``siftpdf.audit.internal.InternalAuditor``.
+"""Unit tests for ``lintpdf.audit.internal.InternalAuditor``.
 
 Mocks the ``anthropic`` SDK + the ``render_page_to_image`` helper so
 the tests run without Ghostscript or a live ``ANTHROPIC_API_KEY``.
@@ -56,7 +56,7 @@ def _stub_anthropic(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 @pytest.fixture(autouse=True)
 def _stub_renderer(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Avoid shelling out to Ghostscript for the unit tests."""
-    from siftpdf import rendering
+    from lintpdf import rendering
 
     renderer_mock = MagicMock(return_value=b"\x89PNG\r\n\x1a\n-fake")
     monkeypatch.setattr(rendering, "render_page_to_image", renderer_mock)
@@ -99,7 +99,7 @@ class TestConstruction:
     @staticmethod
     def test_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
             InternalAuditor()
@@ -107,7 +107,7 @@ class TestConstruction:
     @staticmethod
     def test_explicit_key_bypasses_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         auditor = InternalAuditor(api_key="sk-ant-explicit")
         assert auditor._client is not None  # type: ignore[attr-defined]
@@ -117,7 +117,7 @@ class TestAudit:
     @staticmethod
     def test_empty_findings_returns_empty(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         assert InternalAuditor().audit(b"%PDF-1.4", []) == []
 
@@ -128,7 +128,7 @@ class TestAudit:
         opus_response: Any,
     ) -> None:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         _stub_anthropic.messages.create.return_value = opus_response
 
@@ -154,7 +154,7 @@ class TestAudit:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
         _stub_anthropic.messages.create.side_effect = RuntimeError("rate_limit")
 
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         findings = [_FakeFinding(page_num=1), _FakeFinding(page_num=1)]
         out = InternalAuditor().audit(b"%PDF-fake", findings)
@@ -183,7 +183,7 @@ class TestAudit:
         ]
         _stub_anthropic.messages.create.return_value = resp
 
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         findings = [_FakeFinding(page_num=1), _FakeFinding(page_num=1)]
         out = InternalAuditor().audit(b"%PDF-fake", findings)
@@ -219,7 +219,7 @@ class TestAudit:
         ]
         _stub_anthropic.messages.create.return_value = resp
 
-        from siftpdf.audit.internal import InternalAuditor
+        from lintpdf.audit.internal import InternalAuditor
 
         findings = [_FakeFinding(page_num=None, inspection_id="LPDF_JDF_001")]
         out = InternalAuditor().audit(b"%PDF-fake", findings)

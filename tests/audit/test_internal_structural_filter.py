@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from siftpdf.audit.internal import _is_operational_advisory, _is_structural_only
+from lintpdf.audit.internal import _is_operational_advisory, _is_structural_only
 
 
 def test_pdfx_conformance_ids_are_structural() -> None:

@@ -144,7 +144,7 @@ def _audit_one(pdf_path: Path, job: dict, api_base: str) -> list[dict[str, Any]]
     Returns a list of dicts aligned with ``job.findings``:
     ``{inspection_id, severity, page_num, status, rationale}``.
     """
-    from siftpdf.audit.internal import InternalAuditor
+    from lintpdf.audit.internal import InternalAuditor
 
     # We don't have a SQLAlchemy session here (no DB), so build
     # lightweight objects that quack like ``JobFinding`` for the

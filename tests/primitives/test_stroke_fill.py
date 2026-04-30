@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from siftpdf.primitives import REGISTRY, stroke_fill
+from lintpdf.primitives import REGISTRY, stroke_fill
 
 
 def test_registry_contains_eight_primitives():

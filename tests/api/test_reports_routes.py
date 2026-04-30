@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from siftpdf.api.models import Job, JobStatus, ReportToken
+from lintpdf.api.models import Job, JobStatus, ReportToken
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -146,10 +146,10 @@ class TestGenerateReportsRoute:
 
         with (
             patch(
-                "siftpdf.reports.service.ReportService",
+                "lintpdf.reports.service.ReportService",
                 return_value=mock_service,
             ),
-            patch("siftpdf.api.config.get_settings") as mock_settings,
+            patch("lintpdf.api.config.get_settings") as mock_settings,
         ):
             mock_settings.return_value.report_base_url = "https://reports.example.com"
             resp = client.post(f"/api/v1/jobs/{job.id}/reports")
@@ -272,7 +272,7 @@ class TestServeHtmlReportRoute:
         # Use no_expiry=True to avoid timezone comparison issues on SQLite
         _seed_report_token(db_session, job.id, fmt="html", token="tok_html_ok", no_expiry=True)
 
-        from siftpdf.api.storage import get_storage
+        from lintpdf.api.storage import get_storage
 
         get_storage().upload_report(
             str(PLACEHOLDER_TENANT_ID), str(job.id), "html", b"<html>Report</html>"
@@ -286,7 +286,7 @@ class TestServeHtmlReportRoute:
     def test_increments_access_count(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, fmt="html", token="tok_count", no_expiry=True)
-        from siftpdf.api.storage import get_storage
+        from lintpdf.api.storage import get_storage
 
         get_storage().upload_report(str(PLACEHOLDER_TENANT_ID), str(job.id), "html", b"<html/>")
 
@@ -397,7 +397,7 @@ class TestInlineReturnMode:
         """Legacy ``formats: ["html","pdf"]`` body still minted as url mode."""
         job = _seed_completed_job(db_session)
         mock_service, captured = _mock_service_capturing_specs()
-        with patch("siftpdf.reports.service.ReportService", return_value=mock_service):
+        with patch("lintpdf.reports.service.ReportService", return_value=mock_service):
             resp = client.post(
                 f"/api/v1/jobs/{job.id}/reports",
                 json={"formats": ["html", "pdf"]},
@@ -415,7 +415,7 @@ class TestInlineReturnMode:
     def test_formats_object_inline_json(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         mock_service, _ = _mock_service_capturing_specs()
-        with patch("siftpdf.reports.service.ReportService", return_value=mock_service):
+        with patch("lintpdf.reports.service.ReportService", return_value=mock_service):
             resp = client.post(
                 f"/api/v1/jobs/{job.id}/reports",
                 json={"formats": [{"format": "json", "return": "inline"}]},
@@ -432,7 +432,7 @@ class TestInlineReturnMode:
     def test_formats_object_both_xml(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         mock_service, _ = _mock_service_capturing_specs()
-        with patch("siftpdf.reports.service.ReportService", return_value=mock_service):
+        with patch("lintpdf.reports.service.ReportService", return_value=mock_service):
             resp = client.post(
                 f"/api/v1/jobs/{job.id}/reports",
                 json={"formats": [{"format": "xml", "return": "both"}]},
@@ -461,7 +461,7 @@ class TestInlineReturnMode:
     def test_inline_disabled_flag(client: TestClient, db_session: Session) -> None:
         """Flipping off LINTPDF_REPORTS_INLINE_ENABLED turns inline into 422."""
         job = _seed_completed_job(db_session)
-        with patch("siftpdf.api.config.get_settings") as mock_settings:
+        with patch("lintpdf.api.config.get_settings") as mock_settings:
             s = MagicMock()
             s.reports_inline_enabled = False
             s.reports_idempotency_enabled = True
@@ -502,8 +502,8 @@ class TestDeterministicTokens:
 
     @staticmethod
     def test_deterministic_token_is_stable(db_session: Session) -> None:
-        from siftpdf.api.storage import get_storage
-        from siftpdf.reports.service import ReportService
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
 
         job = _seed_completed_job(db_session)
         storage = get_storage()
@@ -533,7 +533,7 @@ class TestDeterministicTokens:
     def test_deterministic_token_cross_tenant_isolation(
         db_session: Session,
     ) -> None:
-        from siftpdf.reports.service import _deterministic_token
+        from lintpdf.reports.service import _deterministic_token
 
         tenant_a = str(uuid.uuid4())
         tenant_b = str(uuid.uuid4())
@@ -543,8 +543,8 @@ class TestDeterministicTokens:
 
     @staticmethod
     def test_idempotent_mint_skips_reupload(db_session: Session) -> None:
-        from siftpdf.api.storage import get_storage
-        from siftpdf.reports.service import ReportService
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
 
         job = _seed_completed_job(db_session)
         storage = get_storage()
@@ -576,8 +576,8 @@ class TestDeterministicTokens:
 
     @staticmethod
     def test_inline_mode_skips_upload_and_token(db_session: Session) -> None:
-        from siftpdf.api.storage import get_storage
-        from siftpdf.reports.service import ReportService
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
 
         job = _seed_completed_job(db_session)
         storage = get_storage()
@@ -621,8 +621,8 @@ class TestViewerUrlField:
 
     @staticmethod
     def test_html_mint_carries_viewer_url(db_session: Session) -> None:
-        from siftpdf.api.storage import get_storage
-        from siftpdf.reports.service import ReportService
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
 
         job = _seed_completed_job(db_session)
         storage = get_storage()
@@ -646,8 +646,8 @@ class TestViewerUrlField:
 
     @staticmethod
     def test_non_html_format_has_null_viewer_url(db_session: Session) -> None:
-        from siftpdf.api.storage import get_storage
-        from siftpdf.reports.service import ReportService
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
 
         job = _seed_completed_job(db_session)
         storage = get_storage()
@@ -670,9 +670,9 @@ class TestViewerUrlField:
     @staticmethod
     def test_default_viewer_base_falls_back_to_global(db_session: Session) -> None:
         """When no ``viewer_base_url`` passed, fall back to global app_base_url."""
-        from siftpdf.api.config import get_settings
-        from siftpdf.api.storage import get_storage
-        from siftpdf.reports.service import ReportService
+        from lintpdf.api.config import get_settings
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
 
         job = _seed_completed_job(db_session)
         storage = get_storage()

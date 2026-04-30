@@ -1,7 +1,7 @@
 """Generator for the GWG 2022 profile family (T2-GWG01 + T2-GWG02).
 
 Emits one JSON file per substrate x workflow combination into
-``packages/engine/src/siftpdf/profiles/builtin/``. Each profile
+``packages/engine/src/lintpdf/profiles/builtin/``. Each profile
 inherits a common base (PDF/X-4 conformance, GWG check enable list)
 and varies the substrate-specific thresholds:
 
@@ -29,7 +29,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-PROFILES_DIR = Path(__file__).resolve().parent.parent / "src" / "siftpdf" / "profiles" / "builtin"
+PROFILES_DIR = Path(__file__).resolve().parent.parent / "src" / "lintpdf" / "profiles" / "builtin"
 
 
 @dataclass(frozen=True)

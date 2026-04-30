@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from siftpdf.api.models import BrandProfile, BrandProfileType, Tenant
+from lintpdf.api.models import BrandProfile, BrandProfileType, Tenant
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

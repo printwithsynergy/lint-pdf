@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from siftpdf.epm import icc
+from lintpdf.epm import icc
 
 # ---- ΔE math: zero-distance + symmetry ------------------------------------
 

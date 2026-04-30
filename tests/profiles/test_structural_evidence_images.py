@@ -10,8 +10,8 @@ field surfaces.
 
 from __future__ import annotations
 
-from siftpdf.profiles.orchestrator import _build_structural_evidence
-from siftpdf.semantic.model import (
+from lintpdf.profiles.orchestrator import _build_structural_evidence
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     PdfImage,

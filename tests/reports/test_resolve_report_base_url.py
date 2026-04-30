@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from siftpdf.reports.service import resolve_report_base_url
+from lintpdf.reports.service import resolve_report_base_url
 
 
 @dataclass

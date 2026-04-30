@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from siftpdf.reports.check_names import CHECK_NAMES, CheckInfo, get_check_info
+from lintpdf.reports.check_names import CHECK_NAMES, CheckInfo, get_check_info
 
 
 def test_check_info_v2_ids_default_empty():

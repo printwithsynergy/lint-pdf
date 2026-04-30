@@ -14,10 +14,10 @@ still drill in.
 
 from __future__ import annotations
 
-from siftpdf.analyzers.advanced_color_analyzer import AdvancedColorAnalyzer
-from siftpdf.analyzers.color import ColorAnalyzer
-from siftpdf.semantic.events import PathPaintingEvent
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.advanced_color_analyzer import AdvancedColorAnalyzer
+from lintpdf.analyzers.color import ColorAnalyzer
+from lintpdf.semantic.events import PathPaintingEvent
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _path_event(

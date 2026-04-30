@@ -37,9 +37,9 @@ from unittest.mock import patch
 
 import pytest
 
-from siftpdf.profiles.orchestrator import PreflightOrchestrator
-from siftpdf.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.profiles.orchestrator import PreflightOrchestrator
+from lintpdf.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc_with_alcohol_text(text: str) -> SemanticDocument:
@@ -76,7 +76,7 @@ class TestOrchestratorDispatchesToAnalyzeV2:
         orchestrator silently drops findings (the regression fixed
         in PR #368), we'd get only ``AI_SCAN_001`` and the assertion
         would fail."""
-        from siftpdf.ai.analyzers.regulatory_compliance.alcohol import (
+        from lintpdf.ai.analyzers.regulatory_compliance.alcohol import (
             AlcoholLabelingAnalyzer,
         )
 
@@ -94,7 +94,7 @@ class TestOrchestratorDispatchesToAnalyzeV2:
 
         with (
             patch(
-                "siftpdf.ai.registry.get_ai_analyzers",
+                "lintpdf.ai.registry.get_ai_analyzers",
                 return_value=[analyzer],
             ),
         ):
@@ -129,7 +129,7 @@ class TestOrchestratorDispatchesToAnalyzeV2:
         analyzer ran, it just had nothing to report. This confirms
         the orchestrator dispatched the analyzer (vs. silently
         skipping it)."""
-        from siftpdf.ai.analyzers.regulatory_compliance.alcohol import (
+        from lintpdf.ai.analyzers.regulatory_compliance.alcohol import (
             AlcoholLabelingAnalyzer,
         )
 
@@ -144,7 +144,7 @@ class TestOrchestratorDispatchesToAnalyzeV2:
         analyzer = AlcoholLabelingAnalyzer()
 
         with patch(
-            "siftpdf.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")
@@ -167,7 +167,7 @@ class TestOrchestratorDispatchesToAnalyzeV2:
         ai_config-gated analyzer — passing ``industry_type=
         dietary_supplement`` should suppress its findings.
         """
-        from siftpdf.ai.analyzers.regulatory_compliance.cosmetics import (
+        from lintpdf.ai.analyzers.regulatory_compliance.cosmetics import (
             CosmeticsLabelingAnalyzer,
         )
 
@@ -202,7 +202,7 @@ class TestOrchestratorDispatchesToAnalyzeV2:
         )
 
         with patch(
-            "siftpdf.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[analyzer],
         ):
             orch = PreflightOrchestrator(

@@ -21,10 +21,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException, UploadFile
 
-from siftpdf.api import cache, middleware
-from siftpdf.api.config import Settings, get_settings
-from siftpdf.api.upload_security import validate_upload
-from siftpdf.queue.app import celery_app
+from lintpdf.api import cache, middleware
+from lintpdf.api.config import Settings, get_settings
+from lintpdf.api.upload_security import validate_upload
+from lintpdf.queue.app import celery_app
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -107,8 +107,8 @@ class TestReadyEndpoint:
         mock_redis = MagicMock()
         mock_redis.ping.return_value = True
         with (
-            patch("siftpdf.api.database.get_engine", return_value=mock_engine),
-            patch("siftpdf.api.middleware.get_redis_client", return_value=mock_redis),
+            patch("lintpdf.api.database.get_engine", return_value=mock_engine),
+            patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis),
         ):
             resp = client.get("/ready")
         assert resp.status_code == 200
@@ -121,7 +121,7 @@ class TestReadyEndpoint:
     def test_ready_503_when_database_errors(client: TestClient) -> None:
         mock_engine = MagicMock()
         mock_engine.connect.side_effect = Exception("boom")
-        with patch("siftpdf.api.database.get_engine", return_value=mock_engine):
+        with patch("lintpdf.api.database.get_engine", return_value=mock_engine):
             resp = client.get("/ready")
         assert resp.status_code == 503
         assert resp.json()["status"] == "unavailable"
@@ -165,7 +165,7 @@ class TestUploadStreaming:
     @staticmethod
     @pytest.mark.asyncio
     async def test_rejects_declared_size_over_limit() -> None:
-        from siftpdf.api.upload_security import PDF_TYPES
+        from lintpdf.api.upload_security import PDF_TYPES
 
         f = _upload(b"%PDF-1.4\n...", declared_size=10 * 1024 * 1024)
         with pytest.raises(HTTPException) as exc:
@@ -175,7 +175,7 @@ class TestUploadStreaming:
     @staticmethod
     @pytest.mark.asyncio
     async def test_rejects_mid_stream_when_content_length_lied() -> None:
-        from siftpdf.api.upload_security import PDF_TYPES
+        from lintpdf.api.upload_security import PDF_TYPES
 
         # Build a body that claims to be tiny but is actually large.
         payload = b"%PDF-1.4\n" + b"A" * (5 * 1024 * 1024)
@@ -195,7 +195,7 @@ class TestWebhookDeadLetter:
     def test_is_dead_default_false(db_session) -> None:
         import uuid
 
-        from siftpdf.api.models import (
+        from lintpdf.api.models import (
             Tenant,
             WebhookDelivery,
             WebhookEndpoint,
@@ -273,7 +273,7 @@ class TestCeleryAndSettings:
         import os
 
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-        from siftpdf.api.config import _cached_settings
+        from lintpdf.api.config import _cached_settings
 
         _cached_settings.cache_clear()
         a = get_settings()

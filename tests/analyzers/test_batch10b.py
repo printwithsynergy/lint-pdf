@@ -11,22 +11,22 @@ Covers:
 
 from __future__ import annotations
 
-from siftpdf.ai.analyzers.regulatory_compliance.tobacco import TobaccoWarningAnalyzer
-from siftpdf.analyzers.barcode_validation import (
+from lintpdf.ai.analyzers.regulatory_compliance.tobacco import TobaccoWarningAnalyzer
+from lintpdf.analyzers.barcode_validation import (
     validate_eu_dpp_payload,
     validate_gs1_ai_payload,
     validate_udi_payload,
 )
-from siftpdf.analyzers.metadata import MetadataAnalyzer
-from siftpdf.conformance.pdfvt import check_pdfvt_structure
-from siftpdf.semantic.events import TextRenderedEvent
-from siftpdf.semantic.graphics_state import TransformationMatrix
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.metadata import MetadataAnalyzer
+from lintpdf.conformance.pdfvt import check_pdfvt_structure
+from lintpdf.semantic.events import TextRenderedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from siftpdf.plugin.protocol import AnalyzerContext
+    from lintpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

@@ -47,7 +47,7 @@ def upgrade() -> None:
 
     # Extend the pre-existing ai_usage_logs table with the WS-G
     # per-Claude-call columns. ``cost_cents`` is the integer-cent
-    # cost computed by ``siftpdf.audit.metering.record_usage``;
+    # cost computed by ``lintpdf.audit.metering.record_usage``;
     # sub-cent calls round UP to 1. All nullable to stay compatible
     # with pre-037 rows that only logged (credits_consumed, cost).
     op.add_column("ai_usage_logs", sa.Column("model", sa.String(64), nullable=True))

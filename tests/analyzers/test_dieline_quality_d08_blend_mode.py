@@ -15,8 +15,8 @@ import io
 
 import pikepdf
 
-from siftpdf.analyzers.dieline_quality import check_dieline_quality
-from siftpdf.analyzers.finding import Severity
+from lintpdf.analyzers.dieline_quality import check_dieline_quality
+from lintpdf.analyzers.finding import Severity
 
 
 def _build_pdf(
@@ -222,7 +222,7 @@ def test_save_restore_isolates_blend_mode() -> None:
 
 def test_checkinfo_registered_with_v2_id() -> None:
     """Reports must surface D-08 as the v2 ID for LPDF_DIE_BLEND_MODE."""
-    from siftpdf.reports.check_names import CHECK_NAMES
+    from lintpdf.reports.check_names import CHECK_NAMES
 
     info = CHECK_NAMES["LPDF_DIE_BLEND_MODE"]
     assert info.name == "Dieline Has Non-Normal Blend Mode"

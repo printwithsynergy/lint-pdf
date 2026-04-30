@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.imports.acrobat import AcrobatXmlParser
-from siftpdf.imports.base import ParserError
+from lintpdf.imports.acrobat import AcrobatXmlParser
+from lintpdf.imports.base import ParserError
 
 ACROBAT_XML = b"""<?xml version="1.0" encoding="UTF-8"?>
 <Preflight>

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.plugin import PluginManifest, Tier
+from lintpdf.plugin import PluginManifest, Tier
 
 
 def test_manifest_minimal_construction():
-    m = PluginManifest(id="siftpdf.test.simple", version="1.0.0", tier=Tier.CPU)
-    assert m.id == "siftpdf.test.simple"
+    m = PluginManifest(id="lintpdf.test.simple", version="1.0.0", tier=Tier.CPU)
+    assert m.id == "lintpdf.test.simple"
     assert m.version == "1.0.0"
     assert m.tier is Tier.CPU
     assert m.requires_capabilities == ()
@@ -20,7 +20,7 @@ def test_manifest_minimal_construction():
 
 def test_manifest_full_construction():
     m = PluginManifest(
-        id="siftpdf.barcode.qr",
+        id="lintpdf.barcode.qr",
         version="2.3.1",
         tier=Tier.GPU,
         requires_capabilities=("page_images", "text_regions"),

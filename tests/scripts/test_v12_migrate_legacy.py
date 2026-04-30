@@ -10,14 +10,14 @@ from sqlalchemy import create_engine, event, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from siftpdf.api.models import Base, Tenant, TenantPlan
-from siftpdf.scripts.v12_migrate_legacy import (
+from lintpdf.api.models import Base, Tenant, TenantPlan
+from lintpdf.scripts.v12_migrate_legacy import (
     LEGACY_TOGGLE_MAP,
     ensure_toggles_seeded,
     migrate_tenant,
     run,
 )
-from siftpdf.tenants.toggle_models import (
+from lintpdf.tenants.toggle_models import (
     Toggle,
     ToggleAuditLog,
     ToggleOverride,

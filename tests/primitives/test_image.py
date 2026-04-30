@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.primitives import REGISTRY
-from siftpdf.primitives import image as image_p
+from lintpdf.primitives import REGISTRY
+from lintpdf.primitives import image as image_p
 
 
 def test_registry_contains_fourteen_primitives():

@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from siftpdf.analyzers.art_size import ArtSizeMM, compute_art_size
-from siftpdf.analyzers.dieline import _name_matches, detect_dieline
-from siftpdf.analyzers.legend import classify_swatches
+from lintpdf.analyzers.art_size import ArtSizeMM, compute_art_size
+from lintpdf.analyzers.dieline import _name_matches, detect_dieline
+from lintpdf.analyzers.legend import classify_swatches
 
 
 class _D:

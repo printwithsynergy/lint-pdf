@@ -1,6 +1,6 @@
 """Plan-tier entitlement overrides table.
 
-Until now the per-plan defaults in ``siftpdf.tenants.models.PLAN_LIMITS``
+Until now the per-plan defaults in ``lintpdf.tenants.models.PLAN_LIMITS``
 were hardcoded — bumping Scale's monthly_ai_credits or flipping the
 default `ai_audit_enabled` on Enterprise meant a code change + deploy.
 

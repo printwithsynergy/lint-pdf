@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers import epm_v2_c
-from siftpdf.epm import codes
-from siftpdf.semantic.events import PathPaintingEvent
-from siftpdf.semantic.model import (
+from lintpdf.analyzers import epm_v2_c
+from lintpdf.epm import codes
+from lintpdf.semantic.events import PathPaintingEvent
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,
@@ -245,7 +245,7 @@ def test_analyzer_fans_out_to_each_tier_c_check():
 
 def test_score_walks_tier_c_findings_as_advisories():
     """Integration smoke: scorer treats C-tier as advisories, not rejection."""
-    from siftpdf.epm.scoring import EpmTier, score_epm_candidacy
+    from lintpdf.epm.scoring import EpmTier, score_epm_candidacy
 
     fired = [codes.EPM_TRAPPING_DISABLED, codes.EPM_FEATURE_BELOW_DIGITAL_RES]
     verdict = score_epm_candidacy(fired)

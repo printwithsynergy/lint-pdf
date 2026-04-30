@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

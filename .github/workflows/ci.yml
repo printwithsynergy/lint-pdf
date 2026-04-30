@@ -45,7 +45,7 @@ jobs:
         # The 14 deselects below are pre-existing failures in lint-pdf
         # at the moment of the Phase 4 extraction (verified by running
         # the same suite in lint-pdf:packages/engine/). They are NOT
-        # caused by the lintpdf -> siftpdf rename. They fall into two
+        # caused by the lintpdf -> lintpdf rename. They fall into two
         # categories:
         #
         # 1. tests/test_worker.py (8) — Celery config assertions drifted

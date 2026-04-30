@@ -21,7 +21,7 @@ import io
 
 import pikepdf
 
-from siftpdf.reports.separation_renderer import list_separations
+from lintpdf.reports.separation_renderer import list_separations
 
 
 def _make_nested_spot_pdf(spot_names: list[str]) -> bytes:

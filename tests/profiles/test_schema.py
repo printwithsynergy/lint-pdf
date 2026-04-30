@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from siftpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
+from lintpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
 
 
 class TestThresholdConfig:

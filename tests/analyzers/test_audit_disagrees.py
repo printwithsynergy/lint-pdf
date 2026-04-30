@@ -19,9 +19,9 @@ list (8 disagrees pre-PR-P, 2 expected after):
 
 from __future__ import annotations
 
-from siftpdf.ai.analyzers.regulatory_compliance._gates import is_supplement_document
-from siftpdf.analyzers.spot_color_analyzer import _canonical_colorant
-from siftpdf.semantic.model import (
+from lintpdf.ai.analyzers.regulatory_compliance._gates import is_supplement_document
+from lintpdf.analyzers.spot_color_analyzer import _canonical_colorant
+from lintpdf.semantic.model import (
     PdfBox,
     SemanticDocument,
     SemanticPage,

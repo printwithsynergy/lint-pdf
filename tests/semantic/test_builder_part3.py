@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from siftpdf.parser.adapter import PdfDocument, PdfPage
-from siftpdf.semantic.builder import SemanticModelBuilder
+from lintpdf.parser.adapter import PdfDocument, PdfPage
+from lintpdf.semantic.builder import SemanticModelBuilder
 
 
 def _make_adapter() -> MagicMock:

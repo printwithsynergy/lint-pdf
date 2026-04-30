@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from siftpdf.analyzers.audit_advisories import AuditAdvisoryAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.audit_advisories import AuditAdvisoryAnalyzer
+from lintpdf.semantic.model import (
     DetectedTextRegion,
     PdfBox,
     SemanticDocument,

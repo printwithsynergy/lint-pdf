@@ -31,7 +31,7 @@ URLS_FILE = "/tmp/lintpdf_report_urls.json"
 
 # ── Local filesystem storage ─────────────────────────────────────────────────
 
-from siftpdf.api.storage import StorageBackend
+from lintpdf.api.storage import StorageBackend
 
 
 class LocalFileStorage(StorageBackend):
@@ -103,8 +103,8 @@ def seed():
     """Phase 1: run preflight, store reports, create tokens."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
-    from siftpdf.api.models import Base, Job, JobFinding, JobStatus, ReportToken, Tenant
-    from siftpdf.tenants.models import TenantPlan
+    from lintpdf.api.models import Base, Job, JobFinding, JobStatus, ReportToken, Tenant
+    from lintpdf.tenants.models import TenantPlan
 
     engine = create_engine(os.environ["LINTPDF_DATABASE_URL"])
     Base.metadata.create_all(engine)
@@ -134,8 +134,8 @@ def seed():
     with open(PDF_PATH, "rb") as f:
         pdf_bytes = f.read()
 
-    from siftpdf.profiles.orchestrator import PreflightOrchestrator
-    from siftpdf.profiles.schema import AIFeatureConfig, PreflightProfile
+    from lintpdf.profiles.orchestrator import PreflightOrchestrator
+    from lintpdf.profiles.schema import AIFeatureConfig, PreflightProfile
 
     profile = PreflightProfile(
         name="Full Preflight + AI",
@@ -225,7 +225,7 @@ def seed():
     print(f"  Job {job_id} + {len(result.findings)} findings stored")
 
     # Generate reports + tokens
-    from siftpdf.reports.engine import ReportEngine
+    from lintpdf.reports.engine import ReportEngine
 
     report_engine = ReportEngine()
     base = os.environ["LINTPDF_REPORT_BASE_URL"]
@@ -266,12 +266,12 @@ def seed():
 
 def serve():
     """Phase 2: start FastAPI with local storage."""
-    from siftpdf.api.storage import set_storage
+    from lintpdf.api.storage import set_storage
 
     set_storage(LocalFileStorage(LOCAL_STORAGE))
 
     import uvicorn
-    from siftpdf.api.app import create_app
+    from lintpdf.api.app import create_app
 
     app = create_app()
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

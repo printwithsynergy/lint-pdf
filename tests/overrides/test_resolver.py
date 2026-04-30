@@ -1,6 +1,6 @@
 """Unit tests for the universal per-call override resolver.
 
-These cover the three public helpers in ``siftpdf.overrides.resolver``
+These cover the three public helpers in ``lintpdf.overrides.resolver``
 and document the intended layering semantics: override wins,
 ``None`` leaves the profile value alone, empty string clears a cap.
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.overrides import (
+from lintpdf.overrides import (
     AIOverrides,
     ChecksOverrides,
     ColorOverrides,
@@ -21,14 +21,14 @@ from siftpdf.overrides import (
     enforce_report_entitlements,
     viewer_overrides_to_dict,
 )
-from siftpdf.profiles.schema import (
+from lintpdf.profiles.schema import (
     AIFeatureConfig,
     CheckConfig,
     ColorConfig,
     PreflightProfile,
     ThresholdConfig,
 )
-from siftpdf.tenants.entitlements import TenantEntitlements
+from lintpdf.tenants.entitlements import TenantEntitlements
 
 
 def _make_profile(**overrides: object) -> PreflightProfile:

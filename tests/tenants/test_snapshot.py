@@ -12,9 +12,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from siftpdf.api.models import Base, Job, JobStatus, Tenant, TenantPlan
-from siftpdf.tenants.snapshot import write_snapshot
-from siftpdf.tenants.toggle_models import (
+from lintpdf.api.models import Base, Job, JobStatus, Tenant, TenantPlan
+from lintpdf.tenants.snapshot import write_snapshot
+from lintpdf.tenants.toggle_models import (
     MergeStrategy,
     ResolvedConfigSnapshot,
     Toggle,

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.plugin import AnalyzerContext
+from lintpdf.analyzers.finding import Severity
+from lintpdf.plugin import AnalyzerContext
 
 
 def _ctx(document: MagicMock, ai_config: dict | None) -> AnalyzerContext:
@@ -32,15 +32,15 @@ class TestBrandPaletteAnalyzer:
     def test_no_palette_configured_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
                 True,
             ),
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
                 True,
             ),
         ):
-            from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+            from lintpdf.ai.analyzers.color_compliance.brand_palette import (
                 BrandPaletteAnalyzer,
             )
 
@@ -56,15 +56,15 @@ class TestBrandPaletteAnalyzer:
     def test_empty_palette_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
                 True,
             ),
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
                 True,
             ),
         ):
-            from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+            from lintpdf.ai.analyzers.color_compliance.brand_palette import (
                 BrandPaletteAnalyzer,
             )
 
@@ -77,10 +77,10 @@ class TestBrandPaletteAnalyzer:
     @staticmethod
     def test_skips_when_colour_science_not_installed(minimal_semantic_doc: MagicMock) -> None:
         with patch(
-            "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
+            "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
             False,
         ):
-            from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+            from lintpdf.ai.analyzers.color_compliance.brand_palette import (
                 BrandPaletteAnalyzer,
             )
 
@@ -93,15 +93,15 @@ class TestBrandPaletteAnalyzer:
     def test_none_ai_config_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
                 True,
             ),
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
                 True,
             ),
         ):
-            from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+            from lintpdf.ai.analyzers.color_compliance.brand_palette import (
                 BrandPaletteAnalyzer,
             )
 
@@ -115,15 +115,15 @@ class TestBrandPaletteAnalyzer:
     def test_findings_have_ai_source(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
                 True,
             ),
             patch(
-                "siftpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
+                "lintpdf.ai.analyzers.color_compliance.brand_palette._HAS_NUMPY",
                 True,
             ),
         ):
-            from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+            from lintpdf.ai.analyzers.color_compliance.brand_palette import (
                 BrandPaletteAnalyzer,
             )
 
@@ -136,7 +136,7 @@ class TestBrandPaletteAnalyzer:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             BrandPaletteAnalyzer,
         )
 
@@ -152,7 +152,7 @@ class TestParseColorValue:
 
     @staticmethod
     def test_parse_hex_6_digit() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
 
@@ -165,7 +165,7 @@ class TestParseColorValue:
 
     @staticmethod
     def test_parse_hex_3_digit() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
 
@@ -177,7 +177,7 @@ class TestParseColorValue:
 
     @staticmethod
     def test_parse_rgb() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
 
@@ -188,7 +188,7 @@ class TestParseColorValue:
 
     @staticmethod
     def test_parse_cmyk() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
 
@@ -200,7 +200,7 @@ class TestParseColorValue:
 
     @staticmethod
     def test_parse_invalid_returns_none() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
 
@@ -209,7 +209,7 @@ class TestParseColorValue:
 
     @staticmethod
     def test_parse_hex_with_whitespace() -> None:
-        from siftpdf.ai.analyzers.color_compliance.brand_palette import (
+        from lintpdf.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
 

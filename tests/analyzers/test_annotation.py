@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.annotation import AnnotationAnalyzer
-from siftpdf.analyzers.finding import Severity
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.annotation import AnnotationAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.model import (
     PdfAnnotation,
     PdfBox,
     SemanticDocument,
