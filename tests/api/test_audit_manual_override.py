@@ -57,7 +57,9 @@ def _seed_finding(db: Session, *, status: str | None = "confirmed") -> uuid.UUID
 
 class TestManualAuditOverride:
     @staticmethod
-    def test_rejects_missing_admin_key(client: TestClient, db_session: Session, monkeypatch) -> None:
+    def test_rejects_missing_admin_key(
+        client: TestClient, db_session: Session, monkeypatch
+    ) -> None:
         # Configure admin key so verify_admin_key takes the
         # invalid-key branch (401) rather than the unconfigured
         # branch (503). In a dev shell `LINTPDF_ADMIN_API_KEY` is
