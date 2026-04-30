@@ -1,20 +1,26 @@
-"""BaseAIAnalyzer — abstract base class for AI-powered analyzers.
+"""BaseAIAnalyzer — base class for AI-powered analyzers.
 
 AI analyzers follow the same detection-only principle as core engine analyzers
 but produce findings with source="ai" and include a category tag.
 
-Phase 1 introduces ``analyze_v2(ctx)`` as a default-implemented hook on top
-of the legacy ``analyze(document, events, pdf_bytes, ai_config)`` signature.
-The default impl pulls ``ai_config`` from ``ctx.config["ai_config"]`` (a
-plain dict reconstituted into a TenantAIConfig object via the host bridge)
-so existing subclasses keep working unchanged. New AI analyzers should
-override ``analyze_v2`` directly and read services / capabilities / per-
-plugin config straight from the ``AnalyzerContext``.
+Subclasses override **one** of two entry points:
+
+- ``analyze_v2(ctx)`` — preferred. Pulls the AI config from
+  ``ctx.config["ai_config"]`` (plain dict) and reaches SaaS-coupled
+  features (cost cap, metering, GPU client) via ``ctx.services.*``.
+- ``analyze(document, events, pdf_bytes, ai_config)`` — legacy
+  4-arg shape. The default ``analyze_v2`` reconstitutes
+  ``ai_config`` and forwards here.
+
+Phase 2 (Q&A 1b-B) relaxed the abstract requirement on ``analyze``:
+the class now ships a ``NotImplementedError`` default so AI analyzers
+can override only ``analyze_v2`` without satisfying a phantom abstract
+method. Subclasses that override neither method instantiate cleanly
+but raise NotImplementedError on first invocation.
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from lintpdf.analyzers.finding import Finding, Severity
@@ -26,11 +32,15 @@ if TYPE_CHECKING:
     from lintpdf.semantic.model import SemanticDocument
 
 
-class BaseAIAnalyzer(ABC):
-    """Abstract base class for AI-powered preflight analyzers.
+class BaseAIAnalyzer:
+    """Base class for AI-powered preflight analyzers.
 
-    Subclasses implement ``analyze()`` to detect issues using AI/ML techniques.
-    All findings are tagged with source="ai" and the analyzer's category.
+    Subclasses implement **one** of:
+
+    - ``analyze_v2(ctx)`` — preferred plugin-protocol entry point.
+    - ``analyze(document, events, pdf_bytes, ai_config)`` — legacy
+      4-arg shape (the default ``analyze_v2`` reconstitutes
+      ``ai_config`` and forwards here).
     """
 
     # Subclasses must define these
@@ -39,7 +49,6 @@ class BaseAIAnalyzer(ABC):
     tier: str = "cpu"  # "cpu" or "gpu"
     credits_per_run: int = 1
 
-    @abstractmethod
     def analyze(
         self,
         document: SemanticDocument,
@@ -47,7 +56,13 @@ class BaseAIAnalyzer(ABC):
         pdf_bytes: bytes,
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
-        """Analyze a document and return AI findings.
+        """Legacy AI-analyzer hook (default raises ``NotImplementedError``).
+
+        Override this OR ``analyze_v2(ctx)``. The default
+        ``analyze_v2`` reconstitutes ``ai_config`` from
+        ``ctx.config["ai_config"]`` and forwards here, so analyzers
+        that don't need ``ctx.services`` can keep using this 4-arg
+        shape unchanged.
 
         Args:
             document: Enriched semantic document.
@@ -58,6 +73,11 @@ class BaseAIAnalyzer(ABC):
         Returns:
             List of findings (may be empty).
         """
+
+        raise NotImplementedError(
+            f"{type(self).__name__} must override either `analyze` "
+            "(legacy 4-arg signature) or `analyze_v2(ctx)` (preferred)."
+        )
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
         """Plugin-protocol entry point. Default forwards to ``analyze``.

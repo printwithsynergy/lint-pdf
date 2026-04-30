@@ -148,3 +148,105 @@ def test_reconstitute_ai_config_returns_attribute_accessor():
     # Unknown attrs return None instead of raising AttributeError —
     # contract that several AI analyzers rely on.
     assert getattr(cfg, "missing", "default") in (None, "default")
+
+
+# ---------------------------------------------------------------------------
+# Q&A 1b-B — relaxed `analyze` abstract requirement
+# ---------------------------------------------------------------------------
+
+
+class _ModernCoreAnalyzer(BaseAnalyzer):
+    """Stand-in for a Phase-2 core analyzer — overrides only analyze_v2."""
+
+    def __init__(self) -> None:
+        self.ctx_calls: list[AnalyzerContext] = []
+
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        self.ctx_calls.append(ctx)
+        return [
+            Finding(
+                inspection_id="LPDF_MODERN_001",
+                severity=Severity.ADVISORY,
+                message="modern core finding",
+            )
+        ]
+
+
+class _ModernAIAnalyzer(BaseAIAnalyzer):
+    """Stand-in for a Phase-2 AI analyzer — overrides only analyze_v2."""
+
+    category = "modern_ai"
+    feature_slug = "modern_ai"
+
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        return [
+            Finding(
+                inspection_id="LPDF_MODERN_AI_001",
+                severity=Severity.ADVISORY,
+                message="modern AI finding",
+                details={"ai_config_keys": list((ctx.config or {}).keys())},
+            )
+        ]
+
+
+class _BrokenCoreAnalyzer(BaseAnalyzer):
+    """Subclass that overrides NEITHER analyze nor analyze_v2.
+
+    Phase 2 (Q1b-B) relaxed @abstractmethod so the class instantiates
+    cleanly; the failure surfaces only when analyze_v2 forwards to
+    the inherited default `analyze` and that raises.
+    """
+
+
+def test_modern_core_analyzer_runs_with_only_analyze_v2_override():
+    """Q1b-B: instantiating a subclass that overrides only analyze_v2 succeeds."""
+
+    modern = _ModernCoreAnalyzer()
+    ctx = AnalyzerContext(document=_FakeDoc(), events=[])
+    findings = modern.analyze_v2(ctx)
+    assert len(findings) == 1
+    assert findings[0].inspection_id == "LPDF_MODERN_001"
+    assert len(modern.ctx_calls) == 1
+    assert modern.ctx_calls[0] is ctx
+
+
+def test_modern_ai_analyzer_runs_with_only_analyze_v2_override():
+    modern = _ModernAIAnalyzer()
+    ctx = AnalyzerContext(
+        document=_FakeDoc(),
+        events=[],
+        pdf_bytes=b"",
+        config={"ai_config": {"foo": 1}, "other": "x"},
+    )
+    findings = modern.analyze_v2(ctx)
+    assert len(findings) == 1
+    assert findings[0].inspection_id == "LPDF_MODERN_AI_001"
+    # ctx.config arrives unchanged.
+    assert "ai_config" in findings[0].details["ai_config_keys"]
+
+
+def test_broken_subclass_instantiates_but_raises_on_call():
+    """A subclass that overrides neither method now instantiates
+    (Phase 1 blocked instantiation via @abstractmethod). The failure
+    is deferred to first call, which surfaces a clear error message
+    naming the subclass.
+    """
+    broken = _BrokenCoreAnalyzer()  # ← used to fail at this line
+    import pytest
+
+    with pytest.raises(NotImplementedError) as exc_info:
+        broken.analyze_v2(AnalyzerContext(document=_FakeDoc(), events=[]))
+    assert "_BrokenCoreAnalyzer" in str(exc_info.value)
+    assert "analyze_v2" in str(exc_info.value)
+
+
+def test_base_analyzer_is_no_longer_abc_strict_about_analyze():
+    """The class still inherits from ABC, but `analyze` is no longer
+    an @abstractmethod. Instantiating a subclass that doesn't override
+    `analyze` works (the failure is deferred to call time).
+    """
+    # If @abstractmethod were still on analyze, instantiating
+    # _BrokenCoreAnalyzer would raise TypeError at class-construction
+    # time. Q1b-B's relaxation means it should NOT raise here.
+    instance = _BrokenCoreAnalyzer()
+    assert isinstance(instance, BaseAnalyzer)

@@ -1,20 +1,33 @@
-"""BaseAnalyzer — abstract base class for all analyzers.
+"""BaseAnalyzer — base class for all analyzers.
 
 Each analyzer focuses on a specific preflight domain (images, fonts, color, etc.)
 and processes a SemanticDocument plus content stream events to produce Findings.
 
 Analyzers are pure detection modules: they never modify the document.
 
-Phase 1 introduces ``analyze_v2(ctx)`` as a default-implemented hook on top
-of the legacy ``analyze(document, events)`` signature. Existing subclasses
-keep working unchanged; the orchestrator drives them via ``analyze_v2``,
-which the default impl forwards to ``analyze``. New analyzers should
-override ``analyze_v2`` directly and skip the legacy method entirely.
+Subclasses override **one** of two entry points:
+
+- ``analyze_v2(ctx)`` — preferred. Receives the full ``AnalyzerContext``
+  (services, capabilities, config). Required for any analyzer that
+  needs SaaS-coupled features (metering, cost cap, GPU client, tenant
+  AI config, etc.) — those reach through ``ctx.services.*`` and
+  ``ctx.config["ai_config"]`` rather than direct imports.
+- ``analyze(document, events)`` — legacy 2-arg shape. The default
+  ``analyze_v2`` forwards here, so analyzers that don't need ``ctx``
+  can keep overriding the legacy method.
+
+Phase 2 (Q&A 1b-B) relaxed the abstract requirement on ``analyze``:
+the class now ships a ``NotImplementedError`` default so new analyzers
+can override only ``analyze_v2`` without satisfying a phantom abstract
+method. Subclasses that override neither method instantiate cleanly
+but raise NotImplementedError on first invocation — discovered at
+analyzer-call time, surfaced through the orchestrator's normal error
+path with a clear "override one of analyze() or analyze_v2(ctx)"
+message.
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -24,20 +37,28 @@ if TYPE_CHECKING:
     from lintpdf.semantic.model import SemanticDocument
 
 
-class BaseAnalyzer(ABC):
-    """Abstract base class for preflight analyzers.
+class BaseAnalyzer:
+    """Base class for preflight analyzers.
 
-    Subclasses implement ``analyze()`` to inspect a document and its
-    content stream events, returning a list of Findings.
+    Subclasses implement **one** of:
+
+    - ``analyze_v2(ctx)`` — preferred plugin-protocol entry point.
+    - ``analyze(document, events)`` — legacy 2-arg shape (the
+      default ``analyze_v2`` forwards here).
     """
 
-    @abstractmethod
     def analyze(
         self,
         document: SemanticDocument,
         events: list[ContentStreamEvent],
     ) -> list[Finding]:
-        """Analyze a document and return findings.
+        """Legacy analyzer hook (default raises ``NotImplementedError``).
+
+        Override this OR ``analyze_v2(ctx)``. The default
+        ``analyze_v2`` forwards here, so analyzers that don't need
+        ``ctx.services`` / ``ctx.config`` can keep using this 2-arg
+        shape unchanged. Authors that need ``ctx`` should override
+        ``analyze_v2`` directly and skip this method.
 
         Args:
             document: Enriched semantic document with resolved properties.
@@ -46,6 +67,11 @@ class BaseAnalyzer(ABC):
         Returns:
             List of findings (may be empty if no issues detected).
         """
+
+        raise NotImplementedError(
+            f"{type(self).__name__} must override either `analyze` "
+            "(legacy 2-arg signature) or `analyze_v2(ctx)` (preferred)."
+        )
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
         """Plugin-protocol entry point. Default forwards to ``analyze``.
