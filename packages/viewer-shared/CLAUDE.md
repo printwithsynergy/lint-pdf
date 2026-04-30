@@ -17,7 +17,7 @@ progress) has completed the structural moves and the services
 abstraction:
 
 - 17 pure-core components moved to `src/core/components/` (PR #332).
-- 10 LintPDF-flavoured components moved to `src/lintpdf/plugins/`
+- 10 LintPDF-flavoured components moved to `src/lintpdf/components/`
   (PR #344).
 - All host-supplied data flows through `ViewerServices` (PRs
   #338-#343); zero components inside `core/components/` build URLs

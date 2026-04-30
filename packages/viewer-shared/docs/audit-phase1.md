@@ -131,7 +131,15 @@ Subsequent PRs do the file-by-file migration. The
 pattern; each migrated component lands with an equivalent snapshot
 in the same PR.
 
-### LintPDF-flavoured (10) — moved to `src/lintpdf/plugins/` in PR #344
+### LintPDF-flavoured (10) — moved to `src/lintpdf/components/` (PR #344 → renamed in PR #346)
+
+The original target was `src/lintpdf/plugins/` (per the early
+Phase-1 audit), but Q&A clarified that LintPDF's first-party
+panels stay React components — they aren't Plugin objects with
+`manifest + mount(ctx)`. The `Plugin` protocol is the **third-
+party extension surface**; LintPDF's own UI is sibling React.
+PR #346 renamed the directory from `plugins/` → `components/`
+to reflect that.
 
 `FindingsPanel`, `ViewerToolbar`, `AnnotationLayer`, `VerdictBar`,
 `ApprovalChainPanel`, `ComparisonPanel`, `SeparationPanel`,
