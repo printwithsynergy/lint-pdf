@@ -49,24 +49,45 @@ _SYSTEM_PROMPT = (
 )
 
 
-def classify_swatches_via_claude(pdf_bytes: bytes, swatches: list[dict[str, Any]]) -> list[Any]:
+def classify_swatches_via_claude(
+    pdf_bytes: bytes,
+    swatches: list[dict[str, Any]],
+    llm_client: Any | None = None,
+) -> list[Any]:
     """Run Sonnet on a batch of ambiguous swatches.
 
     Returns ``[SwatchClassification | None, ...]`` aligned with
     ``swatches``. Lazy-imports ``SwatchClassification`` to keep
     this module free of analyzer imports at load time.
+
+    Phase 3d: ``llm_client`` parameter — the LLMClient service
+    instance. When ``None``, falls back to instantiating
+    ``anthropic.Anthropic()`` directly for backwards compat with
+    non-orchestrator callers.
     """
     from lintpdf.analyzers.legend import SwatchClassification
     from lintpdf.rendering import render_page_to_image
 
-    if not swatches or not os.environ.get("ANTHROPIC_API_KEY"):
+    if not swatches:
         return [None] * len(swatches)
 
-    try:
-        import anthropic
-    except ImportError:
-        logger.warning("legend-claude: anthropic SDK not installed; skipping")
-        return [None] * len(swatches)
+    if llm_client is None:
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            return [None] * len(swatches)
+
+        try:
+            import anthropic
+        except ImportError:
+            logger.warning("legend-claude: anthropic SDK not installed; skipping")
+            return [None] * len(swatches)
+
+        client = anthropic.Anthropic()
+
+        class _DirectAdapter:
+            def messages_create(self, **kwargs: Any) -> Any:
+                return client.messages.create(**kwargs)
+
+        llm_client = _DirectAdapter()
 
     try:
         png = render_page_to_image(pdf_bytes, 1, dpi=_PAGE_DPI)
@@ -83,9 +104,8 @@ def classify_swatches_via_claude(pdf_bytes: bytes, swatches: list[dict[str, Any]
         for i, sw in enumerate(swatches)
     ]
 
-    client = anthropic.Anthropic()
     try:
-        response = client.messages.create(
+        response = llm_client.messages_create(
             model=_DEFAULT_MODEL,
             max_tokens=1024,
             system=[

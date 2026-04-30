@@ -75,9 +75,7 @@ class CostCapExceededError(Exception):
         )
 
 
-def _load_cap_config(
-    db: Session, tenant_id: uuid_mod.UUID
-) -> dict[str, Any] | None:
+def _load_cap_config(db: Session, tenant_id: uuid_mod.UUID) -> dict[str, Any] | None:
     """Read the tenant's ``ai_cost_cap`` override; ``None`` if unset.
 
     Falls back to the toggle's registry default_value so a tenant who
@@ -148,9 +146,7 @@ def alert_threshold_pct(db: Session, tenant_id: uuid_mod.UUID) -> int:
 def _month_window(now: datetime | None = None) -> tuple[datetime, datetime]:
     """Return ``(start_of_month_utc, start_of_next_month_utc)`` half-open."""
     moment = now or datetime.now(tz=timezone.utc)
-    start = moment.replace(
-        day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
-    )
+    start = moment.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
     # First day of next month: bump month, wrap year.
     if start.month == 12:
         end = start.replace(year=start.year + 1, month=1)

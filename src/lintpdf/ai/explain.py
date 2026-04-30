@@ -102,8 +102,7 @@ def explain_finding(
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         logger.warning(
-            "explain_finding: ANTHROPIC_API_KEY unset; returning None for"
-            " finding %s",
+            "explain_finding: ANTHROPIC_API_KEY unset; returning None for finding %s",
             finding.id,
         )
         return None
@@ -172,10 +171,7 @@ def _build_user_prompt(finding: JobFinding) -> str:
         parts.append(f"Object type: {finding.object_type}")
     if finding.object_id:
         parts.append(f"Object id: {finding.object_id}")
-    parts.append(
-        "\nWrite 2-3 sentences explaining what this finding means and"
-        " how to fix it."
-    )
+    parts.append("\nWrite 2-3 sentences explaining what this finding means and how to fix it.")
     return "\n".join(parts)
 
 
@@ -239,12 +235,8 @@ def _record_usage_inline(
                 model=model,
                 input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
                 output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
-                cache_read_tokens=int(
-                    getattr(usage, "cache_read_input_tokens", 0) or 0
-                ),
-                cache_write_tokens=int(
-                    getattr(usage, "cache_creation_input_tokens", 0) or 0
-                ),
+                cache_read_tokens=int(getattr(usage, "cache_read_input_tokens", 0) or 0),
+                cache_write_tokens=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
                 cost_cents=cost,
             )
         )

@@ -390,9 +390,18 @@ class PreflightOrchestrator:
         # ``document.dieline_result = None`` and consumers skip.
         try:
             from lintpdf.analyzers.dieline import detect_dieline
+            from lintpdf.plugin.host import default_services_for_saas
 
             ai_features = getattr(self._ai_config, "features", None) if self._ai_config else None
-            document.dieline_result = detect_dieline(pdf_bytes, ai_features=ai_features)
+            # Phase 3d: pass services.llm_client through so the
+            # Sonnet fallback inside dieline_claude doesn't have to
+            # instantiate Anthropic() directly.
+            services = default_services_for_saas()
+            document.dieline_result = detect_dieline(
+                pdf_bytes,
+                ai_features=ai_features,
+                llm_client=getattr(services, "llm_client", None),
+            )
         except Exception:  # pragma: no cover — never fail the job
             document.dieline_result = None
 

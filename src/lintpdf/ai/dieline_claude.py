@@ -73,25 +73,44 @@ _TOOL_DEFINITION: dict[str, Any] = {
 }
 
 
-def detect_dieline_via_claude(pdf_bytes: bytes) -> Any | None:
+def detect_dieline_via_claude(pdf_bytes: bytes, llm_client: Any | None = None) -> Any | None:
     """Call Sonnet for a one-shot dieline verdict; return None on failure.
 
     Returns a ``DielineResult(source='vision', ...)`` on success,
     or ``None`` if Sonnet couldn't find a dieline (empty polylines
     returned in the tool call). Import kept lazy so the analyzer
     doesn't pull Anthropic at module-load time.
+
+    Phase 3d: ``llm_client`` parameter — the LLMClient service
+    instance from ``ctx.services.llm_client``. When ``None``, falls
+    back to instantiating ``anthropic.Anthropic()`` directly so
+    the helper still runs from contexts without a Services bundle
+    (e.g. tests, ad-hoc scripts). Production goes through the
+    service.
     """
     from lintpdf.analyzers.dieline import DielineResult
     from lintpdf.rendering import render_page_to_image
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return None
+    # Phase 3d: prefer ctx.services.llm_client when supplied;
+    # otherwise fall back to direct Anthropic SDK instantiation
+    # for backwards compat with non-orchestrator callers.
+    if llm_client is None:
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            return None
 
-    try:
-        import anthropic
-    except ImportError:
-        logger.warning("dieline-claude: anthropic SDK not installed; skipping fallback")
-        return None
+        try:
+            import anthropic
+        except ImportError:
+            logger.warning("dieline-claude: anthropic SDK not installed; skipping fallback")
+            return None
+
+        client = anthropic.Anthropic()
+
+        class _DirectAdapter:
+            def messages_create(self, **kwargs: Any) -> Any:
+                return client.messages.create(**kwargs)
+
+        llm_client = _DirectAdapter()
 
     try:
         png = render_page_to_image(pdf_bytes, 1, dpi=_PAGE_DPI)
@@ -99,9 +118,8 @@ def detect_dieline_via_claude(pdf_bytes: bytes) -> Any | None:
         logger.exception("dieline-claude: page render failed")
         return None
 
-    client = anthropic.Anthropic()
     try:
-        response = client.messages.create(
+        response = llm_client.messages_create(
             model=_DEFAULT_MODEL,
             max_tokens=2048,
             system=[

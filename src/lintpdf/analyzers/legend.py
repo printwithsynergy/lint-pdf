@@ -65,6 +65,7 @@ def classify_swatches(
     *,
     ai_features: set[str] | frozenset[str] | None = None,
     pdf_bytes: bytes | None = None,
+    llm_client: Any | None = None,
 ) -> list[SwatchClassification]:
     """Classify every input swatch as legend / art / unknown.
 
@@ -136,7 +137,11 @@ def classify_swatches(
         try:
             from lintpdf.ai.legend_claude import classify_swatches_via_claude
 
-            verdicts = classify_swatches_via_claude(pdf_bytes, [sw for _i, sw in ambiguous])
+            verdicts = classify_swatches_via_claude(
+                pdf_bytes,
+                [sw for _i, sw in ambiguous],
+                llm_client=llm_client,
+            )
             for (slot_idx, _sw), verdict in zip(ambiguous, verdicts, strict=False):
                 if verdict is None:
                     continue
