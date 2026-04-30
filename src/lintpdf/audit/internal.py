@@ -115,7 +115,7 @@ def _finding_to_view(idx: int, f: JobFinding) -> _FindingView:
 
 def _render_pages_for_audit(pdf_bytes: bytes, page_numbers: list[int]) -> dict[int, bytes]:
     """Render each required page once, return {page_num: png_bytes}."""
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     cache: dict[int, bytes] = {}
     for page_num in sorted(set(page_numbers)):
