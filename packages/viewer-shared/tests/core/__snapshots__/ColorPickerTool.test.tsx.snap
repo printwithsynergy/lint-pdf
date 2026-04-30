@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ColorPickerTool > renders the empty pick area as the initial state 1`] = `
+<div
+  class="absolute inset-0 cursor-crosshair"
+  style="z-index: 25;"
+/>
+`;

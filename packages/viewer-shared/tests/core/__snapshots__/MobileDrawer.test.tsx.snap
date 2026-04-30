@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MobileDrawer > renders nothing visible when isOpen=false (closed state) 1`] = `
+<div
+  class="fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 pointer-events-none opacity-0"
+/>
+`;
+
+exports[`MobileDrawer > renders the open drawer with sections + report download links 1`] = `
+<div
+  class="fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 opacity-100"
+/>
+`;
