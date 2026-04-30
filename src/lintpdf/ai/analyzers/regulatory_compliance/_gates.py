@@ -6,7 +6,7 @@ rows on a dietary-supplement pouch (Nutrops) and 1 false-positive
 supplement was conflated with CLP/GHS hazard labelling. These
 regulations simply don't apply to food / dietary supplement /
 cosmetic / pet-food products, so a tenant whose
-``TenantAIConfig.industry_type`` lands in the exclusion set should
+``AIConfig.industry_type`` lands in the exclusion set should
 see those rules no-op.
 
 The helper is deliberately conservative: when the tenant's
@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+    from lintpdf.ai.types import AIConfig
 
 # Product categories where EU pharma font rules (1.4mm x-height,
 # 7pt Didot minimum) and CLP/GHS hazard labelling do NOT apply.
@@ -90,14 +90,14 @@ _EU_MARKETS: frozenset[str] = frozenset(
 )
 
 
-def _market(ai_config: TenantAIConfig | None) -> str | None:
+def _market(ai_config: AIConfig) -> str | None:
     """Return the normalised regulatory market or None if unset."""
     if ai_config is None:
         return None
     return _normalise(getattr(ai_config, "regulatory_market", None))
 
 
-def is_pharma_applicable(ai_config: TenantAIConfig | None) -> bool:
+def is_pharma_applicable(ai_config: AIConfig) -> bool:
     """True when ``AI_PHARMA_001`` should fire on this tenant.
 
     * ``regulatory_market`` explicitly non-EU → False (still skip; pharma
@@ -119,14 +119,14 @@ def is_pharma_applicable(ai_config: TenantAIConfig | None) -> bool:
     return normalised not in _NON_HAZMAT_CATEGORIES
 
 
-def is_ghs_applicable(ai_config: TenantAIConfig | None) -> bool:
+def is_ghs_applicable(ai_config: AIConfig) -> bool:
     """True when ``AI_GHS_003`` (H-statements without pictograms)
     should fire. Same exclusion set as pharma — CLP/GHS labelling
     regulates chemicals, not food / supplements / cosmetics."""
     return is_pharma_applicable(ai_config)
 
 
-def is_eu_food_applicable(ai_config: TenantAIConfig | None) -> bool:
+def is_eu_food_applicable(ai_config: AIConfig) -> bool:
     """True when ``AI_EU1169_001`` (FIR 1169/2011) should fire.
 
     Mirrors :func:`is_pharma_applicable` but inverted around the EU axis:
@@ -161,7 +161,7 @@ def is_eu_food_applicable(ai_config: TenantAIConfig | None) -> bool:
     return industry in {"food", "beverage", "dietary_supplement", "supplement", "nutraceutical"}
 
 
-def is_cosmetic_applicable(ai_config: TenantAIConfig | None) -> bool:
+def is_cosmetic_applicable(ai_config: AIConfig) -> bool:
     """True when ``AI_COSM_001`` / ``AI_COSM_002`` (cosmetic / personal-
     care label rules) should fire on this tenant.
 

@@ -15,7 +15,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+    from lintpdf.ai.types import AIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -61,7 +61,7 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
         pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
+        ai_config: AIConfig = None,
     ) -> list[Finding]:
         # Check for reference file configuration
         reference_pdf_bytes = self._get_reference_bytes(ai_config)
@@ -161,7 +161,7 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
         return findings
 
     @staticmethod
-    def _get_reference_bytes(ai_config: TenantAIConfig | None) -> bytes | None:
+    def _get_reference_bytes(ai_config: AIConfig) -> bytes | None:
         """Retrieve reference PDF bytes from configuration.
 
         Resolution order:
