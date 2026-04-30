@@ -16,6 +16,7 @@ from siftpdf.reports.engine import ReportEngine
 PDF_PATH = "/home/user/lint-pdf/packages/web/public/lintpdf_preflight_test_final.pdf"
 OUTPUT_DIR = "/home/user/lint-pdf/packages/web/public/reports"
 
+
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -60,9 +61,9 @@ def main():
 
     # Print summary
     s = result.summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  PREFLIGHT SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Pages:     {s.page_count}")
     print(f"  File size: {s.file_size_bytes:,} bytes")
     print(f"  Verdict:   {'PASS' if s.passed else 'FAIL'}")
@@ -71,7 +72,7 @@ def main():
     print(f"    Warnings:  {s.warning_count}")
     print(f"    Advisory:  {s.advisory_count}")
     print(f"  Duration:  {result.duration_ms}ms")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Print metadata
     print(f"\n  Metadata:")
@@ -102,7 +103,8 @@ def main():
     # HTML report (comprehensive, with page screenshots)
     print("Generating HTML report (comprehensive)...")
     html_bytes = engine.generate(
-        result, "html",
+        result,
+        "html",
         pdf_bytes=pdf_bytes,
         detail_level="comprehensive",
     )
@@ -114,7 +116,8 @@ def main():
     # PDF report (comprehensive, with page screenshots)
     print("Generating PDF report (comprehensive)...")
     pdf_report_bytes = engine.generate(
-        result, "pdf",
+        result,
+        "pdf",
         pdf_bytes=pdf_bytes,
         detail_level="comprehensive",
     )
@@ -123,12 +126,13 @@ def main():
         f.write(pdf_report_bytes)
     print(f"  Saved: {pdf_path}")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("DONE. Reports generated:")
     print(f"  HTML: {html_path}")
     print(f"  PDF:  {pdf_path}")
     print(f"  JSON: {json_path}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
+
 
 if __name__ == "__main__":
     main()

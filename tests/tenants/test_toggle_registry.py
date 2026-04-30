@@ -213,6 +213,4 @@ def test_all_categories_use_merge_strategy(db: Session):
         assert row.merge_strategy == MergeStrategy.MERGE, (
             f"category {row.id!r} should use MERGE strategy for dict keying"
         )
-        assert row.type == ToggleType.OBJECT, (
-            f"category {row.id!r} should be OBJECT type"
-        )
+        assert row.type == ToggleType.OBJECT, f"category {row.id!r} should be OBJECT type"

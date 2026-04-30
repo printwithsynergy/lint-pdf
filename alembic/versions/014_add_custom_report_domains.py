@@ -100,9 +100,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_brand_profiles_custom_domain_unique", table_name="brand_profiles"
-    )
+    op.drop_index("ix_brand_profiles_custom_domain_unique", table_name="brand_profiles")
     op.drop_column("brand_profiles", "custom_domain_requested_at")
     op.drop_column("brand_profiles", "custom_domain_verified")
     op.drop_column("brand_profiles", "custom_domain")

@@ -42,9 +42,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["annotation_id"], ["viewer_annotations.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["annotation_id"], ["viewer_annotations.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -61,10 +59,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_viewer_ann_comments_token", table_name="viewer_annotation_comments"
-    )
-    op.drop_index(
-        "ix_viewer_ann_comments_annotation", table_name="viewer_annotation_comments"
-    )
+    op.drop_index("ix_viewer_ann_comments_token", table_name="viewer_annotation_comments")
+    op.drop_index("ix_viewer_ann_comments_annotation", table_name="viewer_annotation_comments")
     op.drop_table("viewer_annotation_comments")

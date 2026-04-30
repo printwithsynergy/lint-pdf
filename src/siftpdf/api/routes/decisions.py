@@ -116,9 +116,7 @@ def _parse_uuid(raw: str, *, kind: str) -> uuid_mod.UUID:
         ) from exc
 
 
-def _load_owned_job(
-    db: Session, *, tenant_id: uuid_mod.UUID, job_id: uuid_mod.UUID
-) -> Job:
+def _load_owned_job(db: Session, *, tenant_id: uuid_mod.UUID, job_id: uuid_mod.UUID) -> Job:
     from sqlalchemy import select
 
     row = db.execute(
@@ -274,9 +272,7 @@ async def record_finding_decision(
     job_uid = _parse_uuid(job_id, kind="Job")
     finding_uid = _parse_uuid(finding_id, kind="Finding")
     job = _load_owned_job(db, tenant_id=tenant.id, job_id=job_uid)
-    finding = _load_owned_finding(
-        db, tenant_id=tenant.id, job_id=job.id, finding_id=finding_uid
-    )
+    finding = _load_owned_finding(db, tenant_id=tenant.id, job_id=job.id, finding_id=finding_uid)
     try:
         row = decisions_service.record_decision(
             db,

@@ -76,13 +76,10 @@ def record_decision(
     """
     if source not in _VALID_SOURCES:
         raise InvalidDecisionError(
-            f"unknown decision source {source!r}; "
-            f"expected one of {sorted(_VALID_SOURCES)}"
+            f"unknown decision source {source!r}; expected one of {sorted(_VALID_SOURCES)}"
         )
     if not decision_type or len(decision_type) > 32:
-        raise InvalidDecisionError(
-            "decision_type must be 1-32 chars (e.g. 'approve', 'waive')"
-        )
+        raise InvalidDecisionError("decision_type must be 1-32 chars (e.g. 'approve', 'waive')")
     if not decided_by_user_id:
         raise InvalidDecisionError("decided_by_user_id must be non-empty")
 

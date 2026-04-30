@@ -111,7 +111,9 @@ def _hit(
                 for k, v in list(body.items())[:8]
             }
         else:
-            summary = f"<{type(body).__name__} len={len(body) if hasattr(body, '__len__') else '?'}>"
+            summary = (
+                f"<{type(body).__name__} len={len(body) if hasattr(body, '__len__') else '?'}>"
+            )
     except Exception:
         summary = f"<non-JSON {len(r.content)} bytes>"
     _rec(method, path, r.status_code, elapsed_ms, summary, note)
@@ -334,8 +336,11 @@ def generate_reports(jobs: dict[str, dict]) -> None:
                 url.replace(BASE_URL, ""),
                 g.status_code,
                 elapsed_ms,
-                {"format": info.get("format"), "bytes": len(g.content),
-                 "content_type": g.headers.get("Content-Type")},
+                {
+                    "format": info.get("format"),
+                    "bytes": len(g.content),
+                    "content_type": g.headers.get("Content-Type"),
+                },
                 f"fetch {source} {info.get('format')}",
             )
             print(f"    fetch {info.get('format'):22s} → HTTP {g.status_code} ({len(g.content)} B)")
@@ -353,9 +358,13 @@ def exercise_viewer(job_id: str) -> None:
         params={"dpi": 150},
         timeout=120,
     )
-    _rec("GET", f"/api/v1/viewer/jobs/{job_id}/pages/1/tile",
-         r.status_code, int((time.time()-t0)*1000),
-         {"bytes": len(r.content), "content_type": r.headers.get("Content-Type")})
+    _rec(
+        "GET",
+        f"/api/v1/viewer/jobs/{job_id}/pages/1/tile",
+        r.status_code,
+        int((time.time() - t0) * 1000),
+        {"bytes": len(r.content), "content_type": r.headers.get("Content-Type")},
+    )
     print(f"  ok tile → {r.status_code} ({len(r.content)} B)")
     _hit("GET", f"/api/v1/viewer/jobs/{job_id}/separations", headers=h)
     _hit("GET", f"/api/v1/viewer/jobs/{job_id}/layers", headers=h)
@@ -490,7 +499,9 @@ def exercise_job_state(jobs: dict[str, dict]) -> None:
         r = _hit("GET", f"/api/v1/jobs/{jid}/state", headers=h)
         if r.status_code == 200:
             body = r.json()
-            sections = [k for k in ("reports", "approval_chain", "verdict", "annotations") if k in body]
+            sections = [
+                k for k in ("reports", "approval_chain", "verdict", "annotations") if k in body
+            ]
             print(f"    state sections present: {sections}")
         # Filtered digest
         _hit(
@@ -535,12 +546,16 @@ def emit_markdown() -> None:
     ]
     for a in ARTIFACTS:
         lines.append(
-            f"| {a.get('kind')} | {a.get('job_source','-')} | {a.get('format','-')} | "
+            f"| {a.get('kind')} | {a.get('job_source', '-')} | {a.get('format', '-')} | "
             f"[{a.get('url')}]({a.get('url')}) |"
         )
-    lines += ["", "## Endpoint call log", "",
-              "| Method | Path | Status | ms | Summary |",
-              "|---|---|---|---|---|"]
+    lines += [
+        "",
+        "## Endpoint call log",
+        "",
+        "| Method | Path | Status | ms | Summary |",
+        "|---|---|---|---|---|",
+    ]
     for r in RESULTS:
         summary = json.dumps(r.get("summary"))[:160].replace("|", "\\|")
         lines.append(

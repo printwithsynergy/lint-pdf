@@ -32,9 +32,7 @@ def upgrade() -> None:
         sa.Column("page_num", sa.Integer(), nullable=False),
         sa.Column("kind", sa.String(length=16), nullable=False),
         sa.Column("geometry_json", sa.JSON(), nullable=False),
-        sa.Column(
-            "color", sa.String(length=16), nullable=False, server_default="#dc2626"
-        ),
+        sa.Column("color", sa.String(length=16), nullable=False, server_default="#dc2626"),
         sa.Column("text", sa.Text(), nullable=True),
         sa.Column("author_email", sa.String(length=255), nullable=False),
         sa.Column(
@@ -58,9 +56,7 @@ def upgrade() -> None:
         "viewer_annotations",
         ["job_id", "page_num"],
     )
-    op.create_index(
-        "ix_viewer_annotations_token", "viewer_annotations", ["share_token"]
-    )
+    op.create_index("ix_viewer_annotations_token", "viewer_annotations", ["share_token"])
 
     op.create_table(
         "share_link_visitors",
@@ -83,9 +79,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_share_visitors_token", "share_link_visitors", ["share_token"]
-    )
+    op.create_index("ix_share_visitors_token", "share_link_visitors", ["share_token"])
     op.create_index(
         "ix_share_visitors_token_email",
         "share_link_visitors",

@@ -190,7 +190,9 @@ def main():
 
     s = result.summary
     print(f"\n  Verdict:   {'PASS' if s.passed else 'FAIL'}")
-    print(f"  Findings:  {s.total_findings} ({s.error_count}E / {s.warning_count}W / {s.advisory_count}A)")
+    print(
+        f"  Findings:  {s.total_findings} ({s.error_count}E / {s.warning_count}W / {s.advisory_count}A)"
+    )
 
     # ── 4. Create job record ──────────────────────────────────────────────────
     job_id = uuid.UUID(result.job_id)
@@ -267,7 +269,8 @@ def main():
     for fmt in ["html", "pdf"]:
         print(f"\n  Generating {fmt.upper()} report...")
         report_bytes = report_engine.generate(
-            result, fmt,
+            result,
+            fmt,
             pdf_bytes=pdf_bytes,
             detail_level="comprehensive",
         )
@@ -296,15 +299,16 @@ def main():
     html_url = f"{base_url}/r/{tokens['html']}"
     pdf_url = f"{base_url}/r/{tokens['pdf']}.pdf"
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  REPORT LINKS (reports.lintpdf.com format)")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"  Web report:  {html_url}")
     print(f"  PDF report:  {pdf_url}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     # ── 8. Patch storage and start server ─────────────────────────────────────
     from siftpdf.api.storage import set_storage
+
     set_storage(storage)
 
     print(f"\n  Starting engine server on port 8000...")

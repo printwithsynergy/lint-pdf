@@ -31,9 +31,7 @@ def upgrade() -> None:
         sa.Column("custom_icc_profiles", sa.JSON(), nullable=True),
         sa.Column("brand_palette", sa.JSON(), nullable=True),
         sa.Column("custom_dictionary_words", sa.JSON(), nullable=True),
-        sa.Column(
-            "default_tac_threshold", sa.Integer(), nullable=False, server_default="320"
-        ),
+        sa.Column("default_tac_threshold", sa.Integer(), nullable=False, server_default="320"),
         sa.Column(
             "default_safe_zone_margin_mm",
             sa.Numeric(6, 2),
@@ -43,9 +41,7 @@ def upgrade() -> None:
         sa.Column("package_capacity_default", sa.String(50), nullable=True),
         sa.Column("package_surface_area_default", sa.Numeric(10, 2), nullable=True),
         sa.Column("target_market", sa.String(50), nullable=True),
-        sa.Column(
-            "epm_mode_default", sa.Boolean(), nullable=False, server_default="false"
-        ),
+        sa.Column("epm_mode_default", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -59,9 +55,7 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_index(
-        "ix_tenant_color_configs_tenant_id", "tenant_color_configs", ["tenant_id"]
-    )
+    op.create_index("ix_tenant_color_configs_tenant_id", "tenant_color_configs", ["tenant_id"])
 
     # --- UserAIAccess ---
     op.create_table(
@@ -74,13 +68,9 @@ def upgrade() -> None:
             sa.ForeignKey("tenants.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column(
-            "ai_enabled", sa.Boolean(), nullable=False, server_default="false"
-        ),
+        sa.Column("ai_enabled", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("personal_spending_limit", sa.Numeric(10, 2), nullable=True),
-        sa.Column(
-            "trial_enabled", sa.Boolean(), nullable=False, server_default="false"
-        ),
+        sa.Column("trial_enabled", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("trial_expires_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",

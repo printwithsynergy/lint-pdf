@@ -32,9 +32,7 @@ def upgrade() -> None:
         sa.Column("config", sa.JSON(), nullable=False),
         sa.Column("sample_payload", sa.Text(), nullable=True),
         sa.Column("sample_mime", sa.String(64), nullable=True),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default="true"
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -58,7 +56,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_tenant_import_mappings_tenant", table_name="tenant_import_mappings"
-    )
+    op.drop_index("ix_tenant_import_mappings_tenant", table_name="tenant_import_mappings")
     op.drop_table("tenant_import_mappings")

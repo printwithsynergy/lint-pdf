@@ -17,19 +17,37 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column("tenants", sa.Column("app_custom_domain", sa.String(255), nullable=True))
-    op.add_column("tenants", sa.Column("app_custom_domain_verified", sa.Boolean, nullable=False, server_default="false"))
-    op.add_column("tenants", sa.Column("app_custom_domain_requested_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column(
+        "tenants",
+        sa.Column("app_custom_domain_verified", sa.Boolean, nullable=False, server_default="false"),
+    )
+    op.add_column(
+        "tenants",
+        sa.Column("app_custom_domain_requested_at", sa.DateTime(timezone=True), nullable=True),
+    )
     op.create_index(
-        "ix_tenants_app_custom_domain", "tenants", ["app_custom_domain"],
-        unique=True, postgresql_where=sa.text("app_custom_domain IS NOT NULL"),
+        "ix_tenants_app_custom_domain",
+        "tenants",
+        ["app_custom_domain"],
+        unique=True,
+        postgresql_where=sa.text("app_custom_domain IS NOT NULL"),
     )
 
     op.add_column("brand_profiles", sa.Column("app_custom_domain", sa.String(255), nullable=True))
-    op.add_column("brand_profiles", sa.Column("app_custom_domain_verified", sa.Boolean, nullable=False, server_default="false"))
-    op.add_column("brand_profiles", sa.Column("app_custom_domain_requested_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column(
+        "brand_profiles",
+        sa.Column("app_custom_domain_verified", sa.Boolean, nullable=False, server_default="false"),
+    )
+    op.add_column(
+        "brand_profiles",
+        sa.Column("app_custom_domain_requested_at", sa.DateTime(timezone=True), nullable=True),
+    )
     op.create_index(
-        "ix_brand_profiles_app_custom_domain", "brand_profiles", ["app_custom_domain"],
-        unique=True, postgresql_where=sa.text("app_custom_domain IS NOT NULL"),
+        "ix_brand_profiles_app_custom_domain",
+        "brand_profiles",
+        ["app_custom_domain"],
+        unique=True,
+        postgresql_where=sa.text("app_custom_domain IS NOT NULL"),
     )
 
 

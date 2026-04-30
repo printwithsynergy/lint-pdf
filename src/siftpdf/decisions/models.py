@@ -67,9 +67,7 @@ class Decision(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         Uuid,
         ForeignKey("tenants.id", ondelete="CASCADE"),
@@ -102,12 +100,8 @@ class Decision(Base):
     )
     source: Mapped[str] = mapped_column(String(32), nullable=False)
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    revoked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    revoked_by_user_id: Mapped[str | None] = mapped_column(
-        String(128), nullable=True
-    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_by_user_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     revoked_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @property

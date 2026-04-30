@@ -50,24 +50,12 @@ def upgrade() -> None:
     # cost computed by ``siftpdf.audit.metering.record_usage``;
     # sub-cent calls round UP to 1. All nullable to stay compatible
     # with pre-037 rows that only logged (credits_consumed, cost).
-    op.add_column(
-        "ai_usage_logs", sa.Column("model", sa.String(64), nullable=True)
-    )
-    op.add_column(
-        "ai_usage_logs", sa.Column("input_tokens", sa.Integer, nullable=True)
-    )
-    op.add_column(
-        "ai_usage_logs", sa.Column("output_tokens", sa.Integer, nullable=True)
-    )
-    op.add_column(
-        "ai_usage_logs", sa.Column("cache_read_tokens", sa.Integer, nullable=True)
-    )
-    op.add_column(
-        "ai_usage_logs", sa.Column("cache_write_tokens", sa.Integer, nullable=True)
-    )
-    op.add_column(
-        "ai_usage_logs", sa.Column("cost_cents", sa.Integer, nullable=True)
-    )
+    op.add_column("ai_usage_logs", sa.Column("model", sa.String(64), nullable=True))
+    op.add_column("ai_usage_logs", sa.Column("input_tokens", sa.Integer, nullable=True))
+    op.add_column("ai_usage_logs", sa.Column("output_tokens", sa.Integer, nullable=True))
+    op.add_column("ai_usage_logs", sa.Column("cache_read_tokens", sa.Integer, nullable=True))
+    op.add_column("ai_usage_logs", sa.Column("cache_write_tokens", sa.Integer, nullable=True))
+    op.add_column("ai_usage_logs", sa.Column("cost_cents", sa.Integer, nullable=True))
     # Monthly quota aggregation reuses the pre-existing
     # ``ix_ai_usage_logs_tenant_created`` index (tenant_id, created_at)
     # via ``WHERE created_at >= date_trunc('month', now())``. Attempting

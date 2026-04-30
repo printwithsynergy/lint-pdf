@@ -39,17 +39,11 @@ def test_tenant_default_used_when_endpoint_secret_empty():
 
 
 def test_returns_none_when_neither_set():
-    assert (
-        resolve_signing_secret(endpoint_secret=None, tenant_default_secret=None)
-        is None
-    )
+    assert resolve_signing_secret(endpoint_secret=None, tenant_default_secret=None) is None
 
 
 def test_returns_none_when_both_empty():
-    assert (
-        resolve_signing_secret(endpoint_secret="", tenant_default_secret="")
-        is None
-    )
+    assert resolve_signing_secret(endpoint_secret="", tenant_default_secret="") is None
 
 
 def test_per_webhook_secret_used_when_tenant_default_unset():

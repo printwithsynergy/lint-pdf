@@ -113,9 +113,7 @@ async def list_brand_specs(
             (v.get("name") or "").lower(),
         )
     )
-    return BrandSpecListResponse(
-        brand_specs=[_to_response(v, tenant.id) for v in specs]
-    )
+    return BrandSpecListResponse(brand_specs=[_to_response(v, tenant.id) for v in specs])
 
 
 @router.post("", response_model=BrandSpecResponse, status_code=status.HTTP_201_CREATED)

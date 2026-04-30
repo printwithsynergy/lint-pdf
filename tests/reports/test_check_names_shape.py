@@ -71,12 +71,7 @@ def test_no_truncated_names_with_dangling_prepositions() -> None:
         r"\b(with|from|of|at|on|near|across|between|in|to|for|by|may|will)\s*$",
         re.IGNORECASE,
     )
-    offenders = [
-        cid
-        for cid, info in CHECK_NAMES.items()
-        if danglers.search(info.name)
-    ]
+    offenders = [cid for cid, info in CHECK_NAMES.items() if danglers.search(info.name)]
     assert not offenders, (
-        "names truncated mid-phrase (likely from old description copy): "
-        f"{offenders}"
+        f"names truncated mid-phrase (likely from old description copy): {offenders}"
     )

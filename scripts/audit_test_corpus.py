@@ -58,7 +58,8 @@ CORPUS: list[tuple[str, Path]] = [
     ),
     (
         "Test4_HSI_Outlined",
-        REPO_ROOT / "preflight-test-files/Test4/AN_Energy_StickPack_CA_HSI/AN_Energy_StickPack_CA_HSI_OUTLINED.pdf",
+        REPO_ROOT
+        / "preflight-test-files/Test4/AN_Energy_StickPack_CA_HSI/AN_Energy_StickPack_CA_HSI_OUTLINED.pdf",
     ),
     (
         "web_10p_test_final",
@@ -165,7 +166,9 @@ def to_audit_finding(raw: dict[str, Any]) -> _Finding:
     )
 
 
-def run_audit(auditor: InternalAuditor, pdf_path: Path, findings: list[dict[str, Any]]) -> tuple[list[AuditResult | None], str | None]:
+def run_audit(
+    auditor: InternalAuditor, pdf_path: Path, findings: list[dict[str, Any]]
+) -> tuple[list[AuditResult | None], str | None]:
     if not findings:
         return [], None
     try:
@@ -206,13 +209,15 @@ def write_report(out_path: Path, audits: list[FileAudit]) -> None:
 
     # ----- Summary table -----
     lines.append("## Corpus summary\n")
-    lines.append("| # | File | Findings | Confirmed | Disputed | Needs ctx | Skipped | Dieline | Art size |")
-    lines.append("|---|------|---------:|---------:|---------:|----------:|--------:|---------|----------|")
+    lines.append(
+        "| # | File | Findings | Confirmed | Disputed | Needs ctx | Skipped | Dieline | Art size |"
+    )
+    lines.append(
+        "|---|------|---------:|---------:|---------:|----------:|--------:|---------|----------|"
+    )
     for i, a in enumerate(audits, 1):
         if a.submit_error:
-            lines.append(
-                f"| {i} | `{a.label}` | — | — | — | — | — | — | submit fail |"
-            )
+            lines.append(f"| {i} | `{a.label}` | — | — | — | — | — | — | submit fail |")
             continue
         counts = {"confirmed": 0, "disputed": 0, "needs_context": 0, "skipped": 0, "error": 0}
         for v in a.verdicts:
@@ -222,7 +227,9 @@ def write_report(out_path: Path, audits: list[FileAudit]) -> None:
                 counts[v.status] = counts.get(v.status, 0) + 1
         dsrc = (a.dieline or {}).get("source", "—")
         asz = a.art_size_mm
-        asz_txt = "—" if not asz else f"{asz.get('width_mm', 0):.1f}×{asz.get('height_mm', 0):.1f}mm"
+        asz_txt = (
+            "—" if not asz else f"{asz.get('width_mm', 0):.1f}×{asz.get('height_mm', 0):.1f}mm"
+        )
         lines.append(
             f"| {i} | `{a.label}` | {len(a.findings)} | {counts['confirmed']} | "
             f"{counts['disputed']} | {counts['needs_context']} | "
@@ -241,15 +248,21 @@ def write_report(out_path: Path, audits: list[FileAudit]) -> None:
     for a in audits:
         for raw, v in zip(a.findings, a.verdicts, strict=False):
             ins = raw.get("inspection_id") or "?"
-            row = rollup.setdefault(ins, {"confirmed": 0, "disputed": 0, "needs_context": 0, "skipped": 0, "total": 0})
+            row = rollup.setdefault(
+                ins, {"confirmed": 0, "disputed": 0, "needs_context": 0, "skipped": 0, "total": 0}
+            )
             row["total"] += 1
             status = v.status if v else "skipped"
             row[status] = row.get(status, 0) + 1
-    lines.append("| inspection_id | total | confirmed | disputed | needs_ctx | skipped | dispute% |")
+    lines.append(
+        "| inspection_id | total | confirmed | disputed | needs_ctx | skipped | dispute% |"
+    )
     lines.append("|---------------|------:|---------:|---------:|----------:|--------:|---------:|")
+
     # Sort by dispute percentage desc, then by volume
     def _disp(row: dict[str, int]) -> float:
         return (row.get("disputed", 0) / row["total"]) if row["total"] else 0.0
+
     for ins in sorted(rollup.keys(), key=lambda k: (-_disp(rollup[k]), -rollup[k]["total"])):
         row = rollup[ins]
         pct = _disp(row) * 100
@@ -270,7 +283,9 @@ def write_report(out_path: Path, audits: list[FileAudit]) -> None:
             continue
         lines.append(f"- Job id: `{a.job_id}`")
         d = a.dieline or {}
-        lines.append(f"- Dieline: source=`{d.get('source', '—')}` spot=`{d.get('spot_name') or '—'}` polys={len(d.get('polylines') or [])}")
+        lines.append(
+            f"- Dieline: source=`{d.get('source', '—')}` spot=`{d.get('spot_name') or '—'}` polys={len(d.get('polylines') or [])}"
+        )
         asz = a.art_size_mm
         if asz:
             asz_line = f"{asz.get('width_mm', 0):.2f}mm × {asz.get('height_mm', 0):.2f}mm"
@@ -309,15 +324,32 @@ def write_report(out_path: Path, audits: list[FileAudit]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--api-base", default=os.environ.get("LINTPDF_API_BASE", "https://api.lintpdf.com"))
-    parser.add_argument("--api-key", default=os.environ.get("LINTPDF_API_KEY") or os.environ.get("LINTPDF_ADMIN_API_KEY"))
+    parser.add_argument(
+        "--api-base", default=os.environ.get("LINTPDF_API_BASE", "https://api.lintpdf.com")
+    )
+    parser.add_argument(
+        "--api-key",
+        default=os.environ.get("LINTPDF_API_KEY") or os.environ.get("LINTPDF_ADMIN_API_KEY"),
+    )
     parser.add_argument("--poll-timeout", type=int, default=300)
-    parser.add_argument("--out", default=str(REPO_ROOT / f"docs/audits/{datetime.now(UTC).strftime('%Y-%m-%d')}-preflight-opus-audit.md"))
-    parser.add_argument("--only", help="comma-separated labels to limit corpus (e.g. 'Amalgam_Catalyst,web_10p_test_final')")
+    parser.add_argument(
+        "--out",
+        default=str(
+            REPO_ROOT
+            / f"docs/audits/{datetime.now(UTC).strftime('%Y-%m-%d')}-preflight-opus-audit.md"
+        ),
+    )
+    parser.add_argument(
+        "--only",
+        help="comma-separated labels to limit corpus (e.g. 'Amalgam_Catalyst,web_10p_test_final')",
+    )
     args = parser.parse_args()
 
     if not args.api_key:
-        print("ERR: provide LINTPDF_API_KEY (or LINTPDF_ADMIN_API_KEY) in env or --api-key", file=sys.stderr)
+        print(
+            "ERR: provide LINTPDF_API_KEY (or LINTPDF_ADMIN_API_KEY) in env or --api-key",
+            file=sys.stderr,
+        )
         return 2
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("ERR: ANTHROPIC_API_KEY not set — auditor needs it", file=sys.stderr)
@@ -350,7 +382,9 @@ def main() -> int:
         fa.job_id = job_id
         logger.info("submitted: %s", job_id)
 
-        body, err = poll_until_complete(args.api_base, args.api_key, job_id, timeout_s=args.poll_timeout)
+        body, err = poll_until_complete(
+            args.api_base, args.api_key, job_id, timeout_s=args.poll_timeout
+        )
         if err:
             fa.submit_error = err
             audits.append(fa)
@@ -361,7 +395,12 @@ def main() -> int:
         fa.dieline = body.get("dieline")
         fa.art_size_mm = body.get("art_size_mm")
         fa.legend_swatches = body.get("legend_swatches") or []
-        logger.info("findings=%d dieline=%s art_size=%s", len(fa.findings), (fa.dieline or {}).get("source"), bool(fa.art_size_mm))
+        logger.info(
+            "findings=%d dieline=%s art_size=%s",
+            len(fa.findings),
+            (fa.dieline or {}).get("source"),
+            bool(fa.art_size_mm),
+        )
 
         verdicts, err = run_audit(auditor, path, fa.findings)
         fa.verdicts = verdicts
@@ -377,17 +416,24 @@ def main() -> int:
         # Persist the raw payload alongside the report for follow-up scripts.
         raw_dir = Path(args.out).parent / "raw"
         raw_dir.mkdir(parents=True, exist_ok=True)
-        (raw_dir / f"{label}.json").write_text(json.dumps({
-            "job_id": fa.job_id,
-            "findings": fa.findings,
-            "dieline": fa.dieline,
-            "art_size_mm": fa.art_size_mm,
-            "legend_swatches": fa.legend_swatches,
-            "verdicts": [
-                {"status": v.status, "rationale": v.rationale, "model": v.model} if v else None
-                for v in fa.verdicts
-            ],
-        }, indent=2))
+        (raw_dir / f"{label}.json").write_text(
+            json.dumps(
+                {
+                    "job_id": fa.job_id,
+                    "findings": fa.findings,
+                    "dieline": fa.dieline,
+                    "art_size_mm": fa.art_size_mm,
+                    "legend_swatches": fa.legend_swatches,
+                    "verdicts": [
+                        {"status": v.status, "rationale": v.rationale, "model": v.model}
+                        if v
+                        else None
+                        for v in fa.verdicts
+                    ],
+                },
+                indent=2,
+            )
+        )
 
     write_report(Path(args.out), audits)
     # Exit non-zero if any submit failures happened (so CI can catch).

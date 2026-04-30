@@ -62,9 +62,7 @@ def test_clean_job_passes(client: TestClient, db_session: Session):
     assert body["epm_findings_count"] == 0
 
 
-def test_advisory_only_passes_with_advisory(
-    client: TestClient, db_session: Session
-):
+def test_advisory_only_passes_with_advisory(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     _add_finding(
         db_session,
@@ -96,9 +94,7 @@ def test_single_b_finding_marginal(client: TestClient, db_session: Session):
 def test_two_b_findings_reject(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     _add_finding(db_session, job_id=job.id, inspection_id=codes.EPM_BLEED_BELOW_MIN)
-    _add_finding(
-        db_session, job_id=job.id, inspection_id=codes.EPM_PROCESS_COLOR_COUNT
-    )
+    _add_finding(db_session, job_id=job.id, inspection_id=codes.EPM_PROCESS_COLOR_COUNT)
     resp = client.get(f"/api/v1/jobs/{job.id}/epm")
     body = resp.json()
     assert body["tier"] == "reject"
@@ -106,9 +102,7 @@ def test_two_b_findings_reject(client: TestClient, db_session: Session):
     assert codes.EPM_PROCESS_COLOR_COUNT in body["rejection_drivers"]
 
 
-def test_a_tier_finding_rejects_outright(
-    client: TestClient, db_session: Session
-):
+def test_a_tier_finding_rejects_outright(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     _add_finding(
         db_session,
@@ -134,9 +128,7 @@ def test_legacy_a_code_recognized(client: TestClient, db_session: Session):
     assert "LPDF_EPM_001" in body["legacy_codes_fired"]
 
 
-def test_non_epm_findings_are_ignored(
-    client: TestClient, db_session: Session
-):
+def test_non_epm_findings_are_ignored(client: TestClient, db_session: Session):
     """A heap of LPDF_IMG_* findings shouldn't bias the EPM verdict."""
     job = _make_job(db_session)
     for _ in range(20):
@@ -152,14 +144,10 @@ def test_non_epm_findings_are_ignored(
     assert body["epm_findings_count"] == 0
 
 
-def test_indichrome_hint_when_spot_drives_b_pair(
-    client: TestClient, db_session: Session
-):
+def test_indichrome_hint_when_spot_drives_b_pair(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     _add_finding(db_session, job_id=job.id, inspection_id="LPDF_EPM_005")
-    _add_finding(
-        db_session, job_id=job.id, inspection_id=codes.EPM_BLEED_BELOW_MIN
-    )
+    _add_finding(db_session, job_id=job.id, inspection_id=codes.EPM_BLEED_BELOW_MIN)
     resp = client.get(f"/api/v1/jobs/{job.id}/epm")
     body = resp.json()
     assert body["tier"] == "reject"
@@ -204,9 +192,7 @@ def test_404_for_cross_tenant_job(client: TestClient, db_session: Session):
 # ---- response shape ------------------------------------------------------
 
 
-def test_response_includes_all_documented_fields(
-    client: TestClient, db_session: Session
-):
+def test_response_includes_all_documented_fields(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     _add_finding(
         db_session,

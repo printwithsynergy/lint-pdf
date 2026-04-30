@@ -280,9 +280,7 @@ async def list_import_mappings(
     mappings = _load_mappings_dict(db, tenant.id)
     rows = list(mappings.values())
     rows.sort(key=lambda v: v.get("created_at") or "")
-    return ImportMappingListResponse(
-        mappings=[_to_response_from_value(v) for v in rows]
-    )
+    return ImportMappingListResponse(mappings=[_to_response_from_value(v) for v in rows])
 
 
 @router.post(
@@ -438,11 +436,7 @@ async def preview_import_mapping(
     _, value = _load_owned_mapping(db, tenant, mapping_id)
 
     overrides = request or ImportMappingPreviewRequest()
-    raw_config = (
-        overrides.config
-        if overrides.config is not None
-        else value.get("config")
-    )
+    raw_config = overrides.config if overrides.config is not None else value.get("config")
     cfg = _merged_config(raw_config or {}, value.get("format", "xml"))
     payload_str = (
         overrides.sample_payload

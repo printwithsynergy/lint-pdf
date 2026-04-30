@@ -42,19 +42,15 @@ def upgrade() -> None:
     )
 
     # --- Severity value updates ---
-    op.execute(
-        "UPDATE job_findings SET severity = 'error' WHERE severity = 'aground'"
-    )
-    op.execute(
-        "UPDATE job_findings SET severity = 'warning' WHERE severity = 'squall'"
-    )
+    op.execute("UPDATE job_findings SET severity = 'error' WHERE severity = 'aground'")
+    op.execute("UPDATE job_findings SET severity = 'warning' WHERE severity = 'squall'")
 
     # --- Update severity_labels defaults ---
     op.execute(
         "UPDATE tenant_ai_configs SET severity_labels = "
-        "'{\"error\": \"Error\", \"warning\": \"Warning\", \"advisory\": \"Advisory\"}' "
+        '\'{"error": "Error", "warning": "Warning", "advisory": "Advisory"}\' '
         "WHERE severity_labels = "
-        "'{\"aground\": \"Aground\", \"squall\": \"Squall\", \"advisory\": \"Advisory\"}'"
+        '\'{"aground": "Aground", "squall": "Squall", "advisory": "Advisory"}\''
     )
 
     # --- Add JDF overrides column ---
@@ -71,18 +67,14 @@ def downgrade() -> None:
     # --- Revert severity_labels defaults ---
     op.execute(
         "UPDATE tenant_ai_configs SET severity_labels = "
-        "'{\"aground\": \"Aground\", \"squall\": \"Squall\", \"advisory\": \"Advisory\"}' "
+        '\'{"aground": "Aground", "squall": "Squall", "advisory": "Advisory"}\' '
         "WHERE severity_labels = "
-        "'{\"error\": \"Error\", \"warning\": \"Warning\", \"advisory\": \"Advisory\"}'"
+        '\'{"error": "Error", "warning": "Warning", "advisory": "Advisory"}\''
     )
 
     # --- Revert severity values ---
-    op.execute(
-        "UPDATE job_findings SET severity = 'aground' WHERE severity = 'error'"
-    )
-    op.execute(
-        "UPDATE job_findings SET severity = 'squall' WHERE severity = 'warning'"
-    )
+    op.execute("UPDATE job_findings SET severity = 'aground' WHERE severity = 'error'")
+    op.execute("UPDATE job_findings SET severity = 'squall' WHERE severity = 'warning'")
 
     # --- Revert column renames ---
     op.alter_column(

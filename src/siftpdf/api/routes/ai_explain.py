@@ -99,9 +99,7 @@ async def explain_job_finding(
     """Return a cached or freshly-rendered explanation for a finding."""
     job_uid = _parse_uuid(job_id, kind="Job")
     finding_uid = _parse_uuid(finding_id, kind="Finding")
-    finding = _load_owned_finding(
-        db, tenant_id=tenant.id, job_id=job_uid, finding_id=finding_uid
-    )
+    finding = _load_owned_finding(db, tenant_id=tenant.id, job_id=job_uid, finding_id=finding_uid)
 
     cached = bool(finding.ai_explanation)
     try:
@@ -114,9 +112,7 @@ async def explain_job_finding(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail={
                 "code": "cost_cap_exceeded",
-                "message": (
-                    "Tenant LLM cost cap reached for the current month."
-                ),
+                "message": ("Tenant LLM cost cap reached for the current month."),
                 "cap_cents": exc.cap_cents,
                 "used_cents": exc.used_cents,
                 "remaining_cents": max(0, remaining or 0),

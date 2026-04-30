@@ -408,9 +408,7 @@ def _update_job_verdict(db: Session, chain: ApprovalChain, verdict: str) -> None
         # ``approval_chain_templates`` table is no longer queried.
         from siftpdf.approvals import template_storage
 
-        template_value = template_storage.get_template(
-            db, chain.tenant_id, chain.template_id
-        )
+        template_value = template_storage.get_template(db, chain.tenant_id, chain.template_id)
         if template_value is not None:
             template_name = template_value.get("name") or template_name
 

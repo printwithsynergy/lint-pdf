@@ -50,9 +50,7 @@ def upgrade() -> None:
 
     op.create_table(
         "ai_audit_rerun_queue",
-        sa.Column(
-            "job_id", postgresql.UUID(as_uuid=True), primary_key=True
-        ),
+        sa.Column("job_id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

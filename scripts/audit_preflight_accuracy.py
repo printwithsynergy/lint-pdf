@@ -112,9 +112,7 @@ def _bootstrap_tenant(api_base: str, admin_key: str) -> str:
         return json.loads(resp.read())["api_key"]
 
 
-def _wait_terminal(
-    api_base: str, job_id: str, api_key: str, timeout_s: int
-) -> dict:
+def _wait_terminal(api_base: str, job_id: str, api_key: str, timeout_s: int) -> dict:
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         body = _get_job(api_base, job_id, api_key)
@@ -140,9 +138,7 @@ def _findings_from_job(job: dict) -> list[dict]:
     return job.get("findings") or []
 
 
-def _audit_one(
-    pdf_path: Path, job: dict, api_base: str
-) -> list[dict[str, Any]]:
+def _audit_one(pdf_path: Path, job: dict, api_base: str) -> list[dict[str, Any]]:
     """Run the internal auditor against one job's findings.
 
     Returns a list of dicts aligned with ``job.findings``:
@@ -223,14 +219,12 @@ def _write_report(out_path: Path, runs: list[dict]) -> None:
             # next run.
             lines.append(
                 "- **Coverage-only** (no expected_inspection_ids in"
-                " fixture yet). Emitted on this run: "
-                + ", ".join(sorted(emitted) or ["(none)"]),
+                " fixture yet). Emitted on this run: " + ", ".join(sorted(emitted) or ["(none)"]),
             )
         else:
             missing_from_emit = sorted(expected - emitted)
             lines.append(
-                f"- **Expected inspection IDs:** {len(expected)}  "
-                f"**Emitted:** {len(emitted)}",
+                f"- **Expected inspection IDs:** {len(expected)}  **Emitted:** {len(emitted)}",
             )
             if missing_from_emit:
                 lines.append(
@@ -259,9 +253,7 @@ def main() -> int:
     parser.add_argument(
         "--api-base", default=os.environ.get("LINTPDF_API_BASE", "https://api.lintpdf.com")
     )
-    parser.add_argument(
-        "--admin-key", default=os.environ.get("LINTPDF_ADMIN_API_KEY", "")
-    )
+    parser.add_argument("--admin-key", default=os.environ.get("LINTPDF_ADMIN_API_KEY", ""))
     parser.add_argument("--profile-id", default="lintpdf-default")
     parser.add_argument("--job-timeout-s", type=int, default=900)
     args = parser.parse_args()

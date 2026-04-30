@@ -59,22 +59,14 @@ class EpmTierCAnalyzer(BaseAnalyzer):
         events: list[ContentStreamEvent],
     ) -> list[Finding]:
         findings: list[Finding] = []
+        findings.extend(detect_c1_spot_count_high(document, advisory_cap=self._spot_count_advisory))
         findings.extend(
-            detect_c1_spot_count_high(
-                document, advisory_cap=self._spot_count_advisory
-            )
-        )
-        findings.extend(
-            detect_c2_feature_below_digital_res(
-                events, min_line_weight_pt=self._min_line_weight_pt
-            )
+            detect_c2_feature_below_digital_res(events, min_line_weight_pt=self._min_line_weight_pt)
         )
         findings.extend(detect_c3_mixed_process_spaces(document))
         findings.extend(detect_c5_trapping_disabled(document))
         findings.extend(
-            detect_c6_trim_bleed_misaligned(
-                document, tolerance_pt=self._trim_bleed_tolerance_pt
-            )
+            detect_c6_trim_bleed_misaligned(document, tolerance_pt=self._trim_bleed_tolerance_pt)
         )
         findings.extend(detect_c7_page_geometry_varies(document))
         return findings
@@ -83,9 +75,7 @@ class EpmTierCAnalyzer(BaseAnalyzer):
 # ---- C1: spot count high (advisory) -----------------------------------
 
 
-def detect_c1_spot_count_high(
-    document: SemanticDocument, *, advisory_cap: int
-) -> list[Finding]:
+def detect_c1_spot_count_high(document: SemanticDocument, *, advisory_cap: int) -> list[Finding]:
     """Fire EPM-C1 when distinct spot colorant names exceed the advisory
     cap (default 6). Different from B1 which fires on overall process
     color count; C1 is purely about how many separations operators will
@@ -235,7 +225,8 @@ def detect_c5_trapping_disabled(document: SemanticDocument) -> list[Finding]:
             inspection_id=codes.EPM_TRAPPING_DISABLED,
             severity=Severity.ADVISORY,
             message=(
-                "Trapping is " + (trapped_str or "missing")
+                "Trapping is "
+                + (trapped_str or "missing")
                 + " — explicit traps recommended for tight register."
             ),
             page_num=0,
@@ -314,8 +305,7 @@ def detect_c7_page_geometry_varies(
             inspection_id=codes.EPM_PAGE_GEOMETRY_VARIES,
             severity=Severity.ADVISORY,
             message=(
-                f"Document has {len(sizes)} distinct page sizes — "
-                "confirm substrate-feed setup."
+                f"Document has {len(sizes)} distinct page sizes — confirm substrate-feed setup."
             ),
             page_num=0,
             category="geometry",

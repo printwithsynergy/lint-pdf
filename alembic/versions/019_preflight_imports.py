@@ -27,9 +27,7 @@ branch_labels = None
 depends_on = None
 
 
-_PREFLIGHT_SOURCE_ENUM = sa.Enum(
-    "engine", "external", "minimal", name="preflightsource"
-)
+_PREFLIGHT_SOURCE_ENUM = sa.Enum("engine", "external", "minimal", name="preflightsource")
 
 
 def upgrade() -> None:
@@ -89,16 +87,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_job_imported_reports_job", "job_imported_reports", ["job_id"]
-    )
+    op.create_index("ix_job_imported_reports_job", "job_imported_reports", ["job_id"])
 
-    op.add_column(
-        "report_tokens", sa.Column("brand_mode", sa.String(16), nullable=True)
-    )
-    op.add_column(
-        "report_tokens", sa.Column("brand_profile_id", sa.Uuid(), nullable=True)
-    )
+    op.add_column("report_tokens", sa.Column("brand_mode", sa.String(16), nullable=True))
+    op.add_column("report_tokens", sa.Column("brand_profile_id", sa.Uuid(), nullable=True))
 
 
 def downgrade() -> None:

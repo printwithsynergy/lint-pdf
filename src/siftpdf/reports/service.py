@@ -941,11 +941,7 @@ class ReportService:
                 job_uid = None
 
             if job_uid is not None:
-                rows = (
-                    self._db.query(JobFinding)
-                    .filter(JobFinding.job_id == job_uid)
-                    .all()
-                )
+                rows = self._db.query(JobFinding).filter(JobFinding.job_id == job_uid).all()
                 # Index by (inspection_id, page_num or 0). Multiple rows
                 # for the same key keep the first hit — the explain cache
                 # stamps the same text per finding so dupes are harmless.
@@ -960,9 +956,7 @@ class ReportService:
                             "ai_explanation": r.ai_explanation,
                             "ai_explanation_model": r.ai_explanation_model,
                             "ai_explanation_at": (
-                                r.ai_explanation_at.isoformat()
-                                if r.ai_explanation_at
-                                else None
+                                r.ai_explanation_at.isoformat() if r.ai_explanation_at else None
                             ),
                         },
                     )
@@ -980,14 +974,11 @@ class ReportService:
             epm_codes = [
                 f.get("inspection_id", "")
                 for f in findings
-                if isinstance(f, dict)
-                and f.get("inspection_id", "").startswith("LPDF_EPM")
+                if isinstance(f, dict) and f.get("inspection_id", "").startswith("LPDF_EPM")
             ]
             verdict = score_epm_candidacy(epm_codes)
             result_json["epm"] = {
-                "tier": verdict.tier.value
-                if hasattr(verdict.tier, "value")
-                else str(verdict.tier),
+                "tier": verdict.tier.value if hasattr(verdict.tier, "value") else str(verdict.tier),
                 "rejection_drivers": list(verdict.rejection_drivers),
                 "advisories": list(verdict.advisories),
                 "recommends_indichrome": verdict.recommends_indichrome,

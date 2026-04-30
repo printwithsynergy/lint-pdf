@@ -105,15 +105,11 @@ def _compute_provenance(
     """
     tenant_str = str(tenant_id)
     overrides_q = select(ToggleOverride).where(
-        (ToggleOverride.scope == ToggleScope.TENANT)
-        & (ToggleOverride.scope_id == tenant_str)
+        (ToggleOverride.scope == ToggleScope.TENANT) & (ToggleOverride.scope_id == tenant_str)
     )
     if workflow_id is not None:
         overrides_q = select(ToggleOverride).where(
-            (
-                (ToggleOverride.scope == ToggleScope.TENANT)
-                & (ToggleOverride.scope_id == tenant_str)
-            )
+            ((ToggleOverride.scope == ToggleScope.TENANT) & (ToggleOverride.scope_id == tenant_str))
             | (
                 (ToggleOverride.scope == ToggleScope.WORKFLOW)
                 & (ToggleOverride.scope_id == workflow_id)

@@ -83,8 +83,7 @@ def _seed_toggle(
         human_name=toggle_id,
         type=type_,
         default_value=default,
-        override_at=override_at
-        or [ToggleScope.TENANT, ToggleScope.WORKFLOW, ToggleScope.CALL],
+        override_at=override_at or [ToggleScope.TENANT, ToggleScope.WORKFLOW, ToggleScope.CALL],
         merge_strategy=merge,
         lockable=lockable,
     )

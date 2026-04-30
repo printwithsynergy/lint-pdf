@@ -176,9 +176,7 @@ def _build_template_context(  # skipcq: PY-R1000
         ]
         verdict = score_epm_candidacy(epm_codes)
         epm_block = {
-            "tier": verdict.tier.value
-            if hasattr(verdict.tier, "value")
-            else str(verdict.tier),
+            "tier": verdict.tier.value if hasattr(verdict.tier, "value") else str(verdict.tier),
             "rejection_drivers": list(verdict.rejection_drivers),
             "advisories": list(verdict.advisories),
             "recommends_indichrome": verdict.recommends_indichrome,

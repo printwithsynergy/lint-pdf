@@ -35,8 +35,7 @@ def _seed_toggle(
             human_name=toggle_id,
             type=type_,
             default_value=default,
-            override_at=override_at
-            or [ToggleScope.TENANT, ToggleScope.WORKFLOW, ToggleScope.CALL],
+            override_at=override_at or [ToggleScope.TENANT, ToggleScope.WORKFLOW, ToggleScope.CALL],
             merge_strategy=merge,
             lockable=lockable,
         )
@@ -296,11 +295,7 @@ def test_delete_workflow_override(client: TestClient, db_session: Session):
     )
     resp = client.delete(f"/api/v1/workflows/{wf['id']}/toggles/checks.F-22")
     assert resp.status_code == 204
-    rows = (
-        db_session.query(ToggleOverride)
-        .filter(ToggleOverride.toggle_id == "checks.F-22")
-        .all()
-    )
+    rows = db_session.query(ToggleOverride).filter(ToggleOverride.toggle_id == "checks.F-22").all()
     assert rows == []
 
 
@@ -327,9 +322,7 @@ def test_workflow_override_resolve_overrides_tenant_value(
     assert resp1.json()["value"] == "warn"
 
     # Resolve WITH workflow_id → workflow value wins
-    resp2 = client.get(
-        f"/api/v1/toggles/resolve?toggle_id=checks.F-22&workflow_id={wf['id']}"
-    )
+    resp2 = client.get(f"/api/v1/toggles/resolve?toggle_id=checks.F-22&workflow_id={wf['id']}")
     assert resp2.json()["value"] == "error"
 
 
@@ -359,8 +352,6 @@ def test_locked_tenant_override_short_circuits_workflow(
         json={"value": "error"},
     )
     # Resolver short-circuits to the locked tenant value
-    resp = client.get(
-        f"/api/v1/toggles/resolve?toggle_id=checks.F-22&workflow_id={wf['id']}"
-    )
+    resp = client.get(f"/api/v1/toggles/resolve?toggle_id=checks.F-22&workflow_id={wf['id']}")
     assert resp.json()["value"] == "warn"
     assert resp.json()["locked"] is True

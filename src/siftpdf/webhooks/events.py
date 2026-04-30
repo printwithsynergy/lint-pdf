@@ -207,9 +207,7 @@ def resolve_signing_secret(
     return None
 
 
-def _load_tenant_default_secret(
-    db: Session, tenant_id: uuid_mod.UUID
-) -> str | None:
+def _load_tenant_default_secret(db: Session, tenant_id: uuid_mod.UUID) -> str | None:
     """Read ``Tenant.webhook_signing_secret`` once per emission."""
     from siftpdf.api.models import Tenant
 

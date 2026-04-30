@@ -35,9 +35,7 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column("jobs", sa.Column("overrides", sa.JSON(), nullable=True))
-    op.add_column(
-        "report_tokens", sa.Column("overrides", sa.JSON(), nullable=True)
-    )
+    op.add_column("report_tokens", sa.Column("overrides", sa.JSON(), nullable=True))
 
 
 def downgrade() -> None:

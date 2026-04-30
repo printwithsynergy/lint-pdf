@@ -21,7 +21,8 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column("tenants", sa.Column("contact_email", sa.String(255), nullable=True))
     op.add_column(
-        "tenants", sa.Column("overage_enabled", sa.Boolean(), nullable=False, server_default="false")
+        "tenants",
+        sa.Column("overage_enabled", sa.Boolean(), nullable=False, server_default="false"),
     )
     op.add_column("tenants", sa.Column("overage_cap_cents", sa.Integer(), nullable=True))
     op.add_column("tenants", sa.Column("overage_rate_override_cents", sa.Integer(), nullable=True))
@@ -53,7 +54,9 @@ def upgrade() -> None:
     op.create_table(
         "report_tokens",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("job_id", sa.Uuid(), sa.ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "job_id", sa.Uuid(), sa.ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+        ),
         sa.Column(
             "tenant_id", sa.Uuid(), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
         ),

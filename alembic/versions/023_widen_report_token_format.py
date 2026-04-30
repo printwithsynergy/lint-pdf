@@ -43,8 +43,7 @@ def downgrade() -> None:
     # ``annotated_pdf`` / ``annotated_pdf_markup`` rows, so delete them
     # first to avoid silent data loss on a rollback.
     op.execute(
-        "DELETE FROM report_tokens "
-        "WHERE format IN ('annotated_pdf', 'annotated_pdf_markup')"
+        "DELETE FROM report_tokens WHERE format IN ('annotated_pdf', 'annotated_pdf_markup')"
     )
     op.alter_column(
         "report_tokens",

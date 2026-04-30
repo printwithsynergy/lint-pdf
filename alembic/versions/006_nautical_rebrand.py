@@ -38,16 +38,8 @@ def upgrade() -> None:
     )
 
     # Update severity values in job_findings: "no-fly" -> "aground", "delay" -> "squall"
-    op.execute(
-        sa.text(
-            "UPDATE job_findings SET severity = 'aground' WHERE severity = 'no-fly'"
-        )
-    )
-    op.execute(
-        sa.text(
-            "UPDATE job_findings SET severity = 'squall' WHERE severity = 'delay'"
-        )
-    )
+    op.execute(sa.text("UPDATE job_findings SET severity = 'aground' WHERE severity = 'no-fly'"))
+    op.execute(sa.text("UPDATE job_findings SET severity = 'squall' WHERE severity = 'delay'"))
 
     # Add severity_labels JSON column to tenant_ai_configs
     op.add_column(
@@ -68,16 +60,8 @@ def downgrade() -> None:
     op.drop_column("tenant_ai_configs", "severity_labels")
 
     # Revert severity values in job_findings: "aground" -> "no-fly", "squall" -> "delay"
-    op.execute(
-        sa.text(
-            "UPDATE job_findings SET severity = 'no-fly' WHERE severity = 'aground'"
-        )
-    )
-    op.execute(
-        sa.text(
-            "UPDATE job_findings SET severity = 'delay' WHERE severity = 'squall'"
-        )
-    )
+    op.execute(sa.text("UPDATE job_findings SET severity = 'no-fly' WHERE severity = 'aground'"))
+    op.execute(sa.text("UPDATE job_findings SET severity = 'delay' WHERE severity = 'squall'"))
 
     # Rename delta_e_squall_threshold -> delta_e_delay_threshold in tenant_ai_configs
     op.alter_column(

@@ -96,14 +96,8 @@ def _iou(a: tuple[float, float, float, float], b: tuple[float, float, float, flo
     # 0.5pt fuzz for float jitter introduced by coordinate round-
     # trips through different rendering paths).
     fuzz = 0.5
-    a_in_b = (
-        bx0 - fuzz <= ax0 <= ax1 <= bx1 + fuzz
-        and by0 - fuzz <= ay0 <= ay1 <= by1 + fuzz
-    )
-    b_in_a = (
-        ax0 - fuzz <= bx0 <= bx1 <= ax1 + fuzz
-        and ay0 - fuzz <= by0 <= by1 <= ay1 + fuzz
-    )
+    a_in_b = bx0 - fuzz <= ax0 <= ax1 <= bx1 + fuzz and by0 - fuzz <= ay0 <= ay1 <= by1 + fuzz
+    b_in_a = ax0 - fuzz <= bx0 <= bx1 <= ax1 + fuzz and ay0 - fuzz <= by0 <= by1 <= ay1 + fuzz
     if a_in_b or b_in_a:
         return 1.0
     ix0, iy0 = max(ax0, bx0), max(ay0, by0)
@@ -365,4 +359,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

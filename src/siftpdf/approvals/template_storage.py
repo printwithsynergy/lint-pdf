@@ -151,9 +151,7 @@ def mutate_templates(
     return new_value
 
 
-def clear_default(
-    templates: dict[str, Any], *, except_id: str | None = None
-) -> None:
+def clear_default(templates: dict[str, Any], *, except_id: str | None = None) -> None:
     """Demote every is_default template in-place. Pure-function helper."""
     for key, value in templates.items():
         if key == except_id:

@@ -59,18 +59,13 @@ def test_in_gamut_for_srgb_profile_neutral_gray(tmp_path):
 def test_out_of_gamut_for_srgb_profile_extreme_chroma(tmp_path):
     """Lab (50, 120, 120) is well past sRGB's gamut boundary."""
     profile = icc.load_profile(str(_write_srgb_to_disk(tmp_path)))
-    assert (
-        icc.is_in_gamut_for_profile((50.0, 120.0, 120.0), profile=profile)
-        is False
-    )
+    assert icc.is_in_gamut_for_profile((50.0, 120.0, 120.0), profile=profile) is False
 
 
 def test_loose_tolerance_passes_extreme_colour(tmp_path):
     profile = icc.load_profile(str(_write_srgb_to_disk(tmp_path)))
     assert (
-        icc.is_in_gamut_for_profile(
-            (50.0, 100.0, 100.0), profile=profile, tolerance_de=200.0
-        )
+        icc.is_in_gamut_for_profile((50.0, 100.0, 100.0), profile=profile, tolerance_de=200.0)
         is True
     )
 

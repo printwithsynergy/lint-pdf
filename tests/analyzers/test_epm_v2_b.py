@@ -43,9 +43,7 @@ def test_b1_quiet_for_pure_cmyk_doc():
             "DeviceCMYK": PdfColorSpace(name="DeviceCMYK", cs_type="DeviceCMYK", components=4),
         },
     )
-    findings = epm_v2_b.detect_b1_process_color_count(
-        _document(pages=[page]), limit=4
-    )
+    findings = epm_v2_b.detect_b1_process_color_count(_document(pages=[page]), limit=4)
     assert findings == []
 
 
@@ -56,26 +54,32 @@ def test_b1_fires_on_too_many_spots():
         color_spaces={
             "DeviceCMYK": PdfColorSpace(name="DeviceCMYK", cs_type="DeviceCMYK", components=4),
             "Spot1": PdfColorSpace(
-                name="PANTONE 185 C", cs_type="Separation", components=1,
+                name="PANTONE 185 C",
+                cs_type="Separation",
+                components=1,
                 colorant_names=("PANTONE 185 C",),
             ),
             "Spot2": PdfColorSpace(
-                name="PANTONE 286 C", cs_type="Separation", components=1,
+                name="PANTONE 286 C",
+                cs_type="Separation",
+                components=1,
                 colorant_names=("PANTONE 286 C",),
             ),
             "Spot3": PdfColorSpace(
-                name="PANTONE 805 C", cs_type="Separation", components=1,
+                name="PANTONE 805 C",
+                cs_type="Separation",
+                components=1,
                 colorant_names=("PANTONE 805 C",),
             ),
             "Spot4": PdfColorSpace(
-                name="PANTONE Reflex Blue C", cs_type="Separation", components=1,
+                name="PANTONE Reflex Blue C",
+                cs_type="Separation",
+                components=1,
                 colorant_names=("PANTONE Reflex Blue C",),
             ),
         },
     )
-    findings = epm_v2_b.detect_b1_process_color_count(
-        _document(pages=[page]), limit=4
-    )
+    findings = epm_v2_b.detect_b1_process_color_count(_document(pages=[page]), limit=4)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_PROCESS_COLOR_COUNT
 
@@ -88,14 +92,14 @@ def test_b1_ignores_cmyk_inside_separation_colorants():
         color_spaces={
             "DeviceCMYK": PdfColorSpace(name="DeviceCMYK", cs_type="DeviceCMYK", components=4),
             "SepCyan": PdfColorSpace(
-                name="Cyan", cs_type="Separation", components=1,
+                name="Cyan",
+                cs_type="Separation",
+                components=1,
                 colorant_names=("Cyan",),
             ),
         },
     )
-    findings = epm_v2_b.detect_b1_process_color_count(
-        _document(pages=[page]), limit=4
-    )
+    findings = epm_v2_b.detect_b1_process_color_count(_document(pages=[page]), limit=4)
     assert findings == []
 
 
@@ -109,9 +113,7 @@ def test_b3_fires_when_bleed_zero():
         bleed_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(0, 0, 612, 792),
     )
-    findings = epm_v2_b.detect_b3_bleed_below_min(
-        _document(pages=[page]), min_bleed_pt=8.5
-    )
+    findings = epm_v2_b.detect_b3_bleed_below_min(_document(pages=[page]), min_bleed_pt=8.5)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_BLEED_BELOW_MIN
 
@@ -123,9 +125,7 @@ def test_b3_quiet_when_bleed_meets_min():
         bleed_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(9, 9, 603, 783),  # 9pt all sides
     )
-    findings = epm_v2_b.detect_b3_bleed_below_min(
-        _document(pages=[page]), min_bleed_pt=8.5
-    )
+    findings = epm_v2_b.detect_b3_bleed_below_min(_document(pages=[page]), min_bleed_pt=8.5)
     assert findings == []
 
 
@@ -142,9 +142,7 @@ def test_b3_one_finding_per_offending_page():
         bleed_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(0, 0, 612, 792),
     )
-    findings = epm_v2_b.detect_b3_bleed_below_min(
-        _document(pages=[page1, page2]), min_bleed_pt=8.5
-    )
+    findings = epm_v2_b.detect_b3_bleed_below_min(_document(pages=[page1, page2]), min_bleed_pt=8.5)
     assert len(findings) == 1
     assert findings[0].page_num == 2
 
@@ -153,24 +151,18 @@ def test_b3_one_finding_per_offending_page():
 
 
 def test_b4_fires_when_below_min():
-    findings = epm_v2_b.detect_b4_page_count_below_min(
-        _document(page_count=2), min_pages=4
-    )
+    findings = epm_v2_b.detect_b4_page_count_below_min(_document(page_count=2), min_pages=4)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_PAGE_COUNT_BELOW_ECONOMIC
 
 
 def test_b4_quiet_at_min():
-    findings = epm_v2_b.detect_b4_page_count_below_min(
-        _document(page_count=4), min_pages=4
-    )
+    findings = epm_v2_b.detect_b4_page_count_below_min(_document(page_count=4), min_pages=4)
     assert findings == []
 
 
 def test_b4_quiet_above_min():
-    findings = epm_v2_b.detect_b4_page_count_below_min(
-        _document(page_count=10), min_pages=4
-    )
+    findings = epm_v2_b.detect_b4_page_count_below_min(_document(page_count=10), min_pages=4)
     assert findings == []
 
 
@@ -193,9 +185,7 @@ def test_b5_fires_on_low_dpi_image():
         pixel_width=100,
         pixel_height=100,
     )
-    findings = epm_v2_b.detect_b5_image_resolution_below_min(
-        events=[ev], min_dpi=200.0
-    )
+    findings = epm_v2_b.detect_b5_image_resolution_below_min(events=[ev], min_dpi=200.0)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_IMAGE_RES_BELOW_DIGITAL
 
@@ -211,9 +201,7 @@ def test_b5_quiet_on_high_dpi_image():
         pixel_width=1000,
         pixel_height=1000,
     )
-    findings = epm_v2_b.detect_b5_image_resolution_below_min(
-        events=[ev], min_dpi=200.0
-    )
+    findings = epm_v2_b.detect_b5_image_resolution_below_min(events=[ev], min_dpi=200.0)
     assert findings == []
 
 
@@ -228,9 +216,7 @@ def test_b5_skips_invalid_scale():
         pixel_width=100,
         pixel_height=100,
     )
-    findings = epm_v2_b.detect_b5_image_resolution_below_min(
-        events=[ev], min_dpi=200.0
-    )
+    findings = epm_v2_b.detect_b5_image_resolution_below_min(events=[ev], min_dpi=200.0)
     assert findings == []
 
 
@@ -244,9 +230,7 @@ def test_b5_dedups_same_image_per_page():
         pixel_width=100,
         pixel_height=100,
     )
-    findings = epm_v2_b.detect_b5_image_resolution_below_min(
-        events=[ev, ev], min_dpi=200.0
-    )
+    findings = epm_v2_b.detect_b5_image_resolution_below_min(events=[ev, ev], min_dpi=200.0)
     assert len(findings) == 1
 
 
@@ -263,9 +247,7 @@ def test_b6_quiet_for_consistent_pages():
         )
         for i in range(4)
     ]
-    findings = epm_v2_b.detect_b6_trim_inconsistent(
-        _document(pages=pages), tolerance_pt=0.5
-    )
+    findings = epm_v2_b.detect_b6_trim_inconsistent(_document(pages=pages), tolerance_pt=0.5)
     assert findings == []
 
 
@@ -284,9 +266,7 @@ def test_b6_fires_when_trim_varies():
             trim_box=PdfBox(20, 20, 580, 760),  # different trim
         ),
     ]
-    findings = epm_v2_b.detect_b6_trim_inconsistent(
-        _document(pages=pages), tolerance_pt=0.5
-    )
+    findings = epm_v2_b.detect_b6_trim_inconsistent(_document(pages=pages), tolerance_pt=0.5)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_TRIM_INCONSISTENT
 
@@ -299,9 +279,7 @@ def test_b6_quiet_for_single_page_doc():
         bleed_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(9, 9, 603, 783),
     )
-    findings = epm_v2_b.detect_b6_trim_inconsistent(
-        _document(pages=[page]), tolerance_pt=0.5
-    )
+    findings = epm_v2_b.detect_b6_trim_inconsistent(_document(pages=[page]), tolerance_pt=0.5)
     assert findings == []
 
 
@@ -317,7 +295,9 @@ def test_analyzer_fans_out_to_each_tier_b_check():
             trim_box=PdfBox(0, 0, 612, 792),  # zero bleed → B3
             color_spaces={
                 "DeviceCMYK": PdfColorSpace(
-                    name="DeviceCMYK", cs_type="DeviceCMYK", components=4,
+                    name="DeviceCMYK",
+                    cs_type="DeviceCMYK",
+                    components=4,
                 ),
                 "Spot1": PdfColorSpace(
                     name="Spot1",

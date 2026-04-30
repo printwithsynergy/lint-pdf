@@ -41,6 +41,7 @@ What this creates / ensures:
 Writes ``scripts/.lintpdf-demo-credentials.env`` (git-ignored)
 containing ``LINTPDF_DEMO_TENANT_ID`` and ``LINTPDF_DEMO_API_KEY``.
 """
+
 from __future__ import annotations
 
 import json
@@ -154,9 +155,7 @@ def _hit(
 
 
 def find_or_create_tenant() -> str:
-    page = _hit(
-        "GET", "/api/v1/admin/tenants?page=1&page_size=100", admin=True
-    )
+    page = _hit("GET", "/api/v1/admin/tenants?page=1&page_size=100", admin=True)
     tenants = page.get("tenants", page if isinstance(page, list) else [])
     for t in tenants:
         if t.get("name") == PWS["name"]:
@@ -187,9 +186,7 @@ def mint_api_key(tid: str) -> str:
 
 
 def ensure_brand_profile(tid: str, api_key: str) -> str:
-    existing = _hit(
-        "GET", f"/api/v1/tenants/{tid}/brand-profiles", api_key=api_key
-    )
+    existing = _hit("GET", f"/api/v1/tenants/{tid}/brand-profiles", api_key=api_key)
     profiles = existing.get("profiles", existing if isinstance(existing, list) else [])
     for p in profiles:
         if p.get("name") == PWS["brand_name"]:

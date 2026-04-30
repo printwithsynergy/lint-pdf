@@ -64,7 +64,9 @@ def upgrade() -> None:
         sa.Column("default_package_capacity_ml", sa.Numeric(10, 2), nullable=True),
         sa.Column("default_package_surface_area_cm2", sa.Numeric(10, 2), nullable=True),
         sa.Column("min_image_quality_score", sa.Integer(), nullable=False, server_default="50"),
-        sa.Column("delta_e_delay_threshold", sa.Numeric(6, 2), nullable=False, server_default="2.0"),
+        sa.Column(
+            "delta_e_delay_threshold", sa.Numeric(6, 2), nullable=False, server_default="2.0"
+        ),
         sa.Column(
             "delta_e_no_fly_threshold", sa.Numeric(6, 2), nullable=False, server_default="5.0"
         ),
@@ -139,9 +141,7 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_index(
-        "ix_ai_usage_logs_tenant_created", "ai_usage_logs", ["tenant_id", "created_at"]
-    )
+    op.create_index("ix_ai_usage_logs_tenant_created", "ai_usage_logs", ["tenant_id", "created_at"])
     op.create_index("ix_ai_usage_logs_job", "ai_usage_logs", ["job_id"])
 
     # --- Extend job_findings with source and category ---

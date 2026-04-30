@@ -113,18 +113,14 @@ def test_explain_returns_cache_when_present(db_session: Session, monkeypatch):
         MagicMock(side_effect=AssertionError("cap check should not run")),
     )
 
-    text = explain_finding(
-        db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding
-    )
+    text = explain_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding)
     assert text == "Pre-cached explanation."
 
 
 # ---- cost-cap-exceeded → raise ------------------------------------------
 
 
-def test_explain_raises_when_cost_cap_exceeded(
-    db_session: Session, monkeypatch
-):
+def test_explain_raises_when_cost_cap_exceeded(db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
@@ -134,17 +130,13 @@ def test_explain_raises_when_cost_cap_exceeded(
     # Even if anthropic is missing/configured, the cap check fires first.
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(CostCapExceededError):
-        explain_finding(
-            db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding
-        )
+        explain_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding)
 
 
 # ---- happy path: mocks Claude, caches result ----------------------------
 
 
-def test_explain_calls_claude_and_caches(
-    db_session: Session, monkeypatch
-):
+def test_explain_calls_claude_and_caches(db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
@@ -192,25 +184,19 @@ def test_explain_calls_claude_and_caches(
     fake_client.messages.create.assert_not_called()
 
 
-def test_explain_returns_none_when_anthropic_key_missing(
-    db_session: Session, monkeypatch
-):
+def test_explain_returns_none_when_anthropic_key_missing(db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    text = explain_finding(
-        db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding
-    )
+    text = explain_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding)
     assert text is None
     db_session.refresh(finding)
     assert finding.ai_explanation is None
 
 
-def test_explain_returns_none_when_claude_call_raises(
-    db_session: Session, monkeypatch
-):
+def test_explain_returns_none_when_claude_call_raises(db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
@@ -224,18 +210,14 @@ def test_explain_returns_none_when_claude_call_raises(
 
     monkeypatch.setitem(sys.modules, "anthropic", fake_anthropic)
 
-    text = explain_finding(
-        db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding
-    )
+    text = explain_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding)
     assert text is None
     db_session.refresh(finding)
     # Cache stays NULL so a future call retries.
     assert finding.ai_explanation is None
 
 
-def test_explain_returns_none_when_response_text_empty(
-    db_session: Session, monkeypatch
-):
+def test_explain_returns_none_when_response_text_empty(db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
@@ -257,9 +239,7 @@ def test_explain_returns_none_when_response_text_empty(
 
     monkeypatch.setitem(sys.modules, "anthropic", fake_anthropic)
 
-    text = explain_finding(
-        db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding
-    )
+    text = explain_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID, finding=finding)
     assert text is None
 
 
@@ -308,9 +288,7 @@ def test_route_returns_cached_explanation(client: TestClient, db_session: Sessio
     finding.ai_explanation_at = datetime.now(tz=timezone.utc)
     db_session.commit()
 
-    resp = client.post(
-        f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain"
-    )
+    resp = client.post(f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain")
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["explanation"] == "Already done."
@@ -322,22 +300,16 @@ def test_route_404_for_unknown_finding(client: TestClient, db_session: Session):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
-    resp = client.post(
-        f"/api/v1/jobs/{finding.job_id}/findings/{uuid.uuid4()}/explain"
-    )
+    resp = client.post(f"/api/v1/jobs/{finding.job_id}/findings/{uuid.uuid4()}/explain")
     assert resp.status_code == 404
 
 
 def test_route_404_for_invalid_uuid(client: TestClient):
-    resp = client.post(
-        "/api/v1/jobs/not-a-uuid/findings/also-not-a-uuid/explain"
-    )
+    resp = client.post("/api/v1/jobs/not-a-uuid/findings/also-not-a-uuid/explain")
     assert resp.status_code == 404
 
 
-def test_route_404_when_finding_belongs_to_other_tenant(
-    client: TestClient, db_session: Session
-):
+def test_route_404_when_finding_belongs_to_other_tenant(client: TestClient, db_session: Session):
     """Cross-tenant: a finding owned by another tenant must 404 for us."""
     from siftpdf.api.models import Tenant, TenantPlan
 
@@ -360,15 +332,11 @@ def test_route_404_when_finding_belongs_to_other_tenant(
 
     # Auth fixture impersonates PLACEHOLDER_TENANT_ID, so this is a
     # cross-tenant lookup
-    resp = client.post(
-        f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain"
-    )
+    resp = client.post(f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain")
     assert resp.status_code == 404
 
 
-def test_route_402_when_cost_cap_exceeded(
-    client: TestClient, db_session: Session, monkeypatch
-):
+def test_route_402_when_cost_cap_exceeded(client: TestClient, db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
@@ -376,9 +344,7 @@ def test_route_402_when_cost_cap_exceeded(
     _add_usage(db_session, PLACEHOLDER_TENANT_ID, cost_cents=100)
 
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    resp = client.post(
-        f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain"
-    )
+    resp = client.post(f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain")
     assert resp.status_code == 402, resp.text
     body = resp.json()["detail"]
     assert body["code"] == "cost_cap_exceeded"
@@ -386,17 +352,13 @@ def test_route_402_when_cost_cap_exceeded(
     assert body["used_cents"] == 100
 
 
-def test_route_503_when_claude_unconfigured(
-    client: TestClient, db_session: Session, monkeypatch
-):
+def test_route_503_when_claude_unconfigured(client: TestClient, db_session: Session, monkeypatch):
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     finding = _make_finding(db_session, tenant_id=PLACEHOLDER_TENANT_ID)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    resp = client.post(
-        f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain"
-    )
+    resp = client.post(f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain")
     assert resp.status_code == 503
 
 
@@ -409,9 +371,7 @@ def test_route_calls_claude_when_no_cache_present(
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     fake_response = MagicMock()
-    fake_response.content = [
-        MagicMock(type="text", text="Image is too low-res for printing.")
-    ]
+    fake_response.content = [MagicMock(type="text", text="Image is too low-res for printing.")]
     fake_response.usage = MagicMock(
         input_tokens=120,
         output_tokens=40,
@@ -426,9 +386,7 @@ def test_route_calls_claude_when_no_cache_present(
 
     monkeypatch.setitem(sys.modules, "anthropic", fake_anthropic)
 
-    resp = client.post(
-        f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain"
-    )
+    resp = client.post(f"/api/v1/jobs/{finding.job_id}/findings/{finding.id}/explain")
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["explanation"] == "Image is too low-res for printing."

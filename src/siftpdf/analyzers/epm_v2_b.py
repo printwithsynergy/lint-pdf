@@ -69,32 +69,18 @@ class EpmTierBAnalyzer(BaseAnalyzer):
         events: list[ContentStreamEvent],
     ) -> list[Finding]:
         findings: list[Finding] = []
-        findings.extend(
-            detect_b1_process_color_count(document, limit=self._process_color_limit)
-        )
-        findings.extend(
-            detect_b3_bleed_below_min(document, min_bleed_pt=self._min_bleed_pt)
-        )
-        findings.extend(
-            detect_b4_page_count_below_min(document, min_pages=self._page_count_min)
-        )
-        findings.extend(
-            detect_b5_image_resolution_below_min(events, min_dpi=self._image_dpi_min)
-        )
-        findings.extend(
-            detect_b6_trim_inconsistent(
-                document, tolerance_pt=self._trim_tolerance_pt
-            )
-        )
+        findings.extend(detect_b1_process_color_count(document, limit=self._process_color_limit))
+        findings.extend(detect_b3_bleed_below_min(document, min_bleed_pt=self._min_bleed_pt))
+        findings.extend(detect_b4_page_count_below_min(document, min_pages=self._page_count_min))
+        findings.extend(detect_b5_image_resolution_below_min(events, min_dpi=self._image_dpi_min))
+        findings.extend(detect_b6_trim_inconsistent(document, tolerance_pt=self._trim_tolerance_pt))
         return findings
 
 
 # ---- B1: process color count -------------------------------------------
 
 
-def detect_b1_process_color_count(
-    document: SemanticDocument, *, limit: int
-) -> list[Finding]:
+def detect_b1_process_color_count(document: SemanticDocument, *, limit: int) -> list[Finding]:
     """Fire EPM-B1 when the document's distinct process color spaces
     exceed the EPM throughput limit.
 
@@ -110,9 +96,7 @@ def detect_b1_process_color_count(
     for page in document.pages:
         for cs in page.color_spaces.values():
             cs_type = (getattr(cs, "cs_type", "") or "").lower()
-            colorant_names: tuple[str, ...] = (
-                getattr(cs, "colorant_names", None) or ()
-            )
+            colorant_names: tuple[str, ...] = getattr(cs, "colorant_names", None) or ()
             if "cmyk" in cs_type:
                 has_cmyk = True
             elif "rgb" in cs_type:
@@ -169,9 +153,7 @@ def detect_b1_process_color_count(
 # ---- B3: bleed below minimum -------------------------------------------
 
 
-def detect_b3_bleed_below_min(
-    document: SemanticDocument, *, min_bleed_pt: float
-) -> list[Finding]:
+def detect_b3_bleed_below_min(document: SemanticDocument, *, min_bleed_pt: float) -> list[Finding]:
     """Fire EPM-B3 when any page's bleed margin is below ``min_bleed_pt``.
 
     Bleed margin = max distance from BleedBox edge to TrimBox edge across
@@ -218,9 +200,7 @@ def detect_b3_bleed_below_min(
 # ---- B4: page count below economic break-even -------------------------
 
 
-def detect_b4_page_count_below_min(
-    document: SemanticDocument, *, min_pages: int
-) -> list[Finding]:
+def detect_b4_page_count_below_min(document: SemanticDocument, *, min_pages: int) -> list[Finding]:
     """Fire EPM-B4 once at document scope when page count < min_pages."""
     if document.page_count >= min_pages:
         return []

@@ -258,13 +258,9 @@ def test_alert_threshold_default_80(db: Session):
 
 
 def test_alert_threshold_clamps_to_0_100(db: Session):
-    _set_cap_override(
-        db, _TENANT_A, enabled=True, monthly_cap_cents=100, alert_pct=150
-    )
+    _set_cap_override(db, _TENANT_A, enabled=True, monthly_cap_cents=100, alert_pct=150)
     assert alert_threshold_pct(db, _TENANT_A) == 100
-    _set_cap_override(
-        db, _TENANT_B, enabled=True, monthly_cap_cents=100, alert_pct=-5
-    )
+    _set_cap_override(db, _TENANT_B, enabled=True, monthly_cap_cents=100, alert_pct=-5)
     assert alert_threshold_pct(db, _TENANT_B) == 0
 
 

@@ -267,9 +267,7 @@ def test_list_for_actor(db: Session):
         source="api",
     )
     db.commit()
-    alice_rows = service.list_for_actor(
-        db, tenant_id=_TENANT_A, actor_user_id="alice"
-    )
+    alice_rows = service.list_for_actor(db, tenant_id=_TENANT_A, actor_user_id="alice")
     assert len(alice_rows) == 1
     assert alice_rows[0].decided_by_user_id == "alice"
 
@@ -437,9 +435,7 @@ def test_list_excludes_revoked_by_default(db: Session):
 
     active = service.list_for_job(db, tenant_id=_TENANT_A, job_id=job.id)
     assert [r.id for r in active] == [keep.id]
-    everything = service.list_for_job(
-        db, tenant_id=_TENANT_A, job_id=job.id, include_revoked=True
-    )
+    everything = service.list_for_job(db, tenant_id=_TENANT_A, job_id=job.id, include_revoked=True)
     assert {r.id for r in everything} == {keep.id, drop.id}
 
 
@@ -469,9 +465,7 @@ def test_latest_active_for_finding(db: Session):
     )
     db.commit()
 
-    latest = service.latest_active_for_finding(
-        db, tenant_id=_TENANT_A, finding_id=finding.id
-    )
+    latest = service.latest_active_for_finding(db, tenant_id=_TENANT_A, finding_id=finding.id)
     assert latest is not None
     assert latest.id == newer.id
 
@@ -483,9 +477,7 @@ def test_latest_active_for_finding(db: Session):
         revoked_by_user_id="u1",
     )
     db.commit()
-    latest = service.latest_active_for_finding(
-        db, tenant_id=_TENANT_A, finding_id=finding.id
-    )
+    latest = service.latest_active_for_finding(db, tenant_id=_TENANT_A, finding_id=finding.id)
     assert latest is not None
     assert latest.id == older.id
 
@@ -536,9 +528,7 @@ def test_summarise_job_decisions_counts_active_only(db: Session):
     )
     db.commit()
 
-    rows = service.list_for_job(
-        db, tenant_id=_TENANT_A, job_id=job.id, include_revoked=True
-    )
+    rows = service.list_for_job(db, tenant_id=_TENANT_A, job_id=job.id, include_revoked=True)
     counts = service.summarise_job_decisions(rows)
     assert counts == {"waive": 2, "approve": 1}
 

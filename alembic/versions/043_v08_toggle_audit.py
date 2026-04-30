@@ -48,7 +48,9 @@ def upgrade() -> None:
         sa.Column(
             "scope",
             postgresql.ENUM(
-                "TENANT", "WORKFLOW", "CALL",
+                "TENANT",
+                "WORKFLOW",
+                "CALL",
                 name="toggle_scope",
                 create_type=False,
             ),

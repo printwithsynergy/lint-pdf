@@ -53,9 +53,7 @@ def test_one_tier_b_finding_is_marginal():
 
 
 def test_two_tier_b_findings_reject():
-    v = score_epm_candidacy(
-        [codes.EPM_BLEED_BELOW_MIN, codes.EPM_PROCESS_COLOR_COUNT]
-    )
+    v = score_epm_candidacy([codes.EPM_BLEED_BELOW_MIN, codes.EPM_PROCESS_COLOR_COUNT])
     assert v.tier == EpmTier.REJECT
     assert codes.EPM_BLEED_BELOW_MIN in v.rejection_drivers
     assert codes.EPM_PROCESS_COLOR_COUNT in v.rejection_drivers
@@ -78,9 +76,7 @@ def test_only_tier_c_findings_pass_with_advisory():
 
 
 def test_multiple_tier_c_findings_still_advisory():
-    v = score_epm_candidacy(
-        [codes.EPM_TRAPPING_DISABLED, codes.EPM_PAGE_GEOMETRY_VARIES]
-    )
+    v = score_epm_candidacy([codes.EPM_TRAPPING_DISABLED, codes.EPM_PAGE_GEOMETRY_VARIES])
     assert v.tier == EpmTier.PASS_WITH_ADVISORY
 
 
@@ -117,9 +113,7 @@ def test_gamut_rejection_recommends_indichrome():
 
 def test_spot_count_rejection_recommends_indichrome_when_paired():
     """Spot count alone is C-tier (advisory); pair with another B → reject."""
-    v = score_epm_candidacy(
-        [codes.EPM_SPOT_COUNT_HIGH, codes.EPM_BLEED_BELOW_MIN]
-    )
+    v = score_epm_candidacy([codes.EPM_SPOT_COUNT_HIGH, codes.EPM_BLEED_BELOW_MIN])
     # 1 B + 1 C → marginal (B-tier alone)
     assert v.tier == EpmTier.MARGINAL
     # IndiChrome hint depends on rejection drivers; here the driver is
@@ -202,11 +196,7 @@ def test_all_16_new_codes_target_epm_a_b_or_c_tiers():
 
 
 def test_tier_groupings_cover_all_16_new_codes():
-    by_tier = (
-        set(codes.TIER_A_CODES)
-        | set(codes.TIER_B_CODES)
-        | set(codes.TIER_C_CODES)
-    )
+    by_tier = set(codes.TIER_A_CODES) | set(codes.TIER_B_CODES) | set(codes.TIER_C_CODES)
     assert by_tier == set(codes.V2_ID_BY_CODE.keys())
 
 
@@ -231,9 +221,7 @@ def test_check_info_entries_carry_correct_v2_ids():
 
     for code, v2 in codes.V2_ID_BY_CODE.items():
         info = CHECK_NAMES[code]
-        assert info.v2_ids == (v2,), (
-            f"{code} has v2_ids={info.v2_ids!r}, expected ({v2!r},)"
-        )
+        assert info.v2_ids == (v2,), f"{code} has v2_ids={info.v2_ids!r}, expected ({v2!r},)"
 
 
 # ---- verdict shape -------------------------------------------------------

@@ -70,9 +70,7 @@ def test_c2_fires_on_thin_stroke():
         stroke=True,
         line_width=0.1,
     )
-    findings = epm_v2_c.detect_c2_feature_below_digital_res(
-        events=[ev], min_line_weight_pt=0.35
-    )
+    findings = epm_v2_c.detect_c2_feature_below_digital_res(events=[ev], min_line_weight_pt=0.35)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_FEATURE_BELOW_DIGITAL_RES
 
@@ -86,9 +84,7 @@ def test_c2_quiet_on_above_min():
         stroke=True,
         line_width=1.0,
     )
-    findings = epm_v2_c.detect_c2_feature_below_digital_res(
-        events=[ev], min_line_weight_pt=0.35
-    )
+    findings = epm_v2_c.detect_c2_feature_below_digital_res(events=[ev], min_line_weight_pt=0.35)
     assert findings == []
 
 
@@ -101,9 +97,7 @@ def test_c2_skips_unstroked_paths():
         stroke=False,
         line_width=0.1,
     )
-    findings = epm_v2_c.detect_c2_feature_below_digital_res(
-        events=[ev], min_line_weight_pt=0.35
-    )
+    findings = epm_v2_c.detect_c2_feature_below_digital_res(events=[ev], min_line_weight_pt=0.35)
     assert findings == []
 
 
@@ -115,9 +109,7 @@ def test_c3_fires_on_cmyk_plus_separation_mix():
         page_num=1,
         media_box=PdfBox(0, 0, 612, 792),
         color_spaces={
-            "DeviceCMYK": PdfColorSpace(
-                name="DeviceCMYK", cs_type="DeviceCMYK", components=4
-            ),
+            "DeviceCMYK": PdfColorSpace(name="DeviceCMYK", cs_type="DeviceCMYK", components=4),
             "Spot": _spot("Spot"),
         },
     )
@@ -131,9 +123,7 @@ def test_c3_quiet_for_pure_cmyk():
         page_num=1,
         media_box=PdfBox(0, 0, 612, 792),
         color_spaces={
-            "DeviceCMYK": PdfColorSpace(
-                name="DeviceCMYK", cs_type="DeviceCMYK", components=4
-            ),
+            "DeviceCMYK": PdfColorSpace(name="DeviceCMYK", cs_type="DeviceCMYK", components=4),
         },
     )
     findings = epm_v2_c.detect_c3_mixed_process_spaces(_doc(pages=[page]))
@@ -150,16 +140,12 @@ def test_c5_fires_when_trapped_missing():
 
 
 def test_c5_fires_when_trapped_unknown():
-    findings = epm_v2_c.detect_c5_trapping_disabled(
-        _doc(info_dict={"/Trapped": "Unknown"})
-    )
+    findings = epm_v2_c.detect_c5_trapping_disabled(_doc(info_dict={"/Trapped": "Unknown"}))
     assert len(findings) == 1
 
 
 def test_c5_quiet_when_trapped_true():
-    findings = epm_v2_c.detect_c5_trapping_disabled(
-        _doc(info_dict={"/Trapped": "True"})
-    )
+    findings = epm_v2_c.detect_c5_trapping_disabled(_doc(info_dict={"/Trapped": "True"}))
     assert findings == []
 
 
@@ -174,9 +160,7 @@ def test_c6_fires_when_trim_off_centre():
         # 0pt margin on left, 30pt on right → off-centre
         trim_box=PdfBox(0, 9, 582, 783),
     )
-    findings = epm_v2_c.detect_c6_trim_bleed_misaligned(
-        _doc(pages=[page]), tolerance_pt=1.0
-    )
+    findings = epm_v2_c.detect_c6_trim_bleed_misaligned(_doc(pages=[page]), tolerance_pt=1.0)
     assert len(findings) == 1
     assert findings[0].inspection_id == codes.EPM_TRIM_BLEED_MISALIGNED
 
@@ -188,9 +172,7 @@ def test_c6_quiet_when_centred():
         bleed_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(9, 9, 603, 783),  # 9pt all sides, centred
     )
-    findings = epm_v2_c.detect_c6_trim_bleed_misaligned(
-        _doc(pages=[page]), tolerance_pt=1.0
-    )
+    findings = epm_v2_c.detect_c6_trim_bleed_misaligned(_doc(pages=[page]), tolerance_pt=1.0)
     assert findings == []
 
 
@@ -208,10 +190,7 @@ def test_c7_fires_when_page_sizes_vary():
 
 
 def test_c7_quiet_for_uniform_sizes():
-    pages = [
-        SemanticPage(page_num=i + 1, media_box=PdfBox(0, 0, 612, 792))
-        for i in range(3)
-    ]
+    pages = [SemanticPage(page_num=i + 1, media_box=PdfBox(0, 0, 612, 792)) for i in range(3)]
     findings = epm_v2_c.detect_c7_page_geometry_varies(_doc(pages=pages))
     assert findings == []
 
@@ -234,9 +213,7 @@ def test_analyzer_fans_out_to_each_tier_c_check():
             bleed_box=PdfBox(0, 0, 612, 792),
             trim_box=PdfBox(0, 9, 582, 783),  # off-centre → C6
             color_spaces={
-                "DeviceCMYK": PdfColorSpace(
-                    name="DeviceCMYK", cs_type="DeviceCMYK", components=4
-                ),
+                "DeviceCMYK": PdfColorSpace(name="DeviceCMYK", cs_type="DeviceCMYK", components=4),
                 "Spot": _spot("Spot"),  # mix → C3
             },
         ),

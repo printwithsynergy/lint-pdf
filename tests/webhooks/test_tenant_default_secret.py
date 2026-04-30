@@ -52,9 +52,7 @@ def db() -> Generator[Session, None, None]:
     engine.dispose()
 
 
-def _seed_tenant(
-    db: Session, *, default_secret: str | None = None
-) -> Tenant:
+def _seed_tenant(db: Session, *, default_secret: str | None = None) -> Tenant:
     t = Tenant(
         id=_TENANT_A,
         name="t",
@@ -127,9 +125,7 @@ def test_emit_event_falls_back_to_tenant_default(db: Session, monkeypatch):
     assert mock.call_args.kwargs["webhook_secret"] == "tenant-default"
 
 
-def test_emit_event_falls_back_when_endpoint_secret_empty(
-    db: Session, monkeypatch
-):
+def test_emit_event_falls_back_when_endpoint_secret_empty(db: Session, monkeypatch):
     _seed_tenant(db, default_secret="tenant-default")
     _add_endpoint(db, secret="")
     mock = _patch_dispatch(monkeypatch)
@@ -143,9 +139,7 @@ def test_emit_event_falls_back_when_endpoint_secret_empty(
 # ---- both missing → skip dispatch + log -----------------------------------
 
 
-def test_emit_event_skips_when_neither_secret_set(
-    db: Session, monkeypatch, caplog
-):
+def test_emit_event_skips_when_neither_secret_set(db: Session, monkeypatch, caplog):
     _seed_tenant(db, default_secret=None)
     _add_endpoint(db, secret=None)
     mock = _patch_dispatch(monkeypatch)
@@ -165,9 +159,7 @@ def test_emit_event_skips_when_neither_secret_set(
 # ---- multiple endpoints share the tenant default ------------------------
 
 
-def test_emit_event_resolves_per_endpoint_independently(
-    db: Session, monkeypatch
-):
+def test_emit_event_resolves_per_endpoint_independently(db: Session, monkeypatch):
     _seed_tenant(db, default_secret="tenant-default")
     _add_endpoint(db, secret="endpoint-a-specific")
     _add_endpoint(db, secret=None)  # falls back to tenant default
@@ -177,9 +169,7 @@ def test_emit_event_resolves_per_endpoint_independently(
     emit_event(db, _TENANT_A, "job.completed", {"x": 1})
 
     assert mock.call_count == 3
-    used_secrets = sorted(
-        call.kwargs["webhook_secret"] for call in mock.call_args_list
-    )
+    used_secrets = sorted(call.kwargs["webhook_secret"] for call in mock.call_args_list)
     assert used_secrets == [
         "endpoint-a-specific",
         "endpoint-c-specific",
@@ -187,9 +177,7 @@ def test_emit_event_resolves_per_endpoint_independently(
     ]
 
 
-def test_emit_event_persists_delivery_row_with_resolved_dispatch(
-    db: Session, monkeypatch
-):
+def test_emit_event_persists_delivery_row_with_resolved_dispatch(db: Session, monkeypatch):
     """Audit row + dispatch are created together when secret resolves."""
     _seed_tenant(db, default_secret="tenant-default")
     _add_endpoint(db, secret=None)
@@ -206,14 +194,10 @@ def test_emit_event_persists_delivery_row_with_resolved_dispatch(
 # ---- subscription filter still applies after secret resolution -----------
 
 
-def test_emit_event_skips_unsubscribed_event_before_resolving(
-    db: Session, monkeypatch
-):
+def test_emit_event_skips_unsubscribed_event_before_resolving(db: Session, monkeypatch):
     _seed_tenant(db, default_secret="tenant-default")
     # Endpoint subscribes only to "approval.chain.completed"
-    _add_endpoint(
-        db, secret="endpoint-a", events=["approval.chain.completed"]
-    )
+    _add_endpoint(db, secret="endpoint-a", events=["approval.chain.completed"])
     mock = _patch_dispatch(monkeypatch)
 
     emit_event(db, _TENANT_A, "job.completed", {"x": 1})

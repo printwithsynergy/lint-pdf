@@ -67,9 +67,7 @@ def load_profiles(db: Session, tenant_id: uuid_mod.UUID) -> dict[str, Any]:
     return dict(row.value or {})
 
 
-def get_profile(
-    db: Session, tenant_id: uuid_mod.UUID, profile_id: str
-) -> dict[str, Any] | None:
+def get_profile(db: Session, tenant_id: uuid_mod.UUID, profile_id: str) -> dict[str, Any] | None:
     """Return one profile entry by string profile_id, or None."""
     return load_profiles(db, tenant_id).get(profile_id)
 

@@ -118,13 +118,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("tenants", "default_profile_id")
-    op.drop_constraint(
-        "ck_system_profiles_visibility_mode", "system_profiles", type_="check"
-    )
-    op.drop_constraint(
-        "ck_system_profiles_source", "system_profiles", type_="check"
-    )
-    op.drop_constraint(
-        "uq_system_profiles_profile_id", "system_profiles", type_="unique"
-    )
+    op.drop_constraint("ck_system_profiles_visibility_mode", "system_profiles", type_="check")
+    op.drop_constraint("ck_system_profiles_source", "system_profiles", type_="check")
+    op.drop_constraint("uq_system_profiles_profile_id", "system_profiles", type_="unique")
     op.drop_table("system_profiles")

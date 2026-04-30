@@ -98,7 +98,9 @@ def parse_csv(csv_path: str | Path) -> list[dict[str, Any]]:
                 }
                 rows.append(parsed)
             except (ValueError, KeyError) as exc:
-                print(f"  WARN: skipping row {row.get('Pantone_Name', '?')}: {exc}", file=sys.stderr)
+                print(
+                    f"  WARN: skipping row {row.get('Pantone_Name', '?')}: {exc}", file=sys.stderr
+                )
     return rows
 
 
@@ -425,10 +427,10 @@ def print_report(report: dict[str, Any]) -> None:
         print(f"  Max:      {stats['max']}")
         print(f"  StdDev:   {stats['stdev']}")
         hist = stats["histogram"]
-        print(f"  ΔE < 1:   {hist['0-1']} ({hist['0-1']/stats['count']*100:.1f}%)")
-        print(f"  1 ≤ ΔE < 2: {hist['1-2']} ({hist['1-2']/stats['count']*100:.1f}%)")
-        print(f"  2 ≤ ΔE < 5: {hist['2-5']} ({hist['2-5']/stats['count']*100:.1f}%)")
-        print(f"  ΔE ≥ 5:   {hist['5+']} ({hist['5+']/stats['count']*100:.1f}%)")
+        print(f"  ΔE < 1:   {hist['0-1']} ({hist['0-1'] / stats['count'] * 100:.1f}%)")
+        print(f"  1 ≤ ΔE < 2: {hist['1-2']} ({hist['1-2'] / stats['count'] * 100:.1f}%)")
+        print(f"  2 ≤ ΔE < 5: {hist['2-5']} ({hist['2-5'] / stats['count'] * 100:.1f}%)")
+        print(f"  ΔE ≥ 5:   {hist['5+']} ({hist['5+'] / stats['count'] * 100:.1f}%)")
 
     print(f"\n--- Library Breakdown ---")
     for lib, count in sorted(report.get("libraries", {}).items(), key=lambda x: -x[1]):

@@ -66,9 +66,7 @@ def test_list_empty_for_clean_job(client: TestClient, db_session: Session):
     assert body["decisions"] == []
 
 
-def test_list_returns_recorded_decisions(
-    client: TestClient, db_session: Session
-):
+def test_list_returns_recorded_decisions(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -86,9 +84,7 @@ def test_list_returns_recorded_decisions(
     assert types == {"approve", "waive"}
 
 
-def test_list_excludes_revoked_by_default(
-    client: TestClient, db_session: Session
-):
+def test_list_excludes_revoked_by_default(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     create = client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -101,18 +97,14 @@ def test_list_excludes_revoked_by_default(
     )
     resp = client.get(f"/api/v1/jobs/{job.id}/decisions")
     assert resp.json()["count"] == 0
-    resp_all = client.get(
-        f"/api/v1/jobs/{job.id}/decisions?include_revoked=true"
-    )
+    resp_all = client.get(f"/api/v1/jobs/{job.id}/decisions?include_revoked=true")
     assert resp_all.json()["count"] == 1
 
 
 # ---- record (POST) -------------------------------------------------------
 
 
-def test_record_job_decision_returns_201(
-    client: TestClient, db_session: Session
-):
+def test_record_job_decision_returns_201(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     resp = client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -126,9 +118,7 @@ def test_record_job_decision_returns_201(
     assert body["is_active"] is True
 
 
-def test_record_finding_decision_links_finding(
-    client: TestClient, db_session: Session
-):
+def test_record_finding_decision_links_finding(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     finding = _make_finding(db_session, job_id=job.id)
     resp = client.post(
@@ -139,9 +129,7 @@ def test_record_finding_decision_links_finding(
     assert resp.json()["finding_id"] == str(finding.id)
 
 
-def test_record_propagates_request_id_header(
-    client: TestClient, db_session: Session
-):
+def test_record_propagates_request_id_header(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     resp = client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -157,9 +145,7 @@ def test_record_propagates_request_id_header(
     assert row.request_id == "req-abc-123"
 
 
-def test_record_invalid_source_returns_422(
-    client: TestClient, db_session: Session
-):
+def test_record_invalid_source_returns_422(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     resp = client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -168,9 +154,7 @@ def test_record_invalid_source_returns_422(
     assert resp.status_code == 422
 
 
-def test_record_missing_field_returns_422(
-    client: TestClient, db_session: Session
-):
+def test_record_missing_field_returns_422(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     resp = client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -182,9 +166,7 @@ def test_record_missing_field_returns_422(
 # ---- revoke (POST .../revoke) -------------------------------------------
 
 
-def test_revoke_marks_decision_inactive(
-    client: TestClient, db_session: Session
-):
+def test_revoke_marks_decision_inactive(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     create = client.post(
         f"/api/v1/jobs/{job.id}/decisions",
@@ -224,9 +206,7 @@ def test_revoke_is_idempotent(client: TestClient, db_session: Session):
     assert second.json()["revoked_by_user_id"] == "u1"
 
 
-def test_revoke_unknown_decision_404s(
-    client: TestClient, db_session: Session
-):
+def test_revoke_unknown_decision_404s(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     resp = client.post(
         f"/api/v1/jobs/{job.id}/decisions/{uuid.uuid4()}/revoke",
@@ -276,9 +256,7 @@ def test_cross_tenant_job_404s(client: TestClient, db_session: Session):
     assert resp.status_code == 404
 
 
-def test_finding_decision_unknown_finding_404s(
-    client: TestClient, db_session: Session
-):
+def test_finding_decision_unknown_finding_404s(client: TestClient, db_session: Session):
     job = _make_job(db_session)
     resp = client.post(
         f"/api/v1/jobs/{job.id}/findings/{uuid.uuid4()}/decisions",

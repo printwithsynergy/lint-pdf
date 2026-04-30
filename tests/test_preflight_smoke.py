@@ -28,9 +28,7 @@ from siftpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConf
 from siftpdf.reports.html_report import generate_html_report
 from siftpdf.reports.json_report import generate_json_report
 
-_FIXTURE = (
-    Path(__file__).parent / "fixtures" / "test-sample.pdf"
-)
+_FIXTURE = Path(__file__).parent / "fixtures" / "test-sample.pdf"
 
 
 # ---- Claude stub --------------------------------------------------------
