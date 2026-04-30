@@ -1,0 +1,47 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v0.1.0)"
+        required: true
+
+jobs:
+  build:
+    name: build wheel + sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build deps
+        run: |
+          pip install --upgrade pip build hatchling
+
+      - name: Build sdist + wheel
+        run: python -m build --sdist --wheel --outdir dist/
+
+      - name: List artifacts
+        run: ls -lh dist/
+
+      - name: Upload as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: siftpdf-${{ inputs.version }}
+          path: dist/*
+          retention-days: 30
+
+      - name: Create GitHub release
+        if: startsWith(inputs.version, 'v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.version }}" \
+            --title "${{ inputs.version }}" \
+            --notes "Release ${{ inputs.version }} — see CHANGELOG.md" \
+            dist/*

@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: pytest (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install system deps for pikepdf / WeasyPrint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libqpdf-dev libpango-1.0-0 libpangocairo-1.0-0 \
+            libgdk-pixbuf-2.0-0 libcairo2 poppler-utils ghostscript
+
+      - name: Install package
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[ai,dev]"
+
+      - name: ruff check
+        run: ruff check src/ tests/
+
+      - name: ruff format --check
+        run: ruff format --check src/ tests/
+
+      - name: pytest
+        run: pytest -x --no-header
+
+  tripwires:
+    name: engine tripwires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: engine-purity
+        run: bash scripts/check_engine_purity.sh
+
+      - name: openapi-descriptions
+        run: python scripts/check_openapi_descriptions.py
+
+      - name: route-classification
+        run: python scripts/check_route_classification.py
