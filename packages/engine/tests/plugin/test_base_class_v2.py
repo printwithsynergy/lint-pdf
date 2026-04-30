@@ -1,15 +1,23 @@
-"""Behavior-locking tests for analyze_v2 default impl on base classes.
+"""Behavior-locking tests for analyze_v2 contract on base classes.
 
-These tests exercise the bridge that lets legacy analyzers (which only
-implement ``analyze(...)``) run unchanged when the orchestrator calls
-``analyze_v2(ctx)``. They also lock in the ai_config reconstitution
-contract so a Phase 2 cleanup that changes the lookup path can fail
-loudly here instead of silently breaking analyzers in production.
+Phase 3b dropped the legacy ``BaseAIAnalyzer.analyze()`` 4-arg method.
+Subclasses now MUST override ``analyze_v2(ctx)``. ``BaseAnalyzer``
+still keeps the legacy 2-arg ``analyze(document, events)`` path
+because the 4 deterministic non-AI analyzers (advanced_color_analyzer,
+barcode, dieline, legend) haven't migrated yet — that's Phase 3c.
+
+These tests lock in:
+- ``BaseAnalyzer.analyze_v2`` default forwards to legacy ``analyze``.
+- ``BaseAIAnalyzer.analyze_v2`` raises NotImplementedError when a
+  subclass forgets to override.
+- ``_reconstitute_ai_config`` round-trips dicts and handles None.
 """
 
 from __future__ import annotations
 
 from typing import Any, ClassVar
+
+import pytest
 
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.analyzers.base import BaseAnalyzer
@@ -22,12 +30,12 @@ class _FakeDoc:
 
 
 # ---------------------------------------------------------------------------
-# BaseAnalyzer
+# BaseAnalyzer (legacy 2-arg analyze still supported through Phase 3c)
 # ---------------------------------------------------------------------------
 
 
 class _LegacyCoreAnalyzer(BaseAnalyzer):
-    """Stand-in for a typical core analyzer — implements only legacy analyze."""
+    """Stand-in for a non-AI deterministic analyzer — implements legacy analyze."""
 
     def __init__(self) -> None:
         self.calls: list[tuple[Any, ...]] = []
@@ -43,26 +51,18 @@ class _LegacyCoreAnalyzer(BaseAnalyzer):
         ]
 
 
-def test_base_analyzer_v2_default_forwards_to_legacy_analyze():
+def test_base_analyzer_v2_default_forwards_to_legacy_analyze() -> None:
     legacy = _LegacyCoreAnalyzer()
     ctx = AnalyzerContext(document=_FakeDoc(), events=[])
     findings = legacy.analyze_v2(ctx)
     assert len(findings) == 1
     assert findings[0].inspection_id == "LPDF_TEST_001"
-    # Forwarding contract: document + events arrive unchanged.
     assert len(legacy.calls) == 1
     assert legacy.calls[0][0] is ctx.document
     assert legacy.calls[0][1] is ctx.events
 
 
-def test_base_analyzer_v2_returns_same_findings_as_direct_analyze():
-    """Behavior lock: analyze_v2 default impl is bit-equal to analyze().
-
-    Phase 2 will inline this behaviour into analyze_v2 directly; until
-    then, the orchestrator path (analyze_v2) must be observationally
-    indistinguishable from the legacy direct call.
-    """
-
+def test_base_analyzer_v2_returns_same_findings_as_direct_analyze() -> None:
     legacy = _LegacyCoreAnalyzer()
     direct = legacy.analyze(_FakeDoc(), [])
     via_v2 = legacy.analyze_v2(AnalyzerContext(document=_FakeDoc(), events=[]))
@@ -70,110 +70,12 @@ def test_base_analyzer_v2_returns_same_findings_as_direct_analyze():
 
 
 # ---------------------------------------------------------------------------
-# BaseAIAnalyzer
+# BaseAIAnalyzer (Phase 3b: analyze_v2 is the only entry point)
 # ---------------------------------------------------------------------------
-
-
-class _LegacyAIAnalyzer(BaseAIAnalyzer):
-    category = "test_category"
-    feature_slug = "test.feature"
-    tier = "cpu"
-    credits_per_run = 1
-
-    def __init__(self) -> None:
-        self.calls: list[tuple[Any, ...]] = []
-
-    def analyze(
-        self,
-        document: Any,
-        events: list,
-        pdf_bytes: bytes,
-        ai_config: Any = None,
-    ) -> list[Finding]:
-        self.calls.append((document, events, pdf_bytes, ai_config))
-        return [
-            self._make_finding(
-                inspection_id="AI_TEST_001",
-                severity=Severity.WARNING,
-                message="legacy ai finding",
-            )
-        ]
-
-
-def test_base_ai_analyzer_v2_default_forwards_with_pdf_bytes():
-    legacy = _LegacyAIAnalyzer()
-    ctx = AnalyzerContext(
-        document=_FakeDoc(),
-        events=[],
-        pdf_bytes=b"%PDF-1.4-fixture",
-    )
-    findings = legacy.analyze_v2(ctx)
-    assert len(findings) == 1
-    assert findings[0].inspection_id == "AI_TEST_001"
-    assert findings[0].source == "ai"
-    assert findings[0].category == "test_category"
-    # pdf_bytes survives the round trip.
-    assert legacy.calls[0][2] == b"%PDF-1.4-fixture"
-    # ai_config defaults to None when ctx.config has no "ai_config".
-    assert legacy.calls[0][3] is None
-
-
-def test_base_ai_analyzer_v2_reconstitutes_ai_config_for_legacy():
-    """Legacy AI code expects ai_config.attribute access — verify it works."""
-
-    legacy = _LegacyAIAnalyzer()
-    ctx = AnalyzerContext(
-        document=_FakeDoc(),
-        events=[],
-        pdf_bytes=b"",
-        config={"ai_config": {"some_field": "value-x"}},
-    )
-    legacy.analyze_v2(ctx)
-    ai_cfg = legacy.calls[0][3]
-    assert ai_cfg is not None
-    # Either a real TenantAIConfig (if the field is declared) or our
-    # AttrDict fallback — both expose attribute access.
-    assert getattr(ai_cfg, "some_field", None) == "value-x"
-
-
-def test_reconstitute_ai_config_handles_none():
-    assert _reconstitute_ai_config(None) is None
-
-
-def test_reconstitute_ai_config_returns_attribute_accessor():
-    cfg = _reconstitute_ai_config({"foo": 1, "bar": "two"})
-    assert cfg is not None
-    assert getattr(cfg, "foo", None) == 1
-    assert getattr(cfg, "bar", None) == "two"
-    # Unknown attrs return None instead of raising AttributeError —
-    # contract that several AI analyzers rely on.
-    assert getattr(cfg, "missing", "default") in (None, "default")
-
-
-# ---------------------------------------------------------------------------
-# Q&A 1b-B — relaxed `analyze` abstract requirement
-# ---------------------------------------------------------------------------
-
-
-class _ModernCoreAnalyzer(BaseAnalyzer):
-    """Stand-in for a Phase-2 core analyzer — overrides only analyze_v2."""
-
-    def __init__(self) -> None:
-        self.ctx_calls: list[AnalyzerContext] = []
-
-    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        self.ctx_calls.append(ctx)
-        return [
-            Finding(
-                inspection_id="LPDF_MODERN_001",
-                severity=Severity.ADVISORY,
-                message="modern core finding",
-            )
-        ]
 
 
 class _ModernAIAnalyzer(BaseAIAnalyzer):
-    """Stand-in for a Phase-2 AI analyzer — overrides only analyze_v2."""
+    """Standard Phase-2 AI analyzer — overrides analyze_v2 directly."""
 
     category = "modern_ai"
     feature_slug = "modern_ai"
@@ -189,28 +91,14 @@ class _ModernAIAnalyzer(BaseAIAnalyzer):
         ]
 
 
-class _BrokenCoreAnalyzer(BaseAnalyzer):
-    """Subclass that overrides NEITHER analyze nor analyze_v2.
+class _BrokenAIAnalyzer(BaseAIAnalyzer):
+    """Subclass that forgets to override analyze_v2."""
 
-    Phase 2 (Q1b-B) relaxed @abstractmethod so the class instantiates
-    cleanly; the failure surfaces only when analyze_v2 forwards to
-    the inherited default `analyze` and that raises.
-    """
+    category = "broken"
+    feature_slug = "broken"
 
 
-def test_modern_core_analyzer_runs_with_only_analyze_v2_override():
-    """Q1b-B: instantiating a subclass that overrides only analyze_v2 succeeds."""
-
-    modern = _ModernCoreAnalyzer()
-    ctx = AnalyzerContext(document=_FakeDoc(), events=[])
-    findings = modern.analyze_v2(ctx)
-    assert len(findings) == 1
-    assert findings[0].inspection_id == "LPDF_MODERN_001"
-    assert len(modern.ctx_calls) == 1
-    assert modern.ctx_calls[0] is ctx
-
-
-def test_modern_ai_analyzer_runs_with_only_analyze_v2_override():
+def test_modern_ai_analyzer_runs_with_analyze_v2_override() -> None:
     modern = _ModernAIAnalyzer()
     ctx = AnalyzerContext(
         document=_FakeDoc(),
@@ -221,32 +109,85 @@ def test_modern_ai_analyzer_runs_with_only_analyze_v2_override():
     findings = modern.analyze_v2(ctx)
     assert len(findings) == 1
     assert findings[0].inspection_id == "LPDF_MODERN_AI_001"
-    # ctx.config arrives unchanged.
     assert "ai_config" in findings[0].details["ai_config_keys"]
 
 
-def test_broken_subclass_instantiates_but_raises_on_call():
-    """A subclass that overrides neither method now instantiates
-    (Phase 1 blocked instantiation via @abstractmethod). The failure
-    is deferred to first call, which surfaces a clear error message
-    naming the subclass.
+def test_broken_ai_subclass_raises_clear_error() -> None:
+    """Phase 3b: BaseAIAnalyzer.analyze_v2 default raises
+    NotImplementedError naming the subclass when a subclass forgets
+    to override it.
     """
-    broken = _BrokenCoreAnalyzer()  # ← used to fail at this line
-    import pytest
-
+    broken = _BrokenAIAnalyzer()
     with pytest.raises(NotImplementedError) as exc_info:
         broken.analyze_v2(AnalyzerContext(document=_FakeDoc(), events=[]))
-    assert "_BrokenCoreAnalyzer" in str(exc_info.value)
+    assert "_BrokenAIAnalyzer" in str(exc_info.value)
     assert "analyze_v2" in str(exc_info.value)
 
 
-def test_base_analyzer_is_no_longer_abc_strict_about_analyze():
-    """The class still inherits from ABC, but `analyze` is no longer
-    an @abstractmethod. Instantiating a subclass that doesn't override
-    `analyze` works (the failure is deferred to call time).
+def test_legacy_analyze_method_no_longer_exists_on_base_ai_analyzer() -> None:
+    """Phase 3b removed BaseAIAnalyzer.analyze(). Subclasses that
+    accidentally still inherit a legacy 4-arg shape from somewhere
+    won't shadow analyze_v2 — and the bare class definition no
+    longer ships an analyze method at all.
     """
-    # If @abstractmethod were still on analyze, instantiating
-    # _BrokenCoreAnalyzer would raise TypeError at class-construction
-    # time. Q1b-B's relaxation means it should NOT raise here.
-    instance = _BrokenCoreAnalyzer()
-    assert isinstance(instance, BaseAnalyzer)
+    assert "analyze" not in BaseAIAnalyzer.__dict__
+
+
+# ---------------------------------------------------------------------------
+# _reconstitute_ai_config (still used by 13+ analyzers)
+# ---------------------------------------------------------------------------
+
+
+def test_reconstitute_ai_config_handles_none() -> None:
+    assert _reconstitute_ai_config(None) is None
+
+
+def test_reconstitute_ai_config_returns_attribute_accessor() -> None:
+    cfg = _reconstitute_ai_config({"foo": 1, "bar": "two"})
+    assert cfg is not None
+    assert getattr(cfg, "foo", None) == 1
+    assert getattr(cfg, "bar", None) == "two"
+    # Unknown attrs return None instead of raising AttributeError —
+    # contract that several AI analyzers rely on.
+    assert getattr(cfg, "missing", "default") in (None, "default")
+
+
+# ---------------------------------------------------------------------------
+# BaseAnalyzer relaxation (Q1b-B from Phase 2 — kept here for completeness)
+# ---------------------------------------------------------------------------
+
+
+class _ModernCoreAnalyzer(BaseAnalyzer):
+    """Stand-in for a Phase-3 core analyzer — overrides only analyze_v2."""
+
+    def __init__(self) -> None:
+        self.ctx_calls: list[AnalyzerContext] = []
+
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        self.ctx_calls.append(ctx)
+        return [
+            Finding(
+                inspection_id="LPDF_MODERN_001",
+                severity=Severity.ADVISORY,
+                message="modern core finding",
+            )
+        ]
+
+
+class _BrokenCoreAnalyzer(BaseAnalyzer):
+    """BaseAnalyzer subclass that overrides neither analyze nor analyze_v2."""
+
+
+def test_modern_core_analyzer_runs_with_only_analyze_v2_override() -> None:
+    modern = _ModernCoreAnalyzer()
+    ctx = AnalyzerContext(document=_FakeDoc(), events=[])
+    findings = modern.analyze_v2(ctx)
+    assert len(findings) == 1
+    assert findings[0].inspection_id == "LPDF_MODERN_001"
+
+
+def test_broken_core_subclass_instantiates_but_raises_on_call() -> None:
+    broken = _BrokenCoreAnalyzer()
+    with pytest.raises(NotImplementedError) as exc_info:
+        broken.analyze_v2(AnalyzerContext(document=_FakeDoc(), events=[]))
+    assert "_BrokenCoreAnalyzer" in str(exc_info.value)

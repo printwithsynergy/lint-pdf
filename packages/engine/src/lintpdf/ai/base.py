@@ -3,20 +3,15 @@
 AI analyzers follow the same detection-only principle as core engine analyzers
 but produce findings with source="ai" and include a category tag.
 
-Subclasses override **one** of two entry points:
+Subclasses override exactly one entry point: ``analyze_v2(ctx)``.
 
-- ``analyze_v2(ctx)`` — preferred. Pulls the AI config from
-  ``ctx.config["ai_config"]`` (plain dict) and reaches SaaS-coupled
-  features (cost cap, metering, GPU client) via ``ctx.services.*``.
-- ``analyze(document, events, pdf_bytes, ai_config)`` — legacy
-  4-arg shape. The default ``analyze_v2`` reconstitutes
-  ``ai_config`` and forwards here.
-
-Phase 2 (Q&A 1b-B) relaxed the abstract requirement on ``analyze``:
-the class now ships a ``NotImplementedError`` default so AI analyzers
-can override only ``analyze_v2`` without satisfying a phantom abstract
-method. Subclasses that override neither method instantiate cleanly
-but raise NotImplementedError on first invocation.
+Phase 2 alpha-stream migrated every BaseAIAnalyzer subclass off the
+legacy ``analyze(document, events, pdf_bytes, ai_config)`` 4-arg shape
+onto ``analyze_v2(ctx: AnalyzerContext)``. Phase 2 beta-stream routed
+SaaS coupling through ``ctx.services.*``. Phase 3b drops the legacy
+``analyze`` method entirely — ``analyze_v2`` is now the only entry
+point and the default raises ``NotImplementedError`` if a subclass
+forgets to override it.
 """
 
 from __future__ import annotations
@@ -26,21 +21,13 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
     from lintpdf.plugin.protocol import AnalyzerContext
-    from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
 
 
 class BaseAIAnalyzer:
     """Base class for AI-powered preflight analyzers.
 
-    Subclasses implement **one** of:
-
-    - ``analyze_v2(ctx)`` — preferred plugin-protocol entry point.
-    - ``analyze(document, events, pdf_bytes, ai_config)`` — legacy
-      4-arg shape (the default ``analyze_v2`` reconstitutes
-      ``ai_config`` and forwards here).
+    Subclasses MUST override ``analyze_v2(ctx)``.
     """
 
     # Subclasses must define these
@@ -49,57 +36,17 @@ class BaseAIAnalyzer:
     tier: str = "cpu"  # "cpu" or "gpu"
     credits_per_run: int = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
-    ) -> list[Finding]:
-        """Legacy AI-analyzer hook (default raises ``NotImplementedError``).
-
-        Override this OR ``analyze_v2(ctx)``. The default
-        ``analyze_v2`` reconstitutes ``ai_config`` from
-        ``ctx.config["ai_config"]`` and forwards here, so analyzers
-        that don't need ``ctx.services`` can keep using this 4-arg
-        shape unchanged.
-
-        Args:
-            document: Enriched semantic document.
-            events: Content stream events from the interpreter.
-            pdf_bytes: Raw PDF file bytes (needed for image rendering).
-            ai_config: Tenant's AI configuration (thresholds, brand palette, etc).
-
-        Returns:
-            List of findings (may be empty).
-        """
-
-        raise NotImplementedError(
-            f"{type(self).__name__} must override either `analyze` "
-            "(legacy 4-arg signature) or `analyze_v2(ctx)` (preferred)."
-        )
-
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        """Plugin-protocol entry point. Default forwards to ``analyze``.
+        """Plugin-protocol entry point. Subclasses MUST override.
 
-        Pulls the legacy ``ai_config`` parameter from
-        ``ctx.config["ai_config"]``. The host bridge in
-        ``lintpdf.plugin.host`` reconstitutes the plain dict back into a
-        ``TenantAIConfig`` (or attribute-access fallback) so legacy code
-        that does ``ai_config.attribute`` keeps working through Phase 1.
-
-        New AI analyzers should override this method directly and skip
-        the legacy ``analyze`` signature entirely.
+        Read tenant AI config from ``ctx.config["ai_config"]`` (a plain
+        dict) and reach SaaS-coupled features (cost cap, metering, GPU
+        client, renderer, storage, tenants, verapdf_client) through
+        ``ctx.services.*``. See ``packages/engine/CLAUDE.md`` and
+        ``packages/engine/docs/plugin-api.md`` for the full contract.
         """
 
-        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
-        ai_config_obj = _reconstitute_ai_config(ai_config_dict)
-        return self.analyze(
-            ctx.document,
-            ctx.events,
-            ctx.pdf_bytes,
-            ai_config_obj,
-        )
+        raise NotImplementedError(f"{type(self).__name__} must override `analyze_v2(ctx)`.")
 
     def _make_finding(
         self,
