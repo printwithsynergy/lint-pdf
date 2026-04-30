@@ -284,7 +284,7 @@ def test_box_010_maps_to_p12():
 
 
 def test_trans_002_maps_to_tr19():
-    """TR-19: Transparency × overprint interaction (Wave D batch 4)."""
+    """TR-19: Transparency x overprint interaction (Wave D batch 4)."""
     assert CHECK_NAMES["LPDF_TRANS_002"].v2_ids == ("TR-19",)
 
 
