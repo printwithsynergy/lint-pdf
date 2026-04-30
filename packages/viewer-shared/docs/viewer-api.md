@@ -181,3 +181,38 @@ import graph.
 5. **Bump `version` on protocol-affecting changes**. Plugin packs
    declare `peerDependencies` against the OSS LoupePDF SemVer; this
    commit's TypeScript types are the source of truth.
+
+## Replacing a first-party LintPDF panel
+
+Third-party plugins can opt-in **replace** a built-in plugin
+(LintPDF first-party or any other registered plugin) by setting
+`replaces` on their manifest:
+
+```ts
+import { register } from "@lintpdf/viewer-shared/core";
+
+register({
+  id: "vendor.findings",
+  version: "1.0.0",
+  slot: "panel.right",
+  title: "Vendor Findings",
+  replaces: "lintpdf.findings", // ← shadows the LintPDF panel
+  mount: (ctx) => <VendorFindingsPanel services={ctx.services} />,
+});
+```
+
+Semantics:
+- The replaced plugin stays registered (still appears in
+  `listAll()`), but `getPluginsForSlot()` returns the overrider
+  instead.
+- Registration order doesn't matter — the override takes effect
+  whenever both plugins are present.
+- At most one plugin can claim a given `replaces` target. A second
+  registration that targets the same id throws.
+- The target id does not need to be registered yet. The override
+  registers cleanly even before the LintPDF pack loads, and starts
+  shadowing as soon as the target appears.
+- Unregistering the overrider re-emerges the original in slot
+  lookups.
+- Cross-slot overrides are allowed (a toolbar widget can replace a
+  panel) — the original disappears from its slot regardless.
