@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AnnotationCanvas > renders the wrapper div with a canvas child 1`] = `
+<div
+  class="absolute inset-0"
+  style="pointer-events: auto; z-index: 20;"
+>
+  <canvas />
+</div>
+`;

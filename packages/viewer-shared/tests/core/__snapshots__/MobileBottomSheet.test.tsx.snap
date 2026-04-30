@@ -1,0 +1,85 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MobileBottomSheet > renders with the controlled full snap position 1`] = `
+<div
+  class="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-slate-900 shadow-2xl"
+  style="height: 614.4000000000001px; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+>
+  <div
+    class="flex shrink-0 cursor-grab touch-none flex-col items-center pb-1 pt-2 active:cursor-grabbing"
+  >
+    <div
+      class="h-1 w-10 rounded-full bg-slate-600"
+    />
+  </div>
+  <div
+    class="flex shrink-0 items-center px-4 pb-1"
+  >
+    <span>
+      Summary
+    </span>
+  </div>
+  <div
+    class="flex-1 overflow-y-auto"
+  >
+    <div>
+      <div>
+        Body content
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MobileBottomSheet > renders with the controlled half snap position 1`] = `
+<div
+  class="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-slate-900 shadow-2xl"
+  style="height: 230.39999999999998px; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+>
+  <div
+    class="flex shrink-0 cursor-grab touch-none flex-col items-center pb-1 pt-2 active:cursor-grabbing"
+  >
+    <div
+      class="h-1 w-10 rounded-full bg-slate-600"
+    />
+  </div>
+  <div
+    class="flex shrink-0 items-center px-4 pb-1"
+  >
+    <span>
+      Summary
+    </span>
+  </div>
+  <div
+    class="flex-1 overflow-y-auto"
+  >
+    <div>
+      <div>
+        Body content
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MobileBottomSheet > renders with the default collapsed snap position 1`] = `
+<div
+  class="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-slate-900 shadow-2xl"
+  style="height: 56px; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+>
+  <div
+    class="flex shrink-0 cursor-grab touch-none flex-col items-center pb-1 pt-2 active:cursor-grabbing"
+  >
+    <div
+      class="h-1 w-10 rounded-full bg-slate-600"
+    />
+  </div>
+  <div
+    class="flex shrink-0 items-center px-4 pb-1"
+  >
+    <span>
+      Summary
+    </span>
+  </div>
+</div>
+`;
