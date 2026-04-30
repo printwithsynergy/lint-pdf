@@ -33,7 +33,7 @@ from lintpdf.api.schemas import (
 )
 from lintpdf.api.storage import get_storage
 
-router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
+router = APIRouter(prefix="/api/v1/admin", tags=["x:saas-only", "admin"])
 
 # Backward-compatible alias — existing Depends(_verify_admin_key) calls still work
 _verify_admin_key = verify_admin_key
@@ -1590,10 +1590,11 @@ async def list_all_profiles(
     page_slice = flattened[(page - 1) * page_size : (page - 1) * page_size + page_size]
 
     tenant_ids = {t[0] for t in page_slice}
-    tenants = {
-        t.id: t
-        for t in db.query(Tenant).filter(Tenant.id.in_(tenant_ids)).all()
-    } if tenant_ids else {}
+    tenants = (
+        {t.id: t for t in db.query(Tenant).filter(Tenant.id.in_(tenant_ids)).all()}
+        if tenant_ids
+        else {}
+    )
 
     by_tenant: dict[Any, list[AdminProfileSummary]] = {}
     for tenant_uuid, profile_ns, _value in page_slice:

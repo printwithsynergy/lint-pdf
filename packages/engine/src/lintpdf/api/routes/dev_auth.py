@@ -21,7 +21,7 @@ from lintpdf.api.database import get_db  # noqa: E402
 from lintpdf.api.models import ApiKey, Tenant  # noqa: E402
 from lintpdf.tenants.models import TenantPlan  # noqa: E402
 
-router = APIRouter(prefix="/api/v1/dev", tags=["dev"])
+router = APIRouter(prefix="/api/v1/dev", tags=["x:saas-only", "dev"])
 
 
 class ImpersonateRequest(BaseModel):

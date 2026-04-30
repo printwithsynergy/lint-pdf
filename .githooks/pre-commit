@@ -53,6 +53,10 @@ if ((${#ENGINE_FILES[@]})); then
     echo "🔍 [engine] openapi-descriptions guard..."
     (cd "$REPO_ROOT/packages/engine" && python3 scripts/check_openapi_descriptions.py) || FAIL=1
   fi
+  if [ -f "$REPO_ROOT/packages/engine/scripts/check_route_classification.py" ]; then
+    echo "🔍 [engine] route-classification guard..."
+    (cd "$REPO_ROOT/packages/engine" && python3 scripts/check_route_classification.py) || FAIL=1
+  fi
 fi
 
 # ── Python: Inference — scoped ruff check + format on STAGED files only. ──

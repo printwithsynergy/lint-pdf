@@ -28,7 +28,7 @@ from lintpdf.api.models import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["trial"])
+router = APIRouter(tags=["x:saas-only", "trial"])
 
 MAX_TRIAL_FILES = 5
 MAX_TRIAL_FILE_SIZE_MB = 50

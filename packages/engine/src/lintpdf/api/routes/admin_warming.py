@@ -28,7 +28,7 @@ from lintpdf.queue.tasks import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/admin/tile-warming", tags=["admin", "warming"])
+router = APIRouter(prefix="/api/v1/admin/tile-warming", tags=["x:saas-only", "admin", "warming"])
 
 
 # ── Models ────────────────────────────────────────────────────────────
