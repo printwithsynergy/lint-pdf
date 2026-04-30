@@ -18,8 +18,8 @@ from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 
 if TYPE_CHECKING:
+    from lintpdf.ai.types import AIConfig
     from lintpdf.analyzers.finding import Finding
-    from lintpdf.api.models import TenantAIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -44,7 +44,7 @@ class NLPreflightProfileAnalyzer(BaseAIAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
         pdf_bytes: bytes,
-        ai_config: TenantAIConfig | None = None,
+        ai_config: AIConfig = None,
     ) -> list[Finding]:
         # No inspection logic — feature is implemented at the API layer
         return []
