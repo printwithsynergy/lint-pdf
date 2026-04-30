@@ -15,9 +15,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
+    from lintpdf.plugin.protocol import AnalyzerContext
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +49,15 @@ class DuplicateDetectionAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(  # skipcq: PY-R1000
+    def analyze_v2(  # skipcq: PY-R1000
         self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
+        ctx: AnalyzerContext,
     ) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
+        # only via render_all_pages. ai_config + document + events
+        # were declared but never used; dropped.
+        pdf_bytes = ctx.pdf_bytes
+
         if not _HAS_IMAGEHASH or not _HAS_PIL:
             logger.debug("imagehash or Pillow not installed — skipping duplicate detection")
             return []
