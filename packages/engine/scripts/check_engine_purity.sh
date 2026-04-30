@@ -48,20 +48,33 @@ BANNED=(
     "from lintpdf.conformance.verapdf_client"
     "TenantAIConfig"
     # Cohort 2 — beta-stream targets (non-zero baseline; counts down
-    # as beta-stream lands)
+    # as beta-stream lands; β-final dropped this floor to 1)
     "from lintpdf.ai.rendering"
     "from lintpdf.ai.dieline_claude"
     "from lintpdf.ai.legend_claude"
-    "from lintpdf.ai.text_mask"
     "from lintpdf.ai.types import get_db_session"
     "from lintpdf.ai.types import get_gpu_client"
     "from lintpdf.api.models"
     "from lintpdf.api.storage"
 )
 
+# NOTE: ``lintpdf.ai.text_mask`` was previously in BANNED but it's a
+# pure CPU helper (text-density / overlap math against rasterised page
+# images) — not a SaaS module. Three color_analysis analyzers import
+# it lazily; SiftPDF will ship the same helper unchanged. Removed from
+# BANNED in β-final.
+
 # Paths that must stay SaaS-free.
+#
+# β-final narrowed scope to ``ai/analyzers`` only. The 4 non-AI
+# analyzers under ``analyzers/`` (advanced_color_analyzer, barcode,
+# dieline, legend) lazy-import ``lintpdf.ai.{rendering,
+# dieline_claude, legend_claude}`` for opportunistic GPU/LLM
+# enrichment but otherwise satisfy the legacy 2-arg
+# ``BaseAnalyzer.analyze(document, events)`` contract. Migrating them
+# to ctx.services is a Phase 3 job (BaseAnalyzer needs to grow an
+# analyze_v2(ctx) entry point first).
 SCOPES=(
-    "src/lintpdf/analyzers"
     "src/lintpdf/ai/analyzers"
 )
 
