@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import type { OverlayItem } from "../plugin/types";
 import type { PageInfo } from "../types";
 import { THUMBNAIL_DPI } from "../types";
-import { useViewerHost } from "../host";
+import { useViewerServices } from "../host";
 
 interface PageNavigatorProps {
   pages: PageInfo[];
@@ -28,7 +28,7 @@ export function PageNavigator({
   onPageChange,
   horizontal,
 }: PageNavigatorProps) {
-  const { apiBase } = useViewerHost();
+  const { pageImages } = useViewerServices();
   const activeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function PageNavigator({
               style={{ width: 56 }}
             >
               <img
-                src={`${apiBase}/pages/${page.page_num}/tile?dpi=${THUMBNAIL_DPI}`}
+                src={pageImages.getPageImageUrl({ pageNum: page.page_num, dpi: THUMBNAIL_DPI })}
                 alt={`Page ${page.page_num}`}
                 className="w-full rounded"
                 loading="lazy"
@@ -116,7 +116,7 @@ export function PageNavigator({
             }`}
           >
             <img
-              src={`${apiBase}/pages/${page.page_num}/tile?dpi=${THUMBNAIL_DPI}`}
+              src={pageImages.getPageImageUrl({ pageNum: page.page_num, dpi: THUMBNAIL_DPI })}
               alt={`Page ${page.page_num}`}
               className="w-full rounded"
               loading="lazy"
