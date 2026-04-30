@@ -203,26 +203,39 @@ class TestAICreditRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        import uuid
-
         from lintpdf.api.ai_schemas import CreditTopupRequest
         from lintpdf.api.routes.ai_credits import topup_credits
 
-        request = CreditTopupRequest(credits=500)
+        # The route now creates a Stripe Checkout session and returns the
+        # checkout_url / session_id; the package row is inserted by the
+        # checkout.session.completed webhook handler, not by this endpoint.
+        request = CreditTopupRequest(pack="500")
 
-        # The route creates a TenantAICreditPackage and reads its .id after commit.
-        # TenantAICreditPackage is imported inside the function, so patch the model.
-        package_id = uuid.uuid4()
+        mock_pack_def = MagicMock()
+        mock_pack_def.usd_cents = 5000
+        mock_session = {
+            "url": "https://checkout.stripe.com/c/pay/cs_test_abc123",
+            "id": "cs_test_abc123",
+        }
+
         with (
             patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.api.models.TenantAICreditPackage") as MockPackage,  # noqa: N806
+            patch("lintpdf.billing.metered_packs.pack_for_size", return_value=mock_pack_def),
+            patch("lintpdf.billing.metered_packs.resolve_price_id", return_value="price_test_500"),
+            patch(
+                "lintpdf.billing.stripe_client.load_config", return_value=MagicMock(sandbox=True)
+            ),
+            patch(
+                "lintpdf.billing.stripe_client.create_checkout_session",
+                return_value=mock_session,
+            ),
         ):
-            mock_package_instance = MockPackage.return_value
-            mock_package_instance.id = package_id
             response = await topup_credits(request=request, db=mock_db_session, tenant=mock_tenant)
 
-        assert response.credits_purchased == 500
-        assert response.package_id == package_id
+        assert response.checkout_url == mock_session["url"]
+        assert response.session_id == mock_session["id"]
+        assert response.pack_size == 500
+        assert response.usd_cents == 5000
 
     @pytest.mark.asyncio
     async def test_get_credits_requires_access(
