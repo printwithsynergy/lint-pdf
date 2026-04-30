@@ -1,0 +1,129 @@
+Phase 4 Stage F smoke — tenant=Phase4-Smoke (temp tenant 28a2c294)
+Run dir: /tmp/smoke-batch-1777577471
+API: https://api.lintpdf.com  Profile: lintpdf-default
+================================================================
+
+## test-sample
+  job_id    : e7ab5f5f-92df-48c7-a06f-683e3470027f
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/y6_CKciRrD0o0Os44uIOkp49Y519LppkkRi2La_Twaw
+  PDF   : https://reports.lintpdf.com/r/32SdCO-pt5RDCM5iAoNjZCstBTGwauu-200Bstx4Xe0.pdf
+  JSON  : https://reports.lintpdf.com/r/R5Xmekjs7YGkbI7pz_D06RWqHytUlHbjVWLcfczJcUI.json
+  ANNOT : https://reports.lintpdf.com/r/v1VqDo4UGGLxXrkrf7kFoamx4J9S78D68bJh7LBfFqg.pdf
+  VIEW  : https://app.lintpdf.com/view/y6_CKciRrD0o0Os44uIOkp49Y519LppkkRi2La_Twaw
+
+## AN-Energy_StickPack_CA_Pink-Slush_P2_OL
+  job_id    : 53ed45ff-ca0c-4481-8a5b-0dc28daf3627
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/ePK0cy_c6CAc3ahespMgZtHnG0i5omrslbHmtaajrOU
+  PDF   : https://reports.lintpdf.com/r/x4-bT1ApzTgKM4OnKutvOJcSSazQJfIIJciIKqkV8YU.pdf
+  JSON  : https://reports.lintpdf.com/r/gD7gjtH6eLvvyFqH5h_509Bqx0PTGs7OenjWfAn-Ws0.json
+  ANNOT : https://reports.lintpdf.com/r/H2JqADGcf0hdwKnFyhgHcLKegsxwf_NnOOOTu6qN9Co.pdf
+  VIEW  : https://app.lintpdf.com/view/ePK0cy_c6CAc3ahespMgZtHnG0i5omrslbHmtaajrOU
+
+## AN_Energy_StickPack_CA_HSI_ADM_P1_OL
+  job_id    : d02e615d-2777-4453-9fb0-6057942194ea
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/UyfSF7GH1pMZ26Ut8qlUvDqFgZ8NyLxZdVTeZ1PmfBg
+  PDF   : https://reports.lintpdf.com/r/y-cNA83b3E9g4V_3LyLDXke1OZrc9OvilUJc9-Jk1e8.pdf
+  JSON  : https://reports.lintpdf.com/r/xARJ-R3jVZAQpT3vv_bVaHHeJIqUNooEDCQz7T_7gpQ.json
+  ANNOT : https://reports.lintpdf.com/r/pquLCvptne82BOdglPfX2xPqgMZ79UJofOEdZyxrIUY.pdf
+  VIEW  : https://app.lintpdf.com/view/UyfSF7GH1pMZ26Ut8qlUvDqFgZ8NyLxZdVTeZ1PmfBg
+
+## Amalgam_Catalyst_9_5x3_5
+  job_id    : aa2d6f95-446f-4b9a-90b0-27041b1cc4c9
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/EOLSMeyKCoe_LXD3B6obILOdDPzXZjgKdCG__371m-Q
+  PDF   : https://reports.lintpdf.com/r/zjO4aC09E-7umdAG4n6SiO0Sfa5kj-HjskWwXqJHOTE.pdf
+  JSON  : https://reports.lintpdf.com/r/i5hAGxm3dNVR0fOnD3xm80VA4UwWnQD1KwxA0NvAoI8.json
+  ANNOT : https://reports.lintpdf.com/r/3MjMTGuDrIrr5EdFEgmHAhw9ne9gAllzRdOsCnQGGPM.pdf
+  VIEW  : https://app.lintpdf.com/view/EOLSMeyKCoe_LXD3B6obILOdDPzXZjgKdCG__371m-Q
+
+## Cherry-Twist_OUTLINED
+  job_id    : 9e10693a-d900-45b8-9ab1-6ec36e6fa5e6
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/fC9RHpqD_LTxr-KNsD-xYnYw0OWdE-mMJneSddqspuk
+  PDF   : https://reports.lintpdf.com/r/jLq359vX7aT00G2l1GlLdat0m4lfmRRlpBtXy61a_U0.pdf
+  JSON  : https://reports.lintpdf.com/r/I-Bc0qMT6e7KHyk6DV5fMigdjjEq1wdJJqovdE74gkg.json
+  ANNOT : https://reports.lintpdf.com/r/CrilMCKYXUVDow4tkqblakV8qU7pSPdQvBqVpdzgL58.pdf
+  VIEW  : https://app.lintpdf.com/view/fC9RHpqD_LTxr-KNsD-xYnYw0OWdE-mMJneSddqspuk
+
+## DailyFiber_10up
+  job_id    : 33ef5972-98db-4fa9-935a-ba048741ed51
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/BI_xTLi1LQIitGlKEY_20JLmZl8p-4ZukXEGEUTl3zY
+  PDF   : https://reports.lintpdf.com/r/xDjZnucKh85xBvImH1gaU0QZa9xuIISqdxYD2vtrlh4.pdf
+  JSON  : https://reports.lintpdf.com/r/Prk7S04sEym5ObyqcThRopn3Fsy9Qj9-yHCjdj85bu8.json
+  ANNOT : https://reports.lintpdf.com/r/bgrSFzL-0fHAU90iHoir8uUxgJbW4HuRsjHJ3IBgNqU.pdf
+  VIEW  : https://app.lintpdf.com/view/BI_xTLi1LQIitGlKEY_20JLmZl8p-4ZukXEGEUTl3zY
+
+## HSI_OUTLINED
+  job_id    : 1ab577a3-8e03-4860-9a0c-113df016d5cc
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/KwXNlpJsx3aFF99fpCvqf2XSqf52KfRSzOLzNrPhVL4
+  PDF   : https://reports.lintpdf.com/r/Gr_Lud2TwjainUk4bUevDNB5qvoEQV7KNGCvxYPFKNI.pdf
+  JSON  : https://reports.lintpdf.com/r/j7NsiUqnMwwQsePonWwYERwZ_brbPfv-1Eh2a0ibIfA.json
+  ANNOT : https://reports.lintpdf.com/r/n5mxaywWBg1FNTZjpPLC-32Zy431BeVleRpRFSkDNO4.pdf
+  VIEW  : https://app.lintpdf.com/view/KwXNlpJsx3aFF99fpCvqf2XSqf52KfRSzOLzNrPhVL4
+
+## Nutrops_LS_Dieline
+  job_id    : 0c02c41e-89f0-4307-964b-1fc8db128e9f
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/fGsvWjFM6HBLYnLI4HiaxCdFU6r_4oCqy_waSB04YZo
+  PDF   : https://reports.lintpdf.com/r/mgGNP2vH20HLHAVdFyxYGJyRQALcTXW6Ogz6xU8HNjA.pdf
+  JSON  : https://reports.lintpdf.com/r/SUhKo67CPlsC0Ka_-zRcXynQCVpt_IsRKmiDuJwtDMs.json
+  ANNOT : https://reports.lintpdf.com/r/CzOWoCIwv0GX7Cudx-Jwwozyni-rsrC100KMnPtjuE8.pdf
+  VIEW  : https://app.lintpdf.com/view/fGsvWjFM6HBLYnLI4HiaxCdFU6r_4oCqy_waSB04YZo
+
+## Nutrops_SF_Dieline
+  job_id    : 4797c21d-4ff7-48fd-a444-e1a88554f6e4
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/_9kgIrIlEie-0xuDlbJMY1tILHAI-w25h_K-sArmY8I
+  PDF   : https://reports.lintpdf.com/r/0XY-pgvgZuOkXf09d1nDogjYsrUQn5rfCPiASzQEm7s.pdf
+  JSON  : https://reports.lintpdf.com/r/qRSBzAfYJpYXW01_d_ABdOlfdQZEYEllCarzvG0KoLI.json
+  ANNOT : https://reports.lintpdf.com/r/Oh6MFT1GB-DzJ9g9PRDi0VI8O5zSVzeJ_0KVMOer_4I.pdf
+  VIEW  : https://app.lintpdf.com/view/_9kgIrIlEie-0xuDlbJMY1tILHAI-w25h_K-sArmY8I
+
+## OrangeKiss_OUTLINED
+  job_id    : 929b76b8-52d6-42c5-9619-246960d714c6
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/DFxps5uuBzGwn0QHkejfrVY37ueRLyp0ugrnVaijQ9Y
+  PDF   : https://reports.lintpdf.com/r/H3coGeD8FP9q8UJ0X3FBIsvFPkKpZSqvY6fC21HypaA.pdf
+  JSON  : https://reports.lintpdf.com/r/8feb_JvPIvmBZ5VXCkhiO2XCwoEwF26ZymkTeB47gPs.json
+  ANNOT : https://reports.lintpdf.com/r/-Sq_DL9yqrQKrlvJWMarzW4LtLpVkiRx6fxohlZWXmk.pdf
+  VIEW  : https://app.lintpdf.com/view/DFxps5uuBzGwn0QHkejfrVY37ueRLyp0ugrnVaijQ9Y
+
+## Pavette_Pride_v99
+  job_id    : 508e852c-ca21-48fc-ada9-fffce499e019
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/muR2DqJvUI-UnEEbfXDw_IJRBuMewlDkeq7wNmaOJ6M
+  PDF   : https://reports.lintpdf.com/r/kfHSTS31SoO3nbGS-otP7j0zza8jr_E7A2Zm5kBYVLc.pdf
+  JSON  : https://reports.lintpdf.com/r/NfnrvMYNky7PQRVGqvob31nrDiieZ3ousy46jFtqXUY.json
+  ANNOT : https://reports.lintpdf.com/r/fHmMN9SGgFc7sbhQqTK8WvKxa9C1NJtr_xwHATfB8No.pdf
+  VIEW  : https://app.lintpdf.com/view/muR2DqJvUI-UnEEbfXDw_IJRBuMewlDkeq7wNmaOJ6M
+
+## Pink-Slush_OUTLINED
+  job_id    : f08455e4-90aa-4c7e-85a7-60955f5c13b5
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.lintpdf.com/r/epCOU6JVOmQB9FOBCMeUPmo0-HW2JL4euzwoRtFrrpE
+  PDF   : https://reports.lintpdf.com/r/38YIhZc3YUh8GOAGKPxj-BkZr3sqpHmQUAwAbAF8p64.pdf
+  JSON  : https://reports.lintpdf.com/r/3MXiGWf19xxQXqoYt2OaBEAbxz9vb9QK7fBjgugbnqE.json
+  ANNOT : https://reports.lintpdf.com/r/XHSEeFdcJLQvZYj6tFyKoprCm3EBshbmzrH-3mSCslc.pdf
+  VIEW  : https://app.lintpdf.com/view/epCOU6JVOmQB9FOBCMeUPmo0-HW2JL4euzwoRtFrrpE
+
+
+================================================================
+RESULTS: 12 pass / 0 fail / 12 total
+================================================================

@@ -1,0 +1,129 @@
+Phase 4 Stage F smoke — tenant=Print With Synergy (Demo Customer) — df520bc7
+Run dir: /tmp/smoke-pws-1777577542
+API: https://api.lintpdf.com  Profile: lintpdf-default
+================================================================
+
+## test-sample
+  job_id    : ffbc62c8-7eeb-46a6-a0d2-ba28853c9bb2
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/ytvcHEXRJKyecb39gp3riSgLcuKmcsROi0bF9DzhvP8
+  PDF   : https://reports.printwithsynergy.com/r/t9xKclqpJsQrWtv2LD2fWLjErUQW2mQz6A2UPyy2q94.pdf
+  JSON  : https://reports.printwithsynergy.com/r/GW5QhI_SdJnmLEQy71VStspJzL-7wVMPZzFzisUDESo.json
+  ANNOT : https://reports.printwithsynergy.com/r/1I__NAX_FuBdwIB-ee6Td3V6UGzKnUVoUfx9G09XYTE.pdf
+  VIEW  : https://app.printwithsynergy.com/view/ytvcHEXRJKyecb39gp3riSgLcuKmcsROi0bF9DzhvP8
+
+## AN-Energy_StickPack_CA_Pink-Slush_P2_OL
+  job_id    : 69f631fc-9564-4899-9d6f-f9dac2af5f8a
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/9W1q3Kec5U7iDXCrn_cBZ4qBQvuXHPEANYTDv2RkgVc
+  PDF   : https://reports.printwithsynergy.com/r/L0IwkmF4SpS6-ey1nyBlV7oVJhKaKc-MveEGUCXjKRs.pdf
+  JSON  : https://reports.printwithsynergy.com/r/j1qiR4WO689zGtw6DD5UqamDC0uB4VRoIDnWYc8FcfU.json
+  ANNOT : https://reports.printwithsynergy.com/r/WWLedZh-gBfGkKl0fWuCgZggDwXYMMRO2EzFuUWnKag.pdf
+  VIEW  : https://app.printwithsynergy.com/view/9W1q3Kec5U7iDXCrn_cBZ4qBQvuXHPEANYTDv2RkgVc
+
+## AN_Energy_StickPack_CA_HSI_ADM_P1_OL
+  job_id    : f31bfe5c-a216-44e8-a1d2-96f91873eca6
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/2MdNzZsLslxhoMufec76SH_8OlivzUbBoYNBN-AXG2M
+  PDF   : https://reports.printwithsynergy.com/r/-R4uQ45JyCYoxT-4khT-UYe3AUCHa1kM1lBpX5pdW_8.pdf
+  JSON  : https://reports.printwithsynergy.com/r/MQrFxFfLxZ0zqmIxCpj5YHkiTgfbS0BLRVQuKmi_vf8.json
+  ANNOT : https://reports.printwithsynergy.com/r/sqnf-FKUmfSf16gbKnSImlOLkJWGtJrmivIpSvvH-EE.pdf
+  VIEW  : https://app.printwithsynergy.com/view/2MdNzZsLslxhoMufec76SH_8OlivzUbBoYNBN-AXG2M
+
+## Amalgam_Catalyst_9_5x3_5
+  job_id    : 478f1571-b52d-4340-8cf4-e852a1c877e1
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/kWoI_D1J52RiNaLrLG730lQh-JS3cpWP5tPjAer_DIA
+  PDF   : https://reports.printwithsynergy.com/r/Hp6uqfkqxqn0MRUL6aOei_U-LSj5vps47Tx_UOduENM.pdf
+  JSON  : https://reports.printwithsynergy.com/r/gfz9oooa_5VB6pRndDAkRUbZ-or7LaYJomQJZwwhKhY.json
+  ANNOT : https://reports.printwithsynergy.com/r/usf4DStSEmSMcHwiEhC2LZxoZKdsFCuVsv5rrxg8nLA.pdf
+  VIEW  : https://app.printwithsynergy.com/view/kWoI_D1J52RiNaLrLG730lQh-JS3cpWP5tPjAer_DIA
+
+## Cherry-Twist_OUTLINED
+  job_id    : 67fddeec-1ef2-4617-ba67-3e6a94d98ee4
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/OoX7Xn-iINNR8buNnODJaH0CLis1ct45JMdZU8SkfEo
+  PDF   : https://reports.printwithsynergy.com/r/oOeVPZCAU_UnxQdV8bS4Xv4xPbW5HOjam9A7vu0Gncc.pdf
+  JSON  : https://reports.printwithsynergy.com/r/8jQs67AB8dOu5su1CaEBy6iubiins21G_mH10Li8mOQ.json
+  ANNOT : https://reports.printwithsynergy.com/r/v3Qn4nIS9vEFII6DnOxDCzwxZ1wukZ1-1qIVb2UaJTw.pdf
+  VIEW  : https://app.printwithsynergy.com/view/OoX7Xn-iINNR8buNnODJaH0CLis1ct45JMdZU8SkfEo
+
+## DailyFiber_10up
+  job_id    : 87714fb4-9dcc-434d-854f-e989895bb6c7
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/U67GMalKs9AIYyhU7FFF4by0OkNJ72RFSS0DhebvAZc
+  PDF   : https://reports.printwithsynergy.com/r/8syr46MY1YrUHT3Vi3GD6qBGs_rrep5JSiVE_HFxwFU.pdf
+  JSON  : https://reports.printwithsynergy.com/r/ToRCu6lgUQLlOu4Ruk6cJH6BdDtuWK5SZp0pceJMIvY.json
+  ANNOT : https://reports.printwithsynergy.com/r/P8MSGSOR5SaGUpeUVuSOIjoaVR84dP04hz392KGGdI8.pdf
+  VIEW  : https://app.printwithsynergy.com/view/U67GMalKs9AIYyhU7FFF4by0OkNJ72RFSS0DhebvAZc
+
+## HSI_OUTLINED
+  job_id    : 23bc6e90-ada4-4699-8b33-cd0fc813cce4
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/sZGHnClvXPynniopi7P8KntaLd6p4jB-Qnpucsj60Kg
+  PDF   : https://reports.printwithsynergy.com/r/6qgPVFvTMREeM7fUvMPx0cMibNqyaikOF9R5wvWurzM.pdf
+  JSON  : https://reports.printwithsynergy.com/r/wJgHieTGynozM8pS7-DGabHsv0xLLR5jsf4Dxf3HPkQ.json
+  ANNOT : https://reports.printwithsynergy.com/r/nS8EftNofj8N_h8PrqrJ5DoOEhI5P9hGtVA0X8UrPRY.pdf
+  VIEW  : https://app.printwithsynergy.com/view/sZGHnClvXPynniopi7P8KntaLd6p4jB-Qnpucsj60Kg
+
+## Nutrops_LS_Dieline
+  job_id    : b68e1da6-3630-4f1e-81d2-c400b1dbc200
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/9r-QfQAyqQbaNaZgbfZsd6hqzvfV1Nf1f3zXneCTXys
+  PDF   : https://reports.printwithsynergy.com/r/8WH_k0haM4PbwE28bSVokTSXw-gyeoIlM2RYkVP9AOg.pdf
+  JSON  : https://reports.printwithsynergy.com/r/8gQ4UoM9cPiAIqKx5Myp2ObBpoDGtudPSnyOlXsnIss.json
+  ANNOT : https://reports.printwithsynergy.com/r/X9qHJbJUmDaLbe9EbA40ostyN8J_PWqXzaPvtNWrlvg.pdf
+  VIEW  : https://app.printwithsynergy.com/view/9r-QfQAyqQbaNaZgbfZsd6hqzvfV1Nf1f3zXneCTXys
+
+## Nutrops_SF_Dieline
+  job_id    : 31f6d98e-4592-49a9-9909-da2c99f75b36
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/uMjeG7JMInik1FPDnMOY8M2ci-MnccQMfj2LxLeYmQ8
+  PDF   : https://reports.printwithsynergy.com/r/YhR4C1mtrBUh0uEPu3vqZdmXbgdepk4vIVIz-L9sEEg.pdf
+  JSON  : https://reports.printwithsynergy.com/r/GDNPFiPIJ0LNzWzK-ldxaRlebR9ditoWr7Lz7LSwEZc.json
+  ANNOT : https://reports.printwithsynergy.com/r/w2ravK2iLa0j0ktQnXiB7UUplDBmRKiBtlKa8xDqngk.pdf
+  VIEW  : https://app.printwithsynergy.com/view/uMjeG7JMInik1FPDnMOY8M2ci-MnccQMfj2LxLeYmQ8
+
+## OrangeKiss_OUTLINED
+  job_id    : d39a7fad-a939-4aa1-a887-be341ee5dee5
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/maToDGW_cx5yKXn3pRXH9T6CFkbkixfCaSfONWuJ-8g
+  PDF   : https://reports.printwithsynergy.com/r/kzVtdhNIOc7zb5CQDyrEIaxoI86rmEF8mbQn93YiW80.pdf
+  JSON  : https://reports.printwithsynergy.com/r/gSdMHD9DR1VyiYEawFaOmjCWmzXVpMvd3zu0YzQkm2E.json
+  ANNOT : https://reports.printwithsynergy.com/r/2h7C6StGyMJ_hS2LTQ9aRIslPxsav_NokKRxFjkhVts.pdf
+  VIEW  : https://app.printwithsynergy.com/view/maToDGW_cx5yKXn3pRXH9T6CFkbkixfCaSfONWuJ-8g
+
+## Pavette_Pride_v99
+  job_id    : c097bee3-f48f-4690-afc8-c5ee2b756229
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/RDF5-YSSeuzgaVW8iBQa6jJbHQz1o90CRvQoJ_P7-_0
+  PDF   : https://reports.printwithsynergy.com/r/A-m2l5_axuBM3TTQ8i08d1kyQfllRxUZne6cEk_MI-k.pdf
+  JSON  : https://reports.printwithsynergy.com/r/Bn5T_iYJP_JiOa7jTLVxcCX5ta1k42PwMtZfbaWvrJ4.json
+  ANNOT : https://reports.printwithsynergy.com/r/mFq-c4ye-oaTN38IK88zVdovsr2t62UtLq2SsMa6p5Q.pdf
+  VIEW  : https://app.printwithsynergy.com/view/RDF5-YSSeuzgaVW8iBQa6jJbHQz1o90CRvQoJ_P7-_0
+
+## Pink-Slush_OUTLINED
+  job_id    : 194d99a7-14d7-48dc-b2a4-504dce60e2d2
+  status    : complete
+  EPM tier  : pass
+  HTML  : https://reports.printwithsynergy.com/r/cn20rBPOeJFJH4wYY7eYOsC3a1P6CL-C27OzF43uPis
+  PDF   : https://reports.printwithsynergy.com/r/IoxyOxffiizl_NEiC7gTCnNtC0PC0pHDMHtjBcra8Y8.pdf
+  JSON  : https://reports.printwithsynergy.com/r/w_9kStmrykUiMyTvpc6wtd57RdTmHhkxLSKnP9Jd5qE.json
+  ANNOT : https://reports.printwithsynergy.com/r/HdRF56Gqr1Hbu-tZKT6-2HhTIndLhPA-8jOpPG8Gbik.pdf
+  VIEW  : https://app.printwithsynergy.com/view/cn20rBPOeJFJH4wYY7eYOsC3a1P6CL-C27OzF43uPis
+
+
+================================================================
+RESULTS: 12 pass / 0 fail / 12 total
+================================================================
