@@ -16,6 +16,18 @@ from lintpdf.semantic.graphics_state import TransformationMatrix
 from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc_eu(page_num: int = 1) -> SemanticDocument:
     """Build a doc whose content stream triggers the analyzer's EU
     auto-detection path so the pharma check actually runs."""
@@ -63,7 +75,7 @@ def test_large_logo_does_not_flag_pharma_min() -> None:
     Tf=1.0, Tm.a=72, CTM.a=1.5 → 108 pt composed."""
     doc = _doc_eu()
     event = _text_event(font_size=1.0, tm_scale=72.0, ctm_scale=1.5)
-    findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"")
+    findings = PharmaFontAnalyzer().analyze_v2(_ctx(doc, events=[event], pdf_bytes=b""))
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert pharma == [], f"expected no pharma finding for 108pt logo; got {len(pharma)}"
 
@@ -73,7 +85,7 @@ def test_tiny_text_still_flags_pharma_min() -> None:
     1.4 mm EU pharma minimum. Must still fire."""
     doc = _doc_eu()
     event = _text_event(font_size=6.0)
-    findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"")
+    findings = PharmaFontAnalyzer().analyze_v2(_ctx(doc, events=[event], pdf_bytes=b""))
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert len(pharma) == 1
 
@@ -94,8 +106,10 @@ def test_dietary_supplement_industry_skips_analyzer() -> None:
     would otherwise flag as below the pharma minimum."""
     doc = _doc_eu()
     event = _text_event(font_size=6.0)
-    cfg = _Cfg(industry_type="dietary_supplement")
-    findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"", ai_config=cfg)
+    cfg = {"industry_type": "dietary_supplement"}
+    findings = PharmaFontAnalyzer().analyze_v2(
+        _ctx(doc, events=[event], pdf_bytes=b"", ai_config=cfg)
+    )
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert pharma == []
 
@@ -104,7 +118,9 @@ def test_unknown_industry_runs_analyzer() -> None:
     """Conservative default: unset industry_type still fires."""
     doc = _doc_eu()
     event = _text_event(font_size=6.0)
-    cfg = _Cfg(industry_type=None)
-    findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"", ai_config=cfg)
+    cfg: dict = {"industry_type": None}
+    findings = PharmaFontAnalyzer().analyze_v2(
+        _ctx(doc, events=[event], pdf_bytes=b"", ai_config=cfg)
+    )
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert len(pharma) == 1

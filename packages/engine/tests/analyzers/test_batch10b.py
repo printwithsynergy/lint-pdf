@@ -24,6 +24,18 @@ from lintpdf.semantic.graphics_state import TransformationMatrix
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc(**kwargs) -> SemanticDocument:
     return SemanticDocument(
         version=kwargs.get("version", "1.7"),
@@ -95,7 +107,7 @@ class TestTobaccoWarningArea:
     @staticmethod
     def test_silent_on_non_tobacco() -> None:
         doc = _doc(content_stream=b"Premium chocolate bar")
-        out = TobaccoWarningAnalyzer().analyze(doc, [], b"")
+        out = TobaccoWarningAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         assert out == []
 
     @staticmethod
@@ -117,7 +129,7 @@ class TestTobaccoWarningArea:
             )
         ]
         doc = _doc(content_stream=text)
-        out = TobaccoWarningAnalyzer().analyze(doc, events, b"")
+        out = TobaccoWarningAnalyzer().analyze_v2(_ctx(doc, events=events, pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "LPDF_TOBACCO_WARNING_AREA" in ids
 

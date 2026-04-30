@@ -8,10 +8,8 @@ from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
     from lintpdf.analyzers.finding import Finding
-    from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
+    from lintpdf.plugin.protocol import AnalyzerContext
 
 
 @register_ai_analyzer
@@ -30,12 +28,10 @@ class OrganicLabelingAnalyzer(BaseAIAnalyzer):
     tier = "gpu"
     credits_per_run = 3
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
-        """Analyze for organic labeling compliance. Requires GPU inference."""
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        """Analyze for organic labeling compliance. Requires GPU inference.
+
+        Phase 2 alpha-stream: signature migration. Stub — feature
+        requires GPU inference service.
+        """
         return []  # Stub — requires inference service

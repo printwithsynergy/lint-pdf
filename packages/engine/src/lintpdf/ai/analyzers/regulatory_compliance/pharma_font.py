@@ -13,7 +13,7 @@ import re
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.analyzers.regulatory_compliance._gates import is_pharma_applicable
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 from lintpdf.analyzers.text_metrics import (
@@ -22,7 +22,7 @@ from lintpdf.analyzers.text_metrics import (
 )
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -89,13 +89,16 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + events + ai_config (.regulatory_market + is_pharma_applicable).
+        # Reconstituted via _reconstitute_ai_config. pdf_bytes declared
+        # but never used.
+        document = ctx.document
+        events = ctx.events
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         # Category gate: pharma rules do not apply to food /
         # supplement / cosmetic / pet-food products regulated under
         # FIR 1169/2011 or equivalent. Skip the rule outright on
