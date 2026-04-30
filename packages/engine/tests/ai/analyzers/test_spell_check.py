@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from lintpdf.analyzers.finding import Severity
+from lintpdf.plugin import AnalyzerContext
 
 
 def _doc_with_text(page_text: str) -> MagicMock:
@@ -18,6 +19,21 @@ def _doc_with_text(page_text: str) -> MagicMock:
     return doc
 
 
+def _ctx(document: MagicMock, ai_config: dict | None = None) -> AnalyzerContext:
+    """Build an AnalyzerContext mirroring orchestrator-driven analyze_v2 calls.
+
+    Phase 2 alpha-stream batch 3 migrated SpellCheckAnalyzer from
+    legacy analyze() to analyze_v2(ctx); ai_config flows through
+    config["ai_config"] as a plain dict (or None).
+    """
+    return AnalyzerContext(
+        document=document,
+        events=[],
+        pdf_bytes=b"fake_pdf",
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 class TestSpellCheckAnalyzer:
     """Tests for SpellCheckAnalyzer with basic fallback mode."""
 
@@ -27,7 +43,7 @@ class TestSpellCheckAnalyzer:
         from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
         analyzer = SpellCheckAnalyzer()
-        findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+        findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
         assert findings == []
 
     @staticmethod
@@ -42,7 +58,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(doc))
 
         flagged_words = [f.details.get("word") for f in findings]
         assert "proooof" in flagged_words
@@ -59,7 +75,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(doc))
 
         flagged_words = [f.details.get("word") for f in findings]
         assert "weirdWord" in flagged_words
@@ -69,9 +85,6 @@ class TestSpellCheckAnalyzer:
         """Words in the custom dictionary should not be flagged."""
         doc = _doc_with_text("The proooof is in LintPDF")
 
-        ai_config = MagicMock()
-        ai_config.custom_dictionary = ["proooof"]
-
         with patch(
             "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
@@ -79,7 +92,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+            findings = analyzer.analyze_v2(_ctx(doc, {"custom_dictionary": ["proooof"]}))
 
         flagged_words = [f.details.get("word") for f in findings]
         assert "proooof" not in flagged_words
@@ -89,9 +102,6 @@ class TestSpellCheckAnalyzer:
         """Custom dictionary matching should be case-insensitive."""
         doc = _doc_with_text("The Proooof is here")
 
-        ai_config = MagicMock()
-        ai_config.custom_dictionary = ["PROOOOF"]
-
         with patch(
             "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
@@ -99,7 +109,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+            findings = analyzer.analyze_v2(_ctx(doc, {"custom_dictionary": ["PROOOOF"]}))
 
         flagged_words = [f.details.get("word") for f in findings]
         assert "Proooof" not in flagged_words
@@ -115,7 +125,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(doc))
 
         assert len(findings) > 0
         for f in findings:
@@ -145,7 +155,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=None)
+            findings = analyzer.analyze_v2(_ctx(doc))
 
         # Should not raise, may or may not have findings for normal text
         assert isinstance(findings, list)
@@ -171,7 +181,7 @@ class TestSpellCheckAnalyzer:
             from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
-            findings = analyzer.analyze(doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(doc))
 
         # Should flag the word on page 2
         page2_findings = [f for f in findings if f.page_num == 2]

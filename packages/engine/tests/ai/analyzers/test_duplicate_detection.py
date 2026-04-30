@@ -5,6 +5,20 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from lintpdf.analyzers.finding import Severity
+from lintpdf.plugin import AnalyzerContext
+
+
+def _ctx(document: MagicMock) -> AnalyzerContext:
+    """Build an AnalyzerContext mirroring orchestrator-driven analyze_v2 calls.
+
+    Phase 2 alpha-stream batch 3 migrated DuplicateDetectionAnalyzer
+    from legacy analyze() to analyze_v2(ctx).
+    """
+    return AnalyzerContext(
+        document=document,
+        events=[],
+        pdf_bytes=b"fake_pdf",
+    )
 
 
 class TestDuplicateDetectionAnalyzer:
@@ -22,7 +36,7 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
 
         assert findings == []
 
@@ -37,7 +51,7 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
 
         assert findings == []
 
@@ -65,7 +79,7 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
 
         assert findings == []
 
@@ -104,7 +118,7 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DUP_001"
@@ -149,7 +163,7 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
 
         assert len(findings) == 0
 
@@ -174,7 +188,7 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
 
         assert findings == []
 

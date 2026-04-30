@@ -11,13 +11,12 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
@@ -75,13 +74,15 @@ class SpellCheckAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + ai_config.custom_dictionary. ai_config reconstituted via
+        # the same helper BaseAIAnalyzer.analyze_v2 default uses
+        # to preserve attribute-access semantics.
+        document = ctx.document
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         page_texts = _extract_text_per_page(document)
         if not page_texts:
             return []
