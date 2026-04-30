@@ -158,15 +158,18 @@ import graph.
 | Phase | Scope |
 |---|---|
 | **1** *(current)* | `core/plugin/` protocol + `lintpdf/` stub + ESLint boundary rule + Phase-1 docs. No component moves; root barrel unchanged so packages/app and packages/mobile keep working. |
-| 2 | Move the 16 pure-core components to `core/components/`. Move the 11 LintPDF-flavoured components to `lintpdf/plugins/` and wire each as a plugin in `lintpdf/register.ts`. Refactor `PdfViewer.tsx` to thin host + plugin slots. Set up Vitest + behaviour-locking snapshot tests. Replace `/api/lintpdf/*` hardcoded strings with `services.*` calls. |
+| 2 | Move the 16 pure-core components to `core/components/`. Move the 11 LintPDF-flavoured components to `lintpdf/components/` and wire each as a plugin in `lintpdf/register.ts`. Refactor `PdfViewer.tsx` to thin host + plugin slots. Set up Vitest + behaviour-locking snapshot tests. Replace `/api/lintpdf/*` hardcoded strings with `services.*` calls. |
 | 3 | Repo extraction. `core/` becomes `@thinkneverland/loupe-pdf` (MIT, OSS); `lintpdf/` becomes `@thinkneverland/loupe-plugin-lintpdf` (proprietary). |
 | 4 | LoupePDF docs site (TypeDoc + worked examples). v1.0 SemVer commitment. |
 
 ## Authoring rules
 
-1. **Plugins go in `lintpdf/plugins/`** (LintPDF SaaS) or in
-   third-party packages that import only from
-   `@lintpdf/viewer-shared/core`. Never inside `core/`.
+1. **First-party LintPDF panels live in `lintpdf/components/`**;
+   they are React components consumed directly, not Plugin objects.
+   The `Plugin` protocol (manifest + `mount(ctx)`) is the
+   **third-party extension surface** — vendor plugins ship
+   anywhere and import only from `@lintpdf/viewer-shared/core`.
+   Never inside `core/` for either.
 2. **No LintPDF imports inside `core/`**. The
    `eslint.config.mjs` rule fails CI on `@lintpdf/*` and
    `**/lintpdf/**` imports inside the `core/` subtree.

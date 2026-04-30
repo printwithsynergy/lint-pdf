@@ -6,22 +6,22 @@ import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
 import { ViewerServicesContext } from "./core/host";
 import { createLintPDFViewerServices } from "./lintpdf/sources/services";
 import { PageCanvas } from "./core/components/PageCanvas";
-import { FindingsPanel } from "./lintpdf/plugins/FindingsPanel";
+import { FindingsPanel } from "./lintpdf/components/FindingsPanel";
 import { PageNavigator } from "./core/components/PageNavigator";
 import {
   findingToOverlayItem,
   findingsToOverlayItems,
 } from "./lintpdf/sources/finding-overlay";
 import type { OverlayItem } from "./core/plugin/types";
-import { ViewerToolbar } from "./lintpdf/plugins/ViewerToolbar";
-import { SeparationPanel } from "./lintpdf/plugins/SeparationPanel";
+import { ViewerToolbar } from "./lintpdf/components/ViewerToolbar";
+import { SeparationPanel } from "./lintpdf/components/SeparationPanel";
 import { SeparationCanvas } from "./core/components/SeparationCanvas";
 import { LayerCanvas } from "./core/components/LayerCanvas";
 import { TACHeatmapOverlay } from "./core/components/TACHeatmapOverlay";
 import { AnnotationCanvas } from "./core/components/AnnotationCanvas";
 import { AnnotationToolbar } from "./core/components/AnnotationToolbar";
 import type { AnnotationTool } from "./core/components/AnnotationToolbar";
-import { AnnotationLayer, useAnnotations } from "./lintpdf/plugins/AnnotationLayer";
+import { AnnotationLayer, useAnnotations } from "./lintpdf/components/AnnotationLayer";
 import { AnnotationThread } from "./core/components/AnnotationThread";
 import { ColorPickerTool } from "./core/components/ColorPickerTool";
 import { DensitometerTool } from "./core/components/DensitometerTool";
@@ -29,14 +29,14 @@ import { MeasureTool } from "./core/components/MeasureTool";
 import { BoxOverlay } from "./core/components/BoxOverlay";
 import { DielineOverlay } from "./core/components/DielineOverlay";
 import { LayerPanel } from "./core/components/LayerPanel";
-import { VerdictBar } from "./lintpdf/plugins/VerdictBar";
-import { ComparisonPanel } from "./lintpdf/plugins/ComparisonPanel";
+import { VerdictBar } from "./lintpdf/components/VerdictBar";
+import { ComparisonPanel } from "./lintpdf/components/ComparisonPanel";
 import { MobileBottomSheet } from "./core/components/MobileBottomSheet";
 import type { SnapPosition } from "./core/components/MobileBottomSheet";
 import { MobileDrawer } from "./core/components/MobileDrawer";
 import { useTilePrefetch, useTileWarmingStatus } from "./useTileWarming";
-import { ShareDialog } from "./lintpdf/plugins/ShareDialog";
-import { ApprovalChainPanel } from "./lintpdf/plugins/ApprovalChainPanel";
+import { ShareDialog } from "./lintpdf/components/ShareDialog";
+import { ApprovalChainPanel } from "./lintpdf/components/ApprovalChainPanel";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
