@@ -46,7 +46,16 @@ class CostCapService(Protocol):
 
 
 class GPUClient(Protocol):
-    """Abstract handle for the GPU inference sidecar."""
+    """Abstract handle for the GPU inference sidecar.
+
+    Phase 1 only declared ``detect_outlines``. Phase 2 widened the
+    surface to include every method the migrated AI analyzers
+    actually call (logos, NSFW, image quality, embeddings, generic
+    object detection, document classification, regulatory symbols,
+    translation). OSS hosts that ship without GPU access wire this
+    slot to ``None`` and the analyzers self-skip per the
+    service-skip pattern in ``engine/CLAUDE.md``.
+    """
 
     def detect_outlines(
         self,
@@ -55,6 +64,36 @@ class GPUClient(Protocol):
         page_num: int,
         dpi: int,
     ) -> list[dict[str, Any]]: ...
+
+    def detect_logos(
+        self,
+        png_bytes: bytes,
+        reference_embeddings: list[dict[str, Any]] | None = ...,
+    ) -> dict[str, Any]: ...
+
+    def detect_nsfw(self, png_bytes: bytes) -> dict[str, Any]: ...
+
+    def assess_image_quality(self, png_bytes: bytes) -> dict[str, Any]: ...
+
+    def embed_image(self, png_bytes: bytes) -> dict[str, Any]: ...
+
+    def detect_objects(
+        self,
+        png_bytes: bytes,
+        prompt: str,
+    ) -> dict[str, Any]: ...
+
+    def classify_document(self, png_bytes: bytes) -> dict[str, Any]: ...
+
+    def detect_symbols(self, png_bytes: bytes) -> dict[str, Any]: ...
+
+    def translate_text(
+        self,
+        *,
+        text: str,
+        source_lang: str,
+        target_lang: str,
+    ) -> dict[str, Any]: ...
 
 
 class LLMClient(Protocol):
@@ -71,7 +110,13 @@ class LLMClient(Protocol):
 
 
 class Renderer(Protocol):
-    """Rasterises PDF pages to images for AI analyzers."""
+    """Rasterises PDF pages to images for AI analyzers.
+
+    Phase 2 widened beyond ``render_page`` to also expose the two
+    raster helpers AI analyzers actually call:
+    ``render_page_to_image(pdf_bytes, page_num, dpi)`` and
+    ``render_all_pages(pdf_bytes, dpi)``.
+    """
 
     def render_page(
         self,
@@ -80,6 +125,19 @@ class Renderer(Protocol):
         page_num: int,
         dpi: int,
     ) -> bytes: ...
+
+    def render_page_to_image(
+        self,
+        pdf_bytes: bytes,
+        page_num: int = ...,
+        dpi: int = ...,
+    ) -> bytes: ...
+
+    def render_all_pages(
+        self,
+        pdf_bytes: bytes,
+        dpi: int = ...,
+    ) -> list[bytes]: ...
 
 
 class VeraPDFClient(Protocol):
@@ -99,6 +157,17 @@ class DatabaseService(Protocol):
     """Opaque session factory for plugins that read SaaS-side state."""
 
     def session(self) -> Any: ...
+
+
+class StorageService(Protocol):
+    """Object-storage handle for plugins that fetch tenant-uploaded
+    bytes (e.g. reference PDFs for version-diff).
+
+    OSS-mode stub returns ``None`` from every download — analyzers
+    that need storage self-skip.
+    """
+
+    def download(self, file_id: str) -> bytes | None: ...
 
 
 class TenantsService(Protocol):
@@ -126,6 +195,7 @@ class Services(Protocol):
     verapdf_client: VeraPDFClient
     database: DatabaseService
     tenants: TenantsService
+    storage: StorageService
 
 
 # ---------------------------------------------------------------------------
@@ -162,6 +232,11 @@ class _NoOpTenants:
         return {}
 
 
+class _NoOpStorage:
+    def download(self, _file_id: str) -> bytes | None:
+        return None
+
+
 def noop_metering() -> MeteringService:
     """Return a metering stub that records nothing. Safe for OSS hosts."""
 
@@ -184,3 +259,10 @@ def noop_tenants() -> TenantsService:
     """Return a tenants stub that reports no AI config and no entitlements."""
 
     return _NoOpTenants()
+
+
+def noop_storage() -> StorageService:
+    """Return a storage stub that returns ``None`` from every download.
+    Analyzers that need storage self-skip."""
+
+    return _NoOpStorage()
