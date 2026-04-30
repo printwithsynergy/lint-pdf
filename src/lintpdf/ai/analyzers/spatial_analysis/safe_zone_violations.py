@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -27,14 +26,6 @@ logger = logging.getLogger(__name__)
 
 # Conversion constant: 1 mm = 2.8346 points at 72 dpi
 _MM_TO_PT = 2.8346
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
 
 
 def _px_to_pt(px: float, dpi: int) -> float:
@@ -55,15 +46,16 @@ class SafeZoneViolationsAnalyzer(BaseAIAnalyzer):
         self,
         ctx: AnalyzerContext,
     ) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses document
-        # + pdf_bytes + ai_config (.default_safe_zone_mm). Reconstituted
-        # via _reconstitute_ai_config to preserve attribute access.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         document = ctx.document
         pdf_bytes = ctx.pdf_bytes
         ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
         ai_config = _reconstitute_ai_config(ai_config_dict)
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("safe_zone_violations: ctx.services unavailable, skipping")
+            return []
 
         # Get safe zone margin in mm, convert to points
         safe_zone_mm = 3.0
@@ -74,12 +66,12 @@ class SafeZoneViolationsAnalyzer(BaseAIAnalyzer):
         render_dpi = 200
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=render_dpi)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=render_dpi)
         except RuntimeError:
             logger.debug("safe_zone_violations: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         for page_idx, png_bytes in enumerate(page_images):

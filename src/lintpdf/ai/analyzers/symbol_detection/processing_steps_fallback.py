@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -56,14 +55,6 @@ _SPOT_COLOR_INDICATORS: dict[str, str] = {
     "spot uv": "spot_uv",
     "kiss cut": "die_cut",
 }
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
 
 
 def _analyze_layer_names(document: SemanticDocument) -> list[dict[str, Any]]:
@@ -167,13 +158,18 @@ class ProcessingStepsFallbackAnalyzer(BaseAIAnalyzer):
         if not all_detected_steps:
             # Only invoke GPU if structural analysis found nothing — this is
             # the "fallback" path
-            from lintpdf.ai.rendering import render_page_to_image
+            services = ctx.services
+            if services is None or services.gpu_client is None or services.renderer is None:
+                logger.debug("processing_steps_fallback: ctx.services unavailable, skipping")
+                return []
 
-            gpu = _get_gpu_client()
+            gpu = services.gpu_client
 
             # Check first page as representative sample
             try:
-                first_page_png = render_page_to_image(pdf_bytes, page_num=1, dpi=150)
+                first_page_png = services.renderer.render_page_to_image(
+                    pdf_bytes, page_num=1, dpi=150
+                )
             except RuntimeError:
                 logger.debug("processing_steps_fallback: PDF rendering backend unavailable")
                 return []
