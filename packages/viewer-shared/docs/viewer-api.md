@@ -107,16 +107,43 @@ plugin protocol stays the same.
 ```ts
 const services: ViewerServices = {
   pageImages: {
-    async getPageImageUrl({ pageNum, dpi }) {
+    getPageImageUrl({ pageNum, dpi }) {
       return `https://cdn.example.com/tiles/${jobId}/p${pageNum}-${dpi}.png`;
     },
   },
+  layers: noopLayerService,
+  separations: noopSeparationService,
+  tacHeatmap: noopTACHeatmapService,
+  colorSample: noopColorSampleService,
+  densitometer: noopDensitometerService,
   annotations: lintpdfAnnotationService,
+  reports: noopReportsService,
   telemetry: noopTelemetry,
   i18n: noopI18n,
   tokens: defaultThemeTokens,
 };
 ```
+
+`getPageImageUrl` is **synchronous** (returns `string`) so it slots
+straight into `<img src={url}>` without a `useEffect`. Hosts that
+need async URL signing pre-resolve into a redirect proxy upstream.
+
+The full `ViewerServices` surface ships these protocols (all wired
+in PR sequence #338-#343):
+
+| Service | Methods |
+|---|---|
+| `pageImages` | `getPageImageUrl` |
+| `layers` | `getLayerImageUrl`, `listLayers` |
+| `separations` | `getChannelImageUrl` |
+| `tacHeatmap` | `getHeatmapImageUrl`, `listRuns` |
+| `colorSample` | `sampleAt` (returns `null` on err) |
+| `densitometer` | `sampleAt` (throws `Error` on err) |
+| `annotations` | `list`, `getForPage`, `saveForPage`, `remove` |
+| `reports` | `getHtmlReportUrl`, `getPdfDownloadUrl` |
+| `telemetry` | `track` |
+| `i18n` | `t` |
+| `tokens` | `primary`, `accent`, `bg`, `fg`, `border` |
 
 ## OSS-mode no-op stubs
 

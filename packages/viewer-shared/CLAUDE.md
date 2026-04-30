@@ -11,10 +11,27 @@ same workspace:
   (proprietary). LintPDF-flavoured panels, overlays, and the
   `registerLintPDFPlugins()` entry point.
 
-Phase 1 (current) introduces the directories and the protocol but
-keeps every existing component at the legacy `src/` flat layout.
-Phase 2 moves the 16 pure-core components to `src/core/components/`
-and the 11 LintPDF-flavoured components to `src/lintpdf/plugins/`.
+Phase 1 introduced the directories and the protocol while keeping
+existing components at the legacy `src/` flat layout. Phase 2 (in
+progress) has completed the structural moves and the services
+abstraction:
+
+- 17 pure-core components moved to `src/core/components/` (PR #332).
+- 10 LintPDF-flavoured components moved to `src/lintpdf/plugins/`
+  (PR #344).
+- All host-supplied data flows through `ViewerServices` (PRs
+  #338-#343); zero components inside `core/components/` build URLs
+  from `apiBase`.
+
+Still in flight for Phase 2:
+- Wrap the 10 moved LintPDF components as `Plugin` objects (manifest
+  + `mount(ctx)`) and populate `registerLintPDFPlugins()`.
+- Refactor `PdfViewer.tsx` (still a 1244-line orchestrator) into a
+  thin host shell that drives the plugin slots.
+- Wire actual ESLint enforcement (`@typescript-eslint/parser` +
+  `lint` script + CI). Today the boundary rule in
+  `eslint.config.mjs` is documentation-only because the package
+  has no `lint` script.
 
 ## Boundary rule
 
@@ -75,10 +92,11 @@ When you move or refactor a component:
 
 ## Phase roadmap
 
-- **1** — protocol + scaffolding + boundary rule + docs. *(this PR)*
+- **1** — protocol + scaffolding + boundary rule + docs. *(complete)*
 - **2** — move components, wire plugins, replace `/api/lintpdf/*`
   hardcoding with `ctx.services.*`, set up Vitest, refactor
-  `PdfViewer.tsx`.
+  `PdfViewer.tsx`. *(structural moves + services abstraction
+  complete; plugin-wrapping + PdfViewer refactor still pending)*
 - **3** — extract `thinkneverland/loupe-pdf` + `loupe-plugin-lintpdf`
   repos.
 - **4** — LoupePDF docs site, v1.0 SemVer.
