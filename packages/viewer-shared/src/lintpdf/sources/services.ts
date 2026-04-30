@@ -37,6 +37,24 @@ export function createLintPDFViewerServices(args: {
       getPageImageUrl: ({ pageNum, dpi }) =>
         `${apiBase}/pages/${pageNum}/tile?dpi=${dpi}`,
     },
+    layers: {
+      getLayerImageUrl: ({ pageNum, layerIndex, dpi }) =>
+        `${apiBase}/pages/${pageNum}/layers/${layerIndex}?dpi=${dpi}`,
+      listLayers: async () => {
+        const resp = await fetch(`${apiBase}/layers`);
+        if (!resp.ok) {
+          throw new Error("Failed to load layers");
+        }
+        const data = (await resp.json()) as {
+          layers?: ReadonlyArray<{
+            name: string;
+            ocg_index: number;
+            default_on: boolean;
+          }>;
+        };
+        return data.layers ?? [];
+      },
+    },
     // Annotations / telemetry / i18n / tokens stay on the OSS no-op
     // defaults until subsequent PRs land their LintPDF impls.
     annotations: {
