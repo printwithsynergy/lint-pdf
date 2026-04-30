@@ -443,6 +443,20 @@ describe("createLintPDFViewerServices", () => {
     });
   });
 
+  describe("reports", () => {
+    it("getHtmlReportUrl points at /api/lintpdf/reports/{jobId}/html", () => {
+      expect(services.reports.getHtmlReportUrl()).toBe(
+        "/api/lintpdf/reports/job-1/html",
+      );
+    });
+
+    it("getPdfDownloadUrl points at /api/lintpdf/reports/{jobId}/download", () => {
+      expect(services.reports.getPdfDownloadUrl()).toBe(
+        "/api/lintpdf/reports/job-1/download",
+      );
+    });
+  });
+
   describe("telemetry / i18n / tokens", () => {
     it("telemetry.track is a no-op (does not throw)", () => {
       expect(() =>
