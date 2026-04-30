@@ -48,6 +48,12 @@ export function createLintPDFViewerServices(args: {
     /\/viewer\/.*$/,
     `/annotations/${jobId}`,
   );
+  // Reports live at /api/lintpdf/reports/{jobId} — same shape as
+  // annotations, different sub-path.
+  const reportsBase = apiBase.replace(
+    /\/viewer\/.*$/,
+    `/reports/${jobId}`,
+  );
   return {
     pageImages: {
       getPageImageUrl: ({ pageNum, dpi }) =>
@@ -185,6 +191,10 @@ export function createLintPDFViewerServices(args: {
           /* swallow */
         }
       },
+    },
+    reports: {
+      getHtmlReportUrl: () => `${reportsBase}/html`,
+      getPdfDownloadUrl: () => `${reportsBase}/download`,
     },
     telemetry: noopTelemetry,
     i18n: noopI18n,

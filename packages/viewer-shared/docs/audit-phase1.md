@@ -54,27 +54,30 @@ inside `core/components/`)** — Phase 2 split this in two stages:
   (PdfViewer, ViewerToolbar, AnnotationLayer, etc.) keep working
   without changes. Both names point at the same React context
   object.
-- **Stage 2 (PR #338, in progress)** — replaces `apiBase`-based URL
-  string building with `services.X.Y(...)` calls. PR #338 makes
-  `PageImageService.getPageImageUrl` synchronous (returns `string`,
-  was `Promise<string>`); ships the `createLintPDFViewerServices`
-  factory in `src/lintpdf/sources/services.ts`; adds
-  `ViewerServicesContext` + `useViewerServices()` to `core/host`;
-  wires the provider into `PdfViewer.tsx`; and migrates
-  `PageNavigator` + `PageCanvas` (the 2 of 11 components that build
-  page-tile URLs) to call `pageImages.getPageImageUrl(...)`.
+- **Stage 2 (PRs #338-#343, complete)** — replaced `apiBase`-based
+  URL string building with `services.X.Y(...)` calls across **all 11
+  components in `src/core/components/`**. Final state:
 
-  Subsequent PRs expand `ViewerServices` to also cover layers,
-  separations, tac-heatmap, color-sampling, and densitometer reads,
-  migrating the remaining 9 components in lockstep:
-  - `LayerCanvas`, `LayerPanel` → new `LayerService`
-  - `SeparationCanvas` → new `SeparationService`
-  - `TACHeatmapOverlay` → new `TACHeatmapService`
-  - `ColorPickerTool` → new `ColorSampleService`
-  - `DensitometerTool` → new `DensitometerService`
-  - `AnnotationCanvas`, `AnnotationThread` → expand the existing
-    `AnnotationService` with concrete LintPDF impl
-  - `MobileDrawer` → new `ReportsService`
+  | PR | Service shape | Components migrated |
+  |---|---|---|
+  | #338 | `PageImageService` (sync `string` return) | `PageCanvas`, `PageNavigator` |
+  | #339 | `LayerService` (`getLayerImageUrl` + `listLayers`) | `LayerCanvas`, `LayerPanel` |
+  | #340 | `SeparationService` + `TACHeatmapService` | `SeparationCanvas`, `TACHeatmapOverlay` |
+  | #341 | `ColorSampleService` + `DensitometerService` | `ColorPickerTool`, `DensitometerTool` |
+  | #342 | `AnnotationService` (retyped from speculative shape) | `AnnotationCanvas`, `AnnotationThread` |
+  | #343 | `ReportsService` | `MobileDrawer` |
+
+  `createLintPDFViewerServices` (`src/lintpdf/sources/services.ts`)
+  is the single LintPDF-flavoured impl factory. It takes
+  `{ apiBase, jobApiBase, jobId }` and supplies all 11 protocol
+  methods. `PdfViewer.tsx` instantiates it once and mounts the
+  result on `ViewerServicesContext`; components consume via
+  `useViewerServices()`.
+
+  After PR #343, **zero components inside `src/core/components/`
+  read `apiBase` from `useViewerHost()`** — all URL construction
+  flows through services. `useViewerHost()` is still used by
+  components that need `readOnly` (annotation gating).
 
 **`ViewerFinding[]` consumers (0 files remaining)** — both
 `PageNavigator` (PR #334) and `PageCanvas` (PR #335) have migrated.
