@@ -55,6 +55,39 @@ export function createLintPDFViewerServices(args: {
         return data.layers ?? [];
       },
     },
+    separations: {
+      getChannelImageUrl: ({ pageNum, channelName, dpi }) =>
+        `${apiBase}/pages/${pageNum}/channel/${encodeURIComponent(channelName)}?dpi=${dpi}`,
+    },
+    tacHeatmap: {
+      getHeatmapImageUrl: ({ pageNum, dpi, tacLimit }) =>
+        `${apiBase}/pages/${pageNum}/tac-heatmap?dpi=${dpi}&tac_limit=${tacLimit}`,
+      listRuns: async ({ pageNum, dpi, tacLimit }) => {
+        // Non-fatal failures: TACHeatmapOverlay's hover layer just stays
+        // empty, the heatmap PNG itself still renders. Returning [] on
+        // any error preserves that behaviour through the service shape.
+        try {
+          const resp = await fetch(
+            `${apiBase}/pages/${pageNum}/tac-heatmap/runs?dpi=${dpi}&tac_limit=${tacLimit}`,
+          );
+          if (!resp.ok) return [];
+          const data = (await resp.json()) as {
+            runs?: ReadonlyArray<{
+              x0: number;
+              y0: number;
+              x1: number;
+              y1: number;
+              mean_tac: number;
+              limit: number;
+              exceeds: boolean;
+            }>;
+          };
+          return Array.isArray(data.runs) ? data.runs : [];
+        } catch {
+          return [];
+        }
+      },
+    },
     // Annotations / telemetry / i18n / tokens stay on the OSS no-op
     // defaults until subsequent PRs land their LintPDF impls.
     annotations: {
