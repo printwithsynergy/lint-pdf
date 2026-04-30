@@ -8,8 +8,7 @@ src/lintpdf/ai/analyzers/barcode/qr_validation.py:125:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:84:from lintpdf.ai.text_mask
 src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:95:from lintpdf.ai.text_mask
 src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:96:from lintpdf.ai.text_mask
-src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:163:from lintpdf.ai.types import get_db_session
-src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:164:from lintpdf.api.models
+src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:171:from lintpdf.api.models
 src/lintpdf/analyzers/advanced_color_analyzer.py:66:from lintpdf.ai.rendering
 src/lintpdf/analyzers/barcode.py:571:from lintpdf.ai.rendering
 src/lintpdf/analyzers/dieline.py:858:from lintpdf.ai.dieline_claude

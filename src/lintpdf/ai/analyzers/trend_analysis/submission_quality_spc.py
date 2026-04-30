@@ -149,26 +149,35 @@ def _apply_western_electric_rules(  # skipcq: PY-R1000
     return violations
 
 
-def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
+def _query_historical_data(tenant_id: Any, services: Any) -> list[dict[str, Any]] | None:
     """Query historical job quality data for the tenant.
 
     Fetches completed jobs from the database and computes per-job finding
     counts to build the time series needed for SPC analysis.
 
-    Returns None if the database is unavailable or no data exists.
+    Returns None if ``services.database`` or the SaaS-only ``Job``/
+    ``JobFinding`` models aren't available (OSS host case).
     """
-    try:
-        from sqlalchemy import func, text
-
-        from lintpdf.ai.types import get_db_session
-        from lintpdf.api.models import Job, JobFinding, JobStatus
-    except (ImportError, RuntimeError):
-        logger.debug("Database not available for SPC historical query — tenant_id=%s", tenant_id)
+    if services is None or getattr(services, "database", None) is None:
+        logger.debug(
+            "submission_quality_spc: ctx.services.database unavailable — tenant_id=%s",
+            tenant_id,
+        )
         return None
 
     try:
-        db = get_db_session()
-    except RuntimeError:
+        from sqlalchemy import func, text
+
+        from lintpdf.api.models import Job, JobFinding, JobStatus
+    except ImportError:
+        logger.debug(
+            "Database models not available for SPC historical query — tenant_id=%s", tenant_id
+        )
+        return None
+
+    try:
+        db = services.database.session()
+    except (RuntimeError, AttributeError):
         logger.debug("Database session not initialized — tenant_id=%s", tenant_id)
         return None
 
@@ -275,7 +284,7 @@ class SubmissionQualitySPCAnalyzer(BaseAIAnalyzer):
         if tenant_id is None:
             return []
 
-        historical_data = _query_historical_data(tenant_id)
+        historical_data = _query_historical_data(tenant_id, ctx.services)
         if historical_data is None:
             return [
                 self._make_finding(
