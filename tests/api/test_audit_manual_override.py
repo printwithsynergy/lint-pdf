@@ -57,7 +57,14 @@ def _seed_finding(db: Session, *, status: str | None = "confirmed") -> uuid.UUID
 
 class TestManualAuditOverride:
     @staticmethod
-    def test_rejects_missing_admin_key(client: TestClient, db_session: Session) -> None:
+    def test_rejects_missing_admin_key(client: TestClient, db_session: Session, monkeypatch) -> None:
+        # Configure admin key so verify_admin_key takes the
+        # invalid-key branch (401) rather than the unconfigured
+        # branch (503). In a dev shell `LINTPDF_ADMIN_API_KEY` is
+        # often already exported; CI runs with a clean env, so
+        # without this monkeypatch the test fails with 503 on a
+        # clean checkout.
+        monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", ADMIN_KEY)
         fid = _seed_finding(db_session)
         resp = client.patch(
             f"/api/v1/admin/findings/{fid}/audit",
