@@ -1,6 +1,6 @@
 "use client";
 
-import type { AuditVerdict } from "./types";
+import type { AuditVerdict } from "../../types";
 
 /**
  * AI accuracy-audit chip shown next to each finding row.

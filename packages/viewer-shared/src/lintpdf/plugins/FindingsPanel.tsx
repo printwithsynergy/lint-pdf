@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AuditChip } from "./AuditChip";
-import type { PreflightSourceMode, ViewerFinding } from "./types";
+import type { PreflightSourceMode, ViewerFinding } from "../../types";
 import { UpgradePrompt } from "./UpgradePrompt";
 
 interface FindingsPanelProps {

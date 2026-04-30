@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useViewerApi } from "./types";
+import { useViewerApi } from "../../types";
 
 interface ShareDialogProps {
   isOpen: boolean;

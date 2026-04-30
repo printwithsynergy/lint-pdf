@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useViewerApi } from "./types";
+import { useViewerApi } from "../../types";
 
 export type AnnotationKind = "rect" | "circle" | "arrow" | "freehand" | "note";
 
