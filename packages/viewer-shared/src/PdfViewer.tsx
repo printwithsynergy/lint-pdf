@@ -6,7 +6,11 @@ import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
 import { PageCanvas } from "./core/components/PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./core/components/PageNavigator";
-import { findingsToOverlayItems } from "./lintpdf/sources/finding-overlay";
+import {
+  findingToOverlayItem,
+  findingsToOverlayItems,
+} from "./lintpdf/sources/finding-overlay";
+import type { OverlayItem } from "./core/plugin/types";
 import { ViewerToolbar } from "./ViewerToolbar";
 import { SeparationPanel } from "./SeparationPanel";
 import { SeparationCanvas } from "./core/components/SeparationCanvas";
@@ -265,14 +269,17 @@ export function PdfViewer({
     for (const f of findings) counts[f.severity]++;
     return counts;
   }, [findings]);
-  // Phase-2 abstraction: PageNavigator (and, in subsequent PRs,
-  // PageCanvas) consume the generic OverlayItem shape rather than
-  // ViewerFinding directly. The conversion is the one point in the
-  // viewer that bridges LintPDF-domain findings → core-namespace
-  // overlay items.
+  // Phase-2 abstraction: PageNavigator and PageCanvas consume the
+  // generic OverlayItem shape rather than ViewerFinding directly.
+  // The conversion is the one point in the viewer that bridges
+  // LintPDF-domain findings → core-namespace overlay items.
   const overlayItems = useMemo(
     () => findingsToOverlayItems(findings),
     [findings],
+  );
+  const selectedItem = useMemo(
+    () => (selectedFinding ? findingToOverlayItem(selectedFinding) : null),
+    [selectedFinding],
   );
   const findingsSummaryThisPage = useMemo(() => {
     const counts = { error: 0, warning: 0, advisory: 0 };
@@ -456,6 +463,17 @@ export function PdfViewer({
       }
     },
     [currentPage],
+  );
+
+  // PageCanvas emits OverlayItem clicks. The original ViewerFinding
+  // is round-tripped via item.data.finding, so unwrapping here lets
+  // the existing selection/navigation logic stay untouched.
+  const handleItemClick = useCallback(
+    (item: OverlayItem) => {
+      const f = item.data?.finding as ViewerFinding | undefined;
+      if (f) handleSelectFinding(f);
+    },
+    [handleSelectFinding],
   );
 
   // Load channel names when separation mode is first enabled
@@ -894,7 +912,7 @@ export function PdfViewer({
                   ) : viewerMode === "layers" ? (
                     <LayerCanvas jobId={jobId} pageNum={currentPage} enabledLayers={enabledLayers} allLayers={allLayerIndices} width={canvasWidth} height={canvasHeight} />
                   ) : (
-                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={measureMode === "none" ? setZoom : undefined} onPageChange={measureMode === "none" ? (d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d))) : undefined} tileDpi={effectiveDpi} tileCdnBase={config.tile_cdn_base} cropToTrim />
+                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} items={overlayItems} selectedItem={selectedItem} onItemClick={handleItemClick} onZoomChange={measureMode === "none" ? setZoom : undefined} onPageChange={measureMode === "none" ? (d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d))) : undefined} tileDpi={effectiveDpi} tileCdnBase={config.tile_cdn_base} cropToTrim />
                   )}
 
                   {/* Annotation overlay */}
@@ -1169,9 +1187,9 @@ export function PdfViewer({
                     jobId={jobId}
                     page={currentPageInfo}
                     zoom={zoom}
-                    findings={findings}
-                    selectedFinding={selectedFinding}
-                    onFindingClick={handleSelectFinding}
+                    items={overlayItems}
+                    selectedItem={selectedItem}
+                    onItemClick={handleItemClick}
                     tileDpi={effectiveDpi}
                     tileCdnBase={config.tile_cdn_base}
                   />

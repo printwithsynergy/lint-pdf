@@ -1,0 +1,52 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PageCanvas > renders the loading placeholder before the tile image fires onload 1`] = `
+<div
+  class="relative inline-block overflow-hidden"
+  style="width: 1275px; height: 1650px;"
+>
+  <div
+    class="flex items-center justify-center bg-muted/50"
+    style="width: 1275px; height: 1650px;"
+  >
+    <div
+      class="flex flex-col items-center gap-2"
+    >
+      <svg
+        class="h-8 w-8 animate-spin text-slate-400"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
+        <path
+          class="opacity-75"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          fill="currentColor"
+        />
+      </svg>
+      <span
+        class="text-xs text-slate-500"
+      >
+        Page 
+        1
+      </span>
+    </div>
+  </div>
+  <div
+    class="absolute"
+    style="left: 0px; top: 0px; width: 1275px; height: 1650px;"
+  >
+    <canvas
+      class="cursor-crosshair hidden"
+      style="width: 1275px; height: 1650px;"
+    />
+  </div>
+</div>
+`;

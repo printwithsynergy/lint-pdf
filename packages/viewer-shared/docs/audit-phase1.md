@@ -54,14 +54,21 @@ prop (or reads it from a core-namespace context) and replaces
 `services.pageImages.getPageImageUrl(...)`,
 `services.annotations.list()`, etc.
 
-**`ViewerFinding[]` consumers (2 files)** — `PageCanvas`,
-`PageNavigator`. Migration target: take `OverlayItem[]` instead.
+**`ViewerFinding[]` consumers (0 files remaining)** — both
+`PageNavigator` (PR #334) and `PageCanvas` (this PR) have migrated.
+Their public props now take `items: readonly OverlayItem[]` /
+`selectedItem: OverlayItem | null` instead of `findings: ViewerFinding[]`
+/ `selectedFinding: ViewerFinding`, with `PdfViewer.tsx` calling
+`findingsToOverlayItems(findings)` / `findingToOverlayItem(selectedFinding)`
+once at the call site.
 
 #### Phase 2 abstraction primitives (in place)
 
 - **`OverlayItem`** — generic, LintPDF-free shape rendered on top of
-  the page canvas. Fields: `id`, `page`, `bbox`, optional `tier`,
-  `color`, `label`, `data`. Defined in
+  the page canvas. Fields: `id`, `page`, optional `bbox` (page-level
+  items render via a page-level indicator), `tier`, `color`, `label`,
+  `description` (longer text for tooltip body), `code` (short
+  identifier for tooltip badge), `data`. Defined in
   `src/core/plugin/types.ts`; exported from
   `@lintpdf/viewer-shared/core`.
 - **`findingsToOverlayItems(findings)` / `findingToOverlayItem(finding)`**
