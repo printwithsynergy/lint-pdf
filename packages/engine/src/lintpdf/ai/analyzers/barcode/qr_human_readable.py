@@ -156,12 +156,15 @@ class QRHumanReadableMatching(BaseAIAnalyzer):
             logger.debug("qr_human_readable_matching: pytesseract not available — skipping")
             return []
 
-        from lintpdf.ai.rendering import render_all_pages
-
         findings: list[Finding] = []
 
+        services = ctx.services
+        if services is None or services.renderer is None:
+            logger.debug("qr_human_readable: ctx.services.renderer unavailable, skipping")
+            return []
+
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=300)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=300)
         except RuntimeError:
             logger.debug("qr_human_readable_matching: PDF rendering backend unavailable")
             return []

@@ -149,13 +149,16 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
             logger.debug("barcode_dimension_validation: pyzbar or Pillow not available — skipping")
             return []
 
-        from lintpdf.ai.rendering import render_all_pages
-
         findings: list[Finding] = []
         dpi = 300
 
+        services = ctx.services
+        if services is None or services.renderer is None:
+            logger.debug("barcode_dimensions: ctx.services.renderer unavailable, skipping")
+            return []
+
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=dpi)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=dpi)
         except RuntimeError:
             logger.debug("barcode_dimension_validation: PDF rendering backend unavailable")
             return []
