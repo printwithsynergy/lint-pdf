@@ -7,6 +7,18 @@ from unittest.mock import MagicMock, patch
 from lintpdf.analyzers.finding import Severity
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 class TestBarcodeDecode:
     """Tests for BarcodeDecode analyzer with mocked image rendering and pyzbar."""
 
@@ -16,7 +28,7 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
 
         assert findings == []
 
@@ -26,7 +38,7 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
 
         assert findings == []
 
@@ -64,7 +76,7 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
         f = findings[0]
@@ -98,7 +110,7 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
 
         assert len(findings) == 1
         assert "No barcodes detected" in findings[0].message
@@ -116,7 +128,7 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
 
         assert findings == []
 
