@@ -16,6 +16,18 @@ from lintpdf.ai.analyzers.regulatory_compliance.eu_fir_1169 import (
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc_with_text(text: str) -> SemanticDocument:
     page = SemanticPage(
         page_num=1,
@@ -71,7 +83,7 @@ def test_gluten_free_front_panel_does_not_flag() -> None:
         "Gluten Free. Non-GMO. Vegan. "
         "Ingredients: Organic rice, natural flavors, gum arabic."
     )
-    findings = EuFir1169Analyzer().analyze(_doc_with_text(text), [], pdf_bytes=b"")
+    findings = EuFir1169Analyzer().analyze_v2(_ctx(_doc_with_text(text), events=[], pdf_bytes=b""))
     allergen = [f for f in findings if f.inspection_id == "AI_EU1169_002"]
     assert allergen == [], (
         f"expected no allergen finding on a 'Gluten Free' claim page; "
@@ -83,6 +95,6 @@ def test_real_allergen_declaration_without_emphasis_still_flags() -> None:
     """Unemphasised 'Wheat' inside an ingredients list — the rule
     should still fire."""
     text = "Ingredients: wheat flour, sugar, vegetable oil."
-    findings = EuFir1169Analyzer().analyze(_doc_with_text(text), [], pdf_bytes=b"")
+    findings = EuFir1169Analyzer().analyze_v2(_ctx(_doc_with_text(text), events=[], pdf_bytes=b""))
     allergen = [f for f in findings if f.inspection_id == "AI_EU1169_002"]
     assert len(allergen) >= 1

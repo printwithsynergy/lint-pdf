@@ -23,13 +23,12 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.model import SemanticDocument
 
 
@@ -79,13 +78,14 @@ class CosmeticsLabelingAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + ai_config (passed to is_cosmetic_applicable; reconstituted).
+        # events + pdf_bytes declared but never used.
+        document = ctx.document
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         # Industry gate. The 2026-04-27 Opus audit flagged 4 false
         # positives on Nutrops dietary-supplement labels where this
         # rule's structural detection (``Ingredients:`` header + INCI
