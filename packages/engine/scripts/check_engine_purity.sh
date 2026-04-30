@@ -40,8 +40,12 @@ BANNED=(
     # SaaS-only modules — analyzers must reach these via ctx.services.*
     # or ctx.config instead of importing them directly. The list
     # focuses on real coupling (DB / billing / metering / tenant
-    # config / vera​PDF) — stateless compute helpers like rendering and
-    # the Claude SDK wrappers are intentionally NOT banned.
+    # config / vera​PDF) — stateless compute helpers like rendering
+    # and the Claude SDK wrappers are NOT banned because they're our
+    # own code, not SaaS-only modules. Phase 3d migrated the Claude
+    # wrappers to take ``llm_client`` via ``ctx.services.llm_client``
+    # so the LLM coupling is properly abstracted; the import line
+    # itself is just calling our helper function and is allowed.
     "from lintpdf.tenants"
     "from lintpdf.audit.metering"
     "from lintpdf.audit.cost"

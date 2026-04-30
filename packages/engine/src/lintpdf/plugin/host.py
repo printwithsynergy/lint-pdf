@@ -167,10 +167,51 @@ def _wrap_gpu_client() -> Any:
 
 
 def _wrap_llm_client() -> Any:
-    # No central LLM client today — analyzers instantiate the Anthropic
-    # SDK directly. Phase 2 introduces an LLMClient impl; Phase 1
-    # leaves this slot as None so analyzers continue using the SDK.
-    return None
+    """Phase 3d: SaaS host instantiates an Anthropic client and exposes
+    it via the LLMClient.messages_create Protocol. Returns None when
+    ANTHROPIC_API_KEY isn't set or the SDK isn't installed — analyzers
+    self-skip in that case (same OSS-friendly skip pattern as every
+    other service)."""
+    import os
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        logger.info("LLMClient unavailable: ANTHROPIC_API_KEY not set")
+        return None
+
+    try:
+        import anthropic
+    except ImportError:
+        logger.info("LLMClient unavailable: anthropic SDK not installed")
+        return None
+
+    # Module-level singleton would race during pytest; instantiate per
+    # Services bundle (called once per orchestrator run).
+    client = anthropic.Anthropic()
+
+    class _LLMWrap:
+        def messages_create(
+            self,
+            *,
+            model: str,
+            max_tokens: int,
+            system: Any,
+            messages: list[dict[str, Any]],
+            tools: list[dict[str, Any]] | None = None,
+            tool_choice: dict[str, Any] | None = None,
+        ) -> Any:
+            kwargs: dict[str, Any] = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "system": system,
+                "messages": messages,
+            }
+            if tools is not None:
+                kwargs["tools"] = tools
+            if tool_choice is not None:
+                kwargs["tool_choice"] = tool_choice
+            return client.messages.create(**kwargs)
+
+    return _LLMWrap()
 
 
 def _wrap_renderer() -> Any:
