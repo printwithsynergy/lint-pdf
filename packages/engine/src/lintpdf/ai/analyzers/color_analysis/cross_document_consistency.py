@@ -17,8 +17,7 @@ from lintpdf.ai.types import GPUInferenceClient, GPUServiceUnavailableError
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
@@ -77,13 +76,14 @@ class CrossDocumentConsistencyAnalyzer(BaseAIAnalyzer):
     tier = "gpu"
     credits_per_run = 2
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 α-stream: signature migration. Internal globals
+        # (_get_gpu_client) intentionally unchanged in α — migrate to
+        # ctx.services.gpu_client in β-stream. ai_config parameter
+        # was declared but never used; dropped.
+        document = ctx.document
+        pdf_bytes = ctx.pdf_bytes
+
         findings: list[Finding] = []
         spot_colors = _extract_spot_colors(document)
 
