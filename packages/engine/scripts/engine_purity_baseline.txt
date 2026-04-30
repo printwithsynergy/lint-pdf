@@ -15,12 +15,6 @@ src/lintpdf/ai/analyzers/document_classification/file_classification.py:52:from 
 src/lintpdf/ai/analyzers/file_comparison/version_diff.py:189:from lintpdf.api.storage
 src/lintpdf/ai/analyzers/file_comparison/version_diff.py:89:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:37:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:35:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:66:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:170:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py:64:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:100:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py:74:from lintpdf.ai.types import get_gpu_client
 src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:163:from lintpdf.ai.types import get_db_session
 src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py:164:from lintpdf.api.models
 src/lintpdf/analyzers/advanced_color_analyzer.py:66:from lintpdf.ai.rendering
