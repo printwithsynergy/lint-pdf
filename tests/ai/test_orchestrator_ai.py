@@ -72,7 +72,7 @@ class TestOrchestratorWithAI:
         mock_analyzer = MagicMock()
         mock_analyzer.category = "barcode"
         mock_analyzer.feature_slug = "barcode_decode"
-        mock_analyzer.analyze.return_value = [_ai_finding("LPDF_BC_001", category="barcode")]
+        mock_analyzer.analyze_v2.return_value = [_ai_finding("LPDF_BC_001", category="barcode")]
 
         doc = _minimal_doc()
 
@@ -88,7 +88,7 @@ class TestOrchestratorWithAI:
         # 1 finding from the analyzer + 1 AI_SCAN_001 audit-trail marker the
         # orchestrator appends whenever at least one analyzer ran.
         assert result.metadata["ai_findings_count"] == 2
-        mock_analyzer.analyze.assert_called_once()
+        mock_analyzer.analyze_v2.assert_called_once()
 
     @staticmethod
     def test_ai_findings_merged_with_engine_findings() -> None:
@@ -103,7 +103,7 @@ class TestOrchestratorWithAI:
         mock_analyzer = MagicMock()
         mock_analyzer.category = "barcode"
         mock_analyzer.feature_slug = "barcode_decode"
-        mock_analyzer.analyze.return_value = [ai_finding]
+        mock_analyzer.analyze_v2.return_value = [ai_finding]
 
         doc = _minimal_doc()
 
@@ -139,7 +139,7 @@ class TestOrchestratorWithAI:
         mock_analyzer = MagicMock()
         mock_analyzer.category = "barcode"
         mock_analyzer.feature_slug = "barcode_decode"
-        mock_analyzer.analyze.side_effect = RuntimeError("GPU exploded")
+        mock_analyzer.analyze_v2.side_effect = RuntimeError("GPU exploded")
 
         doc = _minimal_doc()
 
@@ -174,7 +174,7 @@ class TestOrchestratorWithAI:
         mock_analyzer = MagicMock()
         mock_analyzer.category = "content_quality"
         mock_analyzer.feature_slug = "spell_check"
-        mock_analyzer.analyze.return_value = [spell_finding]
+        mock_analyzer.analyze_v2.return_value = [spell_finding]
 
         doc = _minimal_doc()
 
