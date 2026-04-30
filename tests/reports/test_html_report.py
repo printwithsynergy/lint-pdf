@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from siftpdf.profiles.orchestrator import PreflightResult
+    from lintpdf.profiles.orchestrator import PreflightResult
 
-from siftpdf.reports.html_report import generate_html_report
+from lintpdf.reports.html_report import generate_html_report
 
 
 class TestHtmlReport:

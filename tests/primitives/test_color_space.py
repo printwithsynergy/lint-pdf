@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.primitives import REGISTRY, color_space
+from lintpdf.primitives import REGISTRY, color_space
 
 # ---- registry --------------------------------------------------------------
 

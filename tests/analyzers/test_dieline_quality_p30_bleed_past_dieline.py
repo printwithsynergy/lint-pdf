@@ -8,8 +8,8 @@ that doesn't fit within the cutter region. ISO 32000-2:2020 §14.11.2
 
 from __future__ import annotations
 
-from siftpdf.analyzers.dieline_quality import check_dieline_quality
-from siftpdf.analyzers.finding import Severity
+from lintpdf.analyzers.dieline_quality import check_dieline_quality
+from lintpdf.analyzers.finding import Severity
 
 # Minimal valid PDF stream so check_dieline_quality's pdf_bytes guard passes.
 # We don't actually need any specific content because the P-30 path runs
@@ -180,7 +180,7 @@ def test_custom_tolerance_widens_silent_zone() -> None:
 
 def test_checkinfo_registered_with_v2_id() -> None:
     """Reports must surface P-30 as the v2 ID for the new check."""
-    from siftpdf.reports.check_names import CHECK_NAMES
+    from lintpdf.reports.check_names import CHECK_NAMES
 
     info = CHECK_NAMES["LPDF_PAGE_BLEED_PAST_DIELINE"]
     assert info.name == "Page BleedBox Extends Past Dieline"

@@ -23,8 +23,8 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from siftpdf.api.models import Job, JobStatus
-from siftpdf.brand_specs.resolver import (
+from lintpdf.api.models import Job, JobStatus
+from lintpdf.brand_specs.resolver import (
     resolve_brand_spec_for_job,
     resolve_brand_spec_for_tenant,
 )
@@ -151,7 +151,7 @@ class TestResolver:
     def test_tenant_default_used_when_no_overrides(
         self, client: TestClient, db_session: Session
     ) -> None:
-        from siftpdf.api.models import Tenant
+        from lintpdf.api.models import Tenant
 
         tenant = db_session.query(Tenant).first()
         assert tenant is not None
@@ -172,7 +172,7 @@ class TestResolver:
     def test_archived_default_does_not_resolve(
         self, client: TestClient, db_session: Session
     ) -> None:
-        from siftpdf.api.models import Tenant
+        from lintpdf.api.models import Tenant
 
         tenant = db_session.query(Tenant).first()
         assert tenant is not None
@@ -188,7 +188,7 @@ class TestResolver:
     def test_resolver_chain_job_wins_over_endpoint(
         self, client: TestClient, db_session: Session
     ) -> None:
-        from siftpdf.api.models import Tenant
+        from lintpdf.api.models import Tenant
 
         tenant = db_session.query(Tenant).first()
         assert tenant is not None
@@ -272,7 +272,7 @@ class TestJobSubmissionBrandSpec:
         )
 
     def test_submit_rejects_unknown_brand_spec(self, client: TestClient) -> None:
-        with patch("siftpdf.queue.tasks.run_preflight.apply_async", MagicMock()):
+        with patch("lintpdf.queue.tasks.run_preflight.apply_async", MagicMock()):
             response = client.post(
                 "/api/v1/jobs",
                 files={"file": ("t.pdf", BytesIO(self._minimal_pdf()), "application/pdf")},
@@ -285,7 +285,7 @@ class TestJobSubmissionBrandSpec:
             "/api/v1/brand-specs",
             json={"name": "submit-spec", "colors": []},
         ).json()
-        with patch("siftpdf.queue.tasks.run_preflight.apply_async", MagicMock()):
+        with patch("lintpdf.queue.tasks.run_preflight.apply_async", MagicMock()):
             response = client.post(
                 "/api/v1/jobs",
                 files={"file": ("t.pdf", BytesIO(self._minimal_pdf()), "application/pdf")},

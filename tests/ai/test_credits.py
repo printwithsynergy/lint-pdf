@@ -1,4 +1,4 @@
-"""Tests for AI credit metering (siftpdf.ai.credits)."""
+"""Tests for AI credit metering (lintpdf.ai.credits)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ class TestGetCreditBalance:
     def test_returns_zero_balance_when_no_config(
         self, mock_db_session: MagicMock, tenant_id
     ) -> None:
-        from siftpdf.ai.credits import get_credit_balance
+        from lintpdf.ai.credits import get_credit_balance
 
         mock_db_session.query.return_value.filter.return_value.first.return_value = None
         balance = get_credit_balance(tenant_id, mock_db_session)
@@ -31,7 +31,7 @@ class TestGetCreditBalance:
     def test_returns_balance_with_config(
         self, mock_db_session: MagicMock, mock_ai_config: MagicMock, tenant_id
     ) -> None:
-        from siftpdf.ai.credits import get_credit_balance
+        from lintpdf.ai.credits import get_credit_balance
 
         mock_ai_config.credit_balance = Decimal("50.00")
         mock_ai_config.monthly_spending_limit = Decimal("200.00")
@@ -47,7 +47,7 @@ class TestGetCreditBalance:
     def test_counts_active_packages(
         self, mock_db_session: MagicMock, mock_ai_config: MagicMock, tenant_id
     ) -> None:
-        from siftpdf.ai.credits import get_credit_balance
+        from lintpdf.ai.credits import get_credit_balance
 
         # Create mock credit packages
         pkg_active = MagicMock()
@@ -82,7 +82,7 @@ class TestCheckAICredits:
 
     @staticmethod
     def test_raises_402_when_no_config(mock_db_session: MagicMock, tenant_id) -> None:
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         mock_db_session.query.return_value.filter.return_value.first.return_value = None
         with pytest.raises(HTTPException) as exc_info:
@@ -93,7 +93,7 @@ class TestCheckAICredits:
     def test_passes_with_sufficient_package_credits(
         self, mock_db_session: MagicMock, tenant_id
     ) -> None:
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "credit_package"
@@ -104,20 +104,20 @@ class TestCheckAICredits:
         mock_db_session.query.return_value.filter.return_value.scalar.return_value = 0
 
         # Patch get_credit_balance to return sufficient credits
-        with patch("siftpdf.ai.credits.get_credit_balance") as mock_balance:
+        with patch("lintpdf.ai.credits.get_credit_balance") as mock_balance:
             mock_balance.return_value = MagicMock(package_credits_remaining=100)
             check_ai_credits(tenant_id, 5, mock_db_session)  # Should not raise
 
     def test_raises_402_with_insufficient_package_credits(
         self, mock_db_session: MagicMock, tenant_id
     ) -> None:
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "credit_package"
         mock_db_session.query.return_value.filter.return_value.first.return_value = config
 
-        with patch("siftpdf.ai.credits.get_credit_balance") as mock_balance:
+        with patch("lintpdf.ai.credits.get_credit_balance") as mock_balance:
             mock_balance.return_value = MagicMock(package_credits_remaining=2)
             with pytest.raises(HTTPException) as exc_info:
                 check_ai_credits(tenant_id, 10, mock_db_session)
@@ -126,7 +126,7 @@ class TestCheckAICredits:
 
     @staticmethod
     def test_passes_pay_per_use_under_limit(mock_db_session: MagicMock, tenant_id) -> None:
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "pay_per_use"
@@ -134,7 +134,7 @@ class TestCheckAICredits:
         config.overage_rate = Decimal("0.10")
         mock_db_session.query.return_value.filter.return_value.first.return_value = config
 
-        with patch("siftpdf.ai.credits.get_credit_balance") as mock_balance:
+        with patch("lintpdf.ai.credits.get_credit_balance") as mock_balance:
             mock_balance.return_value = MagicMock(
                 monthly_spent=Decimal("10.00"),
                 monthly_spending_limit=Decimal("100.00"),
@@ -143,7 +143,7 @@ class TestCheckAICredits:
 
     @staticmethod
     def test_raises_402_pay_per_use_over_limit(mock_db_session: MagicMock, tenant_id) -> None:
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "pay_per_use"
@@ -151,7 +151,7 @@ class TestCheckAICredits:
         config.overage_rate = Decimal("1.00")
         mock_db_session.query.return_value.filter.return_value.first.return_value = config
 
-        with patch("siftpdf.ai.credits.get_credit_balance") as mock_balance:
+        with patch("lintpdf.ai.credits.get_credit_balance") as mock_balance:
             mock_balance.return_value = MagicMock(
                 monthly_spent=Decimal("8.00"),
                 monthly_spending_limit=Decimal("10.00"),
@@ -164,7 +164,7 @@ class TestCheckAICredits:
     @staticmethod
     def test_passes_pay_per_use_no_limit(mock_db_session: MagicMock, tenant_id) -> None:
         """Pay-per-use with no spending limit should always pass."""
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "pay_per_use"
@@ -179,7 +179,7 @@ class TestDeductCredits:
 
     @staticmethod
     def test_deduct_from_oldest_package_first(mock_db_session: MagicMock, tenant_id) -> None:
-        from siftpdf.ai.credits import deduct_credits
+        from lintpdf.ai.credits import deduct_credits
 
         config = MagicMock()
         config.billing_mode = "credit_package"
@@ -221,7 +221,7 @@ class TestDeductCredits:
 
     @staticmethod
     def test_skips_expired_packages(mock_db_session: MagicMock, tenant_id) -> None:
-        from siftpdf.ai.credits import deduct_credits
+        from lintpdf.ai.credits import deduct_credits
 
         config = MagicMock()
         config.billing_mode = "credit_package"
@@ -258,7 +258,7 @@ class TestDeductCredits:
 
     @staticmethod
     def test_pay_per_use_logs_cost(mock_db_session: MagicMock, tenant_id) -> None:
-        from siftpdf.ai.credits import deduct_credits
+        from lintpdf.ai.credits import deduct_credits
 
         config = MagicMock()
         config.billing_mode = "pay_per_use"
@@ -285,7 +285,7 @@ class TestDeductCredits:
     def test_no_config_logs_warning_and_returns(
         self, mock_db_session: MagicMock, tenant_id
     ) -> None:
-        from siftpdf.ai.credits import deduct_credits
+        from lintpdf.ai.credits import deduct_credits
 
         mock_db_session.query.return_value.filter.return_value.first.return_value = None
 
@@ -310,7 +310,7 @@ class TestCheckSpendingLimit:
     @staticmethod
     def test_exact_limit_boundary(mock_db_session: MagicMock, tenant_id) -> None:
         """Spending exactly at the limit (but not over) should pass."""
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "pay_per_use"
@@ -318,7 +318,7 @@ class TestCheckSpendingLimit:
         config.overage_rate = Decimal("1.00")
         mock_db_session.query.return_value.filter.return_value.first.return_value = config
 
-        with patch("siftpdf.ai.credits.get_credit_balance") as mock_balance:
+        with patch("lintpdf.ai.credits.get_credit_balance") as mock_balance:
             # Current spend 9.00 + estimated 1.00 = 10.00 exactly at limit
             mock_balance.return_value = MagicMock(
                 monthly_spent=Decimal("9.00"),
@@ -329,7 +329,7 @@ class TestCheckSpendingLimit:
     @staticmethod
     def test_one_cent_over_limit(mock_db_session: MagicMock, tenant_id) -> None:
         """Exceeding the limit by any amount should raise 402."""
-        from siftpdf.ai.credits import check_ai_credits
+        from lintpdf.ai.credits import check_ai_credits
 
         config = MagicMock()
         config.billing_mode = "pay_per_use"
@@ -337,7 +337,7 @@ class TestCheckSpendingLimit:
         config.overage_rate = Decimal("1.00")
         mock_db_session.query.return_value.filter.return_value.first.return_value = config
 
-        with patch("siftpdf.ai.credits.get_credit_balance") as mock_balance:
+        with patch("lintpdf.ai.credits.get_credit_balance") as mock_balance:
             mock_balance.return_value = MagicMock(
                 monthly_spent=Decimal("9.01"),
                 monthly_spending_limit=Decimal("10.00"),

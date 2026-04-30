@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from siftpdf.tenants.toggle_models import (
+from lintpdf.tenants.toggle_models import (
     MergeStrategy,
     Toggle,
     ToggleOverride,

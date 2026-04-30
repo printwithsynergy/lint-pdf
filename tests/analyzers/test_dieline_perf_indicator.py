@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.dieline_perf_indicator import DielinePerfIndicatorAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.dieline_perf_indicator import DielinePerfIndicatorAnalyzer
+from lintpdf.semantic.model import (
     DetectedTextRegion,
     PdfAnnotation,
     PdfBox,

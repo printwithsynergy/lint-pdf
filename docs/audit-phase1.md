@@ -8,11 +8,11 @@ this audit.
 
 ## Engine package shape
 
-- Package name: **`lintpdf`** (Phase 1). Renames to **`siftpdf`** in
+- Package name: **`lintpdf`** (Phase 1). Renames to **`lintpdf`** in
   Phase 3 when the engine moves to `thinkneverland/sift-pdf`.
 - Python: `>=3.11`, `uv`-managed.
 - Source root: `packages/engine/src/lintpdf/`.
-- Entry-point group introduced in Phase 1: `siftpdf.plugins` (no
+- Entry-point group introduced in Phase 1: `lintpdf.plugins` (no
   third-party packages declare it yet — the legacy decorator registry
   is the active source).
 
@@ -43,15 +43,15 @@ Banned patterns scanned across `src/lintpdf/analyzers/` +
 | Pattern | Approx file hits |
 |---|---|
 | `TenantAIConfig` | 52 |
-| `from siftpdf.api.models` | 42 |
-| `from siftpdf.tenants.*` | 9 |
-| `from siftpdf.audit.metering` | 3 |
-| `from siftpdf.api.database` | 2 |
-| `from siftpdf.ai.cost_cap` | 2 |
-| `from siftpdf.audit.cost` | 0 |
-| `from siftpdf.ai.credits` | 0 |
-| `from siftpdf.ai.gpu_client` | 5 |
-| `from siftpdf.conformance.verapdf_client` | 0 (analyzers reach this via the orchestrator only) |
+| `from lintpdf.api.models` | 42 |
+| `from lintpdf.tenants.*` | 9 |
+| `from lintpdf.audit.metering` | 3 |
+| `from lintpdf.api.database` | 2 |
+| `from lintpdf.ai.cost_cap` | 2 |
+| `from lintpdf.audit.cost` | 0 |
+| `from lintpdf.ai.credits` | 0 |
+| `from lintpdf.ai.gpu_client` | 5 |
+| `from lintpdf.conformance.verapdf_client` | 0 (analyzers reach this via the orchestrator only) |
 | **Total baseline entries** | **125** |
 
 Phase 2 migrates each of the 63 unique files (counted by union, before

@@ -11,8 +11,8 @@ import io
 
 import pikepdf
 
-from siftpdf.analyzers.dieline_quality import check_dieline_quality
-from siftpdf.analyzers.finding import Severity
+from lintpdf.analyzers.dieline_quality import check_dieline_quality
+from lintpdf.analyzers.finding import Severity
 
 
 def _build_pdf(content: bytes) -> bytes:
@@ -148,7 +148,7 @@ def test_no_spot_name_silent() -> None:
 
 def test_checkinfo_registered_with_v2_id() -> None:
     """Reports must surface F-32 as the v2 ID for the new check."""
-    from siftpdf.reports.check_names import CHECK_NAMES
+    from lintpdf.reports.check_names import CHECK_NAMES
 
     info = CHECK_NAMES["LPDF_TEXT_ON_DIELINE_PATH"]
     assert info.name == "Text Overlaps Dieline Cut Path"

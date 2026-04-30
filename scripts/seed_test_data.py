@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from siftpdf.api.auth import generate_api_key, hash_api_key
-from siftpdf.api.models import ApiKey, Tenant, TenantPlan
+from lintpdf.api.auth import generate_api_key, hash_api_key
+from lintpdf.api.models import ApiKey, Tenant, TenantPlan
 
 DATABASE_URL = os.environ.get("DATABASE_URL", os.environ.get("LINTPDF_DATABASE_URL", ""))
 if not DATABASE_URL:

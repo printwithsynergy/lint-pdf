@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from siftpdf.plugin import AnalyzerContext, Capabilities
+from lintpdf.plugin import AnalyzerContext, Capabilities
 
 
 class _FakeDoc:
@@ -26,11 +26,11 @@ def test_context_with_config_and_tenant():
     ctx = AnalyzerContext(
         document=_FakeDoc(),
         events=[],
-        config={"ai_config": {"foo": 1}, "siftpdf.test": {"bar": 2}},
+        config={"ai_config": {"foo": 1}, "lintpdf.test": {"bar": 2}},
         tenant_id="t_abc",
     )
     assert ctx.config["ai_config"]["foo"] == 1
-    assert ctx.config["siftpdf.test"]["bar"] == 2
+    assert ctx.config["lintpdf.test"]["bar"] == 2
     assert ctx.tenant_id == "t_abc"
 
 

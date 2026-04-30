@@ -12,10 +12,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from siftpdf.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
-from siftpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from siftpdf.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
-from siftpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from lintpdf.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
+from lintpdf.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
+from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _minimal_doc(fonts: dict[str, PdfFont] | None = None) -> SemanticDocument:
@@ -58,7 +58,7 @@ class TestGPUUnavailableProducesAdvisory:
         doc = _minimal_doc()
 
         with patch(
-            "siftpdf.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[mock_analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")
@@ -98,7 +98,7 @@ class TestRuleBasedFindingsUnaffected:
         doc = _minimal_doc(fonts={"F1": font})
 
         with patch(
-            "siftpdf.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[mock_analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")

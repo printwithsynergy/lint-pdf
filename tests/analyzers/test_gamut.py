@@ -1,14 +1,14 @@
 """Tests for GamutAnalyzer — CMYK and RGB gamut boundary checking."""
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.gamut_analyzer import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.gamut_analyzer import (
     GamutAnalyzer,
     cmyk_to_lab,
     srgb_to_lab,
 )
-from siftpdf.profiles.icc.profile_manager import get_gamut_boundary
-from siftpdf.semantic.events import ColorChangedEvent
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.profiles.icc.profile_manager import get_gamut_boundary
+from lintpdf.semantic.events import ColorChangedEvent
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_doc(output_intents=None):

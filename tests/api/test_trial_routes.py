@@ -16,14 +16,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from siftpdf.api.models import (
+from lintpdf.api.models import (
     Job,
     JobStatus,
     TrialFile,
     TrialSubmission,
     TrialSubmissionStatus,
 )
-from siftpdf.api.routes.trial import _queue_preflight_for_file
+from lintpdf.api.routes.trial import _queue_preflight_for_file
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -49,7 +49,7 @@ def _seed_submission_with_file(
     The file is also written to InMemoryStorage so that
     _queue_preflight_for_file can download it.
     """
-    from siftpdf.api.storage import get_storage
+    from lintpdf.api.storage import get_storage
 
     submission_id = uuid.uuid4()
     file_id = uuid.uuid4()
@@ -97,7 +97,7 @@ class TestQueuePreflightHelper:
         submission, trial_file = _seed_submission_with_file(db_session)
 
         # run_preflight.apply_async is auto-mocked by conftest._mock_celery_delay
-        from siftpdf.queue import tasks
+        from lintpdf.queue import tasks
 
         tasks.run_preflight.apply_async.reset_mock()
         job_id = await _queue_preflight_for_file(
@@ -182,7 +182,7 @@ def _mock_s3_storage(monkeypatch: pytest.MonkeyPatch) -> None:
     bytes land in ``InMemoryStorage._files`` and downstream
     ``download_pdf`` resolves the same key.
     """
-    from siftpdf.api.storage import get_storage
+    from lintpdf.api.storage import get_storage
 
     storage = get_storage()
 
@@ -246,7 +246,7 @@ class TestSubmitTrialAutoSubmitGate:
         monkeypatch.setenv("LINTPDF_TRIAL_AUTO_SUBMIT", "false")
         _mock_s3_storage(monkeypatch)
 
-        from siftpdf.queue import tasks
+        from lintpdf.queue import tasks
 
         tasks.run_preflight.apply_async.reset_mock()
         resp = self._submit(client)
@@ -272,7 +272,7 @@ class TestSubmitTrialAutoSubmitGate:
         monkeypatch.setenv("LINTPDF_TRIAL_AUTO_SUBMIT", "true")
         _mock_s3_storage(monkeypatch)
 
-        from siftpdf.queue import tasks
+        from lintpdf.queue import tasks
 
         tasks.run_preflight.apply_async.reset_mock()
         resp = self._submit(client)
@@ -309,7 +309,7 @@ class TestSubmitTrialAutoSubmitGate:
         monkeypatch.setenv("LINTPDF_TRIAL_AUTO_SUBMIT", "true")
         _mock_s3_storage(monkeypatch)
 
-        from siftpdf.queue import tasks
+        from lintpdf.queue import tasks
 
         tasks.run_preflight.apply_async.reset_mock()
         tasks.run_preflight.apply_async.side_effect = RuntimeError("broker down")

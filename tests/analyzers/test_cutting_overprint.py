@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.cutting_overprint import CuttingOverprintAnalyzer
-from siftpdf.semantic.events import (
+from lintpdf.analyzers.cutting_overprint import CuttingOverprintAnalyzer
+from lintpdf.semantic.events import (
     OverprintChangedEvent,
     PathPaintingEvent,
 )
-from siftpdf.semantic.model import (
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

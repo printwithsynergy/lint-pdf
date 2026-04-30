@@ -5,7 +5,7 @@ from __future__ import annotations
 import warnings
 from unittest.mock import patch
 
-from siftpdf.api.config import Settings, get_settings
+from lintpdf.api.config import Settings, get_settings
 
 
 class TestSettingsDefaults:

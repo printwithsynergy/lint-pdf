@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.conformance.verapdf_runner import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.verapdf_runner import (
     _CONF_TO_VERAPDF_PDFA,
     _CONF_TO_VERAPDF_PDFX,
     _summarise_failures,
@@ -82,7 +82,7 @@ class TestUnconfigured:
     def test_no_verapdf_url_silent() -> None:
         """When veraPDF URL isn't configured, no findings emit."""
         with patch(
-            "siftpdf.conformance.verapdf_runner.is_verapdf_configured",
+            "lintpdf.conformance.verapdf_runner.is_verapdf_configured",
             return_value=False,
         ):
             assert run_verapdf_checks(_FAKE_PDF, conformance="pdfx4", enabled_ua=True) == []
@@ -102,9 +102,9 @@ class TestPdfXFinding:
             }
         ]
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 return_value=mock_failures,
             ),
         ):
@@ -121,9 +121,9 @@ class TestPdfXFinding:
     @staticmethod
     def test_compliant_pdfx_silent() -> None:
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 return_value=[],
             ),
         ):
@@ -141,9 +141,9 @@ class TestPdfAFinding:
             }
         ]
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 return_value=mock_failures,
             ),
         ):
@@ -163,9 +163,9 @@ class TestUaFinding:
             }
         ]
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 return_value=mock_failures,
             ),
         ):
@@ -177,9 +177,9 @@ class TestUaFinding:
     @staticmethod
     def test_ua_silent_when_not_enabled() -> None:
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 return_value=[{"message": "x", "details": {}}],
             ),
         ):
@@ -199,9 +199,9 @@ class TestCombinedFlavours:
             return [{"message": f"fail-{profile}", "details": {"clause": "1", "test_number": "1"}}]
 
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 side_effect=mock_validate,
             ),
         ):
@@ -213,9 +213,9 @@ class TestCombinedFlavours:
     @staticmethod
     def test_pdfx_only_emits_one() -> None:
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 return_value=[{"message": "x", "details": {"clause": "1", "test_number": "1"}}],
             ),
         ):
@@ -229,9 +229,9 @@ class TestVeraException:
         """If validate_with_verapdf raises (network flake, parse error),
         we return empty and don't block the preflight."""
         with (
-            patch("siftpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
+            patch("lintpdf.conformance.verapdf_runner.is_verapdf_configured", return_value=True),
             patch(
-                "siftpdf.conformance.verapdf_runner.validate_with_verapdf",
+                "lintpdf.conformance.verapdf_runner.validate_with_verapdf",
                 side_effect=RuntimeError("boom"),
             ),
         ):

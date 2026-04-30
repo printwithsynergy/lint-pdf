@@ -8,14 +8,14 @@ Lab values and additional colors.
 Usage:
     python -m scripts.enrich_pantone_reference \
         --csv Pantone_Complete_Library.csv \
-        --existing src/siftpdf/profiles/icc/pantone_reference.json \
-        --output src/siftpdf/profiles/icc/pantone_reference.json \
+        --existing src/lintpdf/profiles/icc/pantone_reference.json \
+        --output src/lintpdf/profiles/icc/pantone_reference.json \
         --upgrade-threshold 2.0
 
     # Dry run (report only, no write):
     python -m scripts.enrich_pantone_reference \
         --csv Pantone_Complete_Library.csv \
-        --existing src/siftpdf/profiles/icc/pantone_reference.json \
+        --existing src/lintpdf/profiles/icc/pantone_reference.json \
         --dry-run
 """
 

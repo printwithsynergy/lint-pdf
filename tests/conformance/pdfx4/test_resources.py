@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.conformance.pdfx4._resources import validate_resources
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._resources import validate_resources
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(pages: list[SemanticPage] | None = None) -> SemanticDocument:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from siftpdf.queue.app import celery_app, create_celery_app
+from lintpdf.queue.app import celery_app, create_celery_app
 
 
 class TestCeleryApp:

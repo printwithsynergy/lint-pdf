@@ -1,6 +1,6 @@
 """Tests for the broker-forwarding "anonymous" branding flow.
 
-Covers the pure helpers in :mod:`siftpdf.reports.service` and the public
+Covers the pure helpers in :mod:`lintpdf.reports.service` and the public
 ``/r/{token}.pdf`` share-link endpoint's filename/metadata sanitization.
 """
 
@@ -11,9 +11,9 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from siftpdf.api.models import Job, JobStatus, ReportToken
-from siftpdf.api.storage import get_storage
-from siftpdf.reports.service import (
+from lintpdf.api.models import Job, JobStatus, ReportToken
+from lintpdf.api.storage import get_storage
+from lintpdf.reports.service import (
     BrandingContext,
     BrandMode,
     build_anonymous_filename,

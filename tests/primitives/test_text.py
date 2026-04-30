@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 
-from siftpdf.primitives import REGISTRY
-from siftpdf.primitives import text as text_p
+from lintpdf.primitives import REGISTRY
+from lintpdf.primitives import text as text_p
 
 
 def test_registry_contains_fourteen_primitives():

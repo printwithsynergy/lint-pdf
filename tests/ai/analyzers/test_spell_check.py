@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.plugin import AnalyzerContext
+from lintpdf.analyzers.finding import Severity
+from lintpdf.plugin import AnalyzerContext
 
 
 def _doc_with_text(page_text: str) -> MagicMock:
@@ -40,7 +40,7 @@ class TestSpellCheckAnalyzer:
     @staticmethod
     def test_no_text_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         """Document with no text content should produce no findings."""
-        from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+        from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
         analyzer = SpellCheckAnalyzer()
         findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
@@ -52,10 +52,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("The proooof is in the pudding")
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc))
@@ -69,10 +69,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("This is a weirdWord example")
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc))
@@ -86,10 +86,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("The proooof is in LintPDF")
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc, {"custom_dictionary": ["proooof"]}))
@@ -103,10 +103,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("The Proooof is here")
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc, {"custom_dictionary": ["PROOOOF"]}))
@@ -119,10 +119,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("The proooof is here")
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc))
@@ -135,7 +135,7 @@ class TestSpellCheckAnalyzer:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+        from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
         analyzer = SpellCheckAnalyzer()
         assert analyzer.category == "content_quality"
@@ -149,10 +149,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("Normal text here")
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc))
@@ -175,10 +175,10 @@ class TestSpellCheckAnalyzer:
         doc.pages = [page1, page2]
 
         with patch(
-            "siftpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from siftpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze_v2(_ctx(doc))

@@ -14,13 +14,13 @@ from pathlib import Path
 
 import pytest
 
-from siftpdf.analyzers.finding import Finding, Severity
-from siftpdf.conformance.pdfx4 import PdfX4Validator
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.conformance.pdfx4 import PdfX4Validator
 
 pytest.importorskip("pikepdf")
 
-from siftpdf.parser.pikepdf_adapter import PikePDFAdapter
-from siftpdf.semantic.builder import SemanticModelBuilder
+from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
+from lintpdf.semantic.builder import SemanticModelBuilder
 
 _FIXTURES = Path(__file__).resolve().parent.parent.parent / "fixtures" / "pdfx4"
 _CONFORMING = _FIXTURES / "conforming"

@@ -1,8 +1,8 @@
 """Tests for SpotColorAnalyzer."""
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

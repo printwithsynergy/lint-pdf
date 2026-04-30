@@ -5,12 +5,12 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from siftpdf.tenants.entitlements import (
+from lintpdf.tenants.entitlements import (
     AI_FEATURE_FLAGS,
     TenantEntitlements,
     resolve_entitlements,
 )
-from siftpdf.tenants.models import TenantPlan
+from lintpdf.tenants.models import TenantPlan
 
 
 def _stub_tenant(**kw):
@@ -36,7 +36,7 @@ class TestAiFeatures:
     def test_scale_plan_baseline_grants_packaging_stack() -> None:
         tenant = _stub_tenant(plan=TenantPlan.SCALE.value)
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=_no_plan_tier,
         ):
             ent = resolve_entitlements(tenant)
@@ -52,7 +52,7 @@ class TestAiFeatures:
     def test_growth_plan_grants_audit_only() -> None:
         tenant = _stub_tenant(plan=TenantPlan.GROWTH.value)
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=_no_plan_tier,
         ):
             ent = resolve_entitlements(tenant)
@@ -62,7 +62,7 @@ class TestAiFeatures:
     def test_starter_gets_no_ai_features() -> None:
         tenant = _stub_tenant(plan=TenantPlan.STARTER.value)
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=_no_plan_tier,
         ):
             ent = resolve_entitlements(tenant)
@@ -76,7 +76,7 @@ class TestAiFeatures:
             ai_features=["similarity"],  # not in SCALE baseline
         )
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=_no_plan_tier,
         ):
             ent = resolve_entitlements(tenant)
@@ -93,7 +93,7 @@ class TestAiFeatures:
             ai_features=["bogus_flag", "audit"],
         )
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=_no_plan_tier,
         ):
             ent = resolve_entitlements(tenant)
@@ -107,7 +107,7 @@ class TestAiFeatures:
             entitlement_overrides={"ai_features": ["ocr"]},
         )
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=_no_plan_tier,
         ):
             ent = resolve_entitlements(tenant)
@@ -122,7 +122,7 @@ class TestAiFeatures:
             return {"ai_features": ["dieline"]}
 
         with patch(
-            "siftpdf.tenants.entitlements._plan_tier_overrides",
+            "lintpdf.tenants.entitlements._plan_tier_overrides",
             side_effect=fake_plan_tier,
         ):
             ent = resolve_entitlements(tenant)

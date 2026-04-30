@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(content: bytes, pages: int = 1) -> SemanticDocument:

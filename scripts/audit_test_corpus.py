@@ -29,8 +29,8 @@ from typing import Any
 
 import requests
 
-from siftpdf.audit.internal import InternalAuditor
-from siftpdf.audit.types import AuditResult
+from lintpdf.audit.internal import InternalAuditor
+from lintpdf.audit.types import AuditResult
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("audit_test_corpus")

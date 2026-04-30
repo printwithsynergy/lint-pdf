@@ -3,8 +3,8 @@ LPDF_INK_DUPLICATE_DEVICEN_SEP."""
 
 from __future__ import annotations
 
-from siftpdf.analyzers.ink_extras import InkExtrasAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.ink_extras import InkExtrasAnalyzer
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

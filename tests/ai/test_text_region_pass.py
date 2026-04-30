@@ -14,15 +14,15 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from siftpdf.ai import text_region_pass
-from siftpdf.ai.gpu_client import GPUServiceUnavailableError
-from siftpdf.semantic.events import (
+from lintpdf.ai import text_region_pass
+from lintpdf.ai.gpu_client import GPUServiceUnavailableError
+from lintpdf.semantic.events import (
     ImagePlacedEvent,
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from siftpdf.semantic.graphics_state import TransformationMatrix
-from siftpdf.semantic.model import (
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import (
     DetectedTextRegion,
     PdfBox,
     SemanticDocument,
@@ -189,9 +189,9 @@ class TestRunPass:
         }
 
         with (
-            patch("siftpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
+            patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
             patch(
-                "siftpdf.rendering.render_page_to_image",
+                "lintpdf.rendering.render_page_to_image",
                 return_value=b"\x89PNG\r\n\x1a\n",
             ),
         ):
@@ -216,9 +216,9 @@ class TestRunPass:
         gpu.detect_outlines.side_effect = GPUServiceUnavailableError("circuit open")
 
         with (
-            patch("siftpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
+            patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
             patch(
-                "siftpdf.rendering.render_page_to_image",
+                "lintpdf.rendering.render_page_to_image",
                 return_value=b"\x89PNG\r\n\x1a\n",
             ),
         ):
@@ -245,7 +245,7 @@ class TestRunPass:
         ]
 
         gpu_factory = MagicMock()
-        with patch("siftpdf.ai.gpu_client.get_gpu_client", gpu_factory):
+        with patch("lintpdf.ai.gpu_client.get_gpu_client", gpu_factory):
             text_region_pass.run(doc, events, b"%PDF-1.7\n")
 
         assert page.detected_text_regions is None

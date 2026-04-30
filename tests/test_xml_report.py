@@ -6,9 +6,9 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from siftpdf.analyzers.finding import Finding, Severity
-from siftpdf.profiles.orchestrator import PreflightResult, PreflightSummary
-from siftpdf.reports.xml_report import generate_xml_from_dict, generate_xml_report
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
+from lintpdf.reports.xml_report import generate_xml_from_dict, generate_xml_report
 
 
 @pytest.fixture

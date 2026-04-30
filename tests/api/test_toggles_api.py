@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from siftpdf.tenants.toggle_models import (
+from lintpdf.tenants.toggle_models import (
     MergeStrategy,
     Toggle,
     ToggleScope,

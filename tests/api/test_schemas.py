@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from siftpdf.api.schemas import (
+from lintpdf.api.schemas import (
     FindingResponse,
     HealthResponse,
     JobCreateResponse,

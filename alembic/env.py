@@ -8,7 +8,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from siftpdf.api.models import Base
+from lintpdf.api.models import Base
 
 config = context.config
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
-from siftpdf.semantic.events import TextRenderedEvent
-from siftpdf.semantic.graphics_state import TransformationMatrix
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
+from lintpdf.semantic.events import TextRenderedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc() -> SemanticDocument:

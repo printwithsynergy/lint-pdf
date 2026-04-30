@@ -46,33 +46,33 @@ BANNED=(
     # wrappers to take ``llm_client`` via ``ctx.services.llm_client``
     # so the LLM coupling is properly abstracted; the import line
     # itself is just calling our helper function and is allowed.
-    "from siftpdf.tenants"
-    "from siftpdf.audit.metering"
-    "from siftpdf.audit.cost"
-    "from siftpdf.api.database"
-    "from siftpdf.api.models"
-    "from siftpdf.api.storage"
-    "from siftpdf.ai.cost_cap"
-    "from siftpdf.ai.credits"
-    "from siftpdf.ai.gpu_client"
-    "from siftpdf.ai.types import get_db_session"
-    "from siftpdf.ai.types import get_gpu_client"
-    "from siftpdf.conformance.verapdf_client"
+    "from lintpdf.tenants"
+    "from lintpdf.audit.metering"
+    "from lintpdf.audit.cost"
+    "from lintpdf.api.database"
+    "from lintpdf.api.models"
+    "from lintpdf.api.storage"
+    "from lintpdf.ai.cost_cap"
+    "from lintpdf.ai.credits"
+    "from lintpdf.ai.gpu_client"
+    "from lintpdf.ai.types import get_db_session"
+    "from lintpdf.ai.types import get_gpu_client"
+    "from lintpdf.conformance.verapdf_client"
     "TenantAIConfig"
 )
 
 # NOTE on previously-banned imports that have been moved or relaxed:
 #
-# - ``siftpdf.ai.rendering`` was relocated to ``siftpdf.rendering`` in
+# - ``lintpdf.ai.rendering`` was relocated to ``lintpdf.rendering`` in
 #   Phase 3c. Pure CPU helper (pdf2image / pikepdf / Pillow); it's not
 #   SaaS-coupled. The old path is a re-export shim. AI analyzers reach
 #   it through ``ctx.services.renderer``; non-AI analyzers can import
-#   ``siftpdf.rendering`` directly.
-# - ``siftpdf.ai.text_mask`` was banned briefly during β-stream and
+#   ``lintpdf.rendering`` directly.
+# - ``lintpdf.ai.text_mask`` was banned briefly during β-stream and
 #   removed in β-final — it's a CPU text-density helper.
-# - ``siftpdf.ai.dieline_claude`` and ``siftpdf.ai.legend_claude`` are
+# - ``lintpdf.ai.dieline_claude`` and ``lintpdf.ai.legend_claude`` are
 #   stateless Anthropic SDK wrappers. They legitimately live under
-#   ``siftpdf.ai.*`` because they call the LLM, but they don't carry
+#   ``lintpdf.ai.*`` because they call the LLM, but they don't carry
 #   SaaS-only state. Phase 4 will fold them behind a proper LLMClient
 #   service Protocol; until then they're not on the η6 list.
 
@@ -82,11 +82,11 @@ BANNED=(
 # decoupled every AI analyzer and Phase 3a closed the last
 # ``api.models`` violation. The 4 deterministic non-AI analyzers
 # (advanced_color_analyzer, barcode, dieline, legend) lazy-imported
-# rendering / Claude helpers; rendering moved to ``siftpdf.rendering``
+# rendering / Claude helpers; rendering moved to ``lintpdf.rendering``
 # (no longer banned) and Claude helpers were removed from the list.
 SCOPES=(
-    "src/siftpdf/analyzers"
-    "src/siftpdf/ai/analyzers"
+    "src/lintpdf/analyzers"
+    "src/lintpdf/ai/analyzers"
 )
 
 BASELINE_FILE="scripts/engine_purity_baseline.txt"

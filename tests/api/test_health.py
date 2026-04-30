@@ -39,8 +39,8 @@ class TestHealth:
         mock_redis.ping.return_value = True
 
         with (
-            patch("siftpdf.api.database.get_engine", return_value=mock_engine),
-            patch("siftpdf.api.middleware.get_redis_client", return_value=mock_redis),
+            patch("lintpdf.api.database.get_engine", return_value=mock_engine),
+            patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis),
         ):
             response = client.get("/api/v1/status")
             data = response.json()
@@ -51,7 +51,7 @@ class TestHealth:
     @staticmethod
     def test_status_no_db_configured(client: TestClient) -> None:
         """When no DB engine exists, database shows not_configured."""
-        with patch("siftpdf.api.database.get_engine", return_value=None):
+        with patch("lintpdf.api.database.get_engine", return_value=None):
             response = client.get("/api/v1/status")
             data = response.json()
             assert data["database"] == "not_configured"
@@ -59,7 +59,7 @@ class TestHealth:
     @staticmethod
     def test_status_no_redis_configured(client: TestClient) -> None:
         """When no Redis client exists, redis shows not_configured."""
-        with patch("siftpdf.api.middleware.get_redis_client", return_value=None):
+        with patch("lintpdf.api.middleware.get_redis_client", return_value=None):
             response = client.get("/api/v1/status")
             data = response.json()
             assert data["redis"] == "not_configured"
@@ -70,7 +70,7 @@ class TestHealth:
         mock_engine = MagicMock()
         mock_engine.connect.side_effect = Exception("Connection refused")
 
-        with patch("siftpdf.api.database.get_engine", return_value=mock_engine):
+        with patch("lintpdf.api.database.get_engine", return_value=mock_engine):
             response = client.get("/api/v1/status")
             data = response.json()
             assert data["database"] == "error"
@@ -82,7 +82,7 @@ class TestHealth:
         mock_redis = MagicMock()
         mock_redis.ping.side_effect = Exception("Redis down")
 
-        with patch("siftpdf.api.middleware.get_redis_client", return_value=mock_redis):
+        with patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis):
             response = client.get("/api/v1/status")
             data = response.json()
             assert data["redis"] == "error"

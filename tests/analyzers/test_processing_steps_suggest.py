@@ -10,7 +10,7 @@ import io
 
 import pikepdf
 
-from siftpdf.analyzers.spot_name_normaliser import (
+from lintpdf.analyzers.spot_name_normaliser import (
     ISO_19593_GROUP_BY_CANONICAL,
     suggest_processing_steps,
 )
@@ -95,7 +95,7 @@ class TestProcessingStepsSuggest:
         """Every canonical name should have an ISO mapping or be
         explicitly absent — a missing entry in the map silently
         omits suggestions."""
-        from siftpdf.analyzers.spot_name_normaliser import CANONICAL_NAMES
+        from lintpdf.analyzers.spot_name_normaliser import CANONICAL_NAMES
 
         # Every canonical name in our taxonomy maps to an ISO group.
         for name in CANONICAL_NAMES:

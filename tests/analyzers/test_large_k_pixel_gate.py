@@ -12,12 +12,12 @@ from dataclasses import dataclass
 from io import BytesIO
 from unittest.mock import patch
 
-from siftpdf.analyzers.advanced_color_analyzer import (
+from lintpdf.analyzers.advanced_color_analyzer import (
     AdvancedColorAnalyzer,
     _dark_ink_fraction,
 )
-from siftpdf.semantic.events import PathPaintingEvent
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.events import PathPaintingEvent
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _path_event(*, page_num: int, k: float, op_index: int = 0) -> PathPaintingEvent:
@@ -68,7 +68,7 @@ def test_dark_fraction_fully_dark_render() -> None:
     """A fully black render (gray level 0) = 100% dark pixels."""
     black_png = _png_from_gray_level(0)
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         return_value=black_png,
     ):
         frac = _dark_ink_fraction(b"%PDF-1.7\n", 1)
@@ -80,7 +80,7 @@ def test_dark_fraction_fully_white_render() -> None:
     """A fully white render (gray 255) = 0% dark pixels."""
     white_png = _png_from_gray_level(255)
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         return_value=white_png,
     ):
         frac = _dark_ink_fraction(b"%PDF-1.7\n", 1)
@@ -91,7 +91,7 @@ def test_dark_fraction_fully_white_render() -> None:
 def test_dark_fraction_render_exception_returns_none() -> None:
     """Pixel gate degrades gracefully when rendering fails."""
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         side_effect=RuntimeError("gs not available"),
     ):
         assert _dark_ink_fraction(b"%PDF-1.7\n", 1) is None
@@ -118,7 +118,7 @@ def test_advanced_color_suppresses_when_rendered_page_has_no_dark() -> None:
         pdf_bytes=b"%PDF-1.7\n",
     )
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         side_effect=_white_render,
     ):
         findings = analyzer.analyze(_doc(), events)
@@ -140,7 +140,7 @@ def test_advanced_color_emits_when_rendered_page_has_dark_patch() -> None:
         pdf_bytes=b"%PDF-1.7\n",
     )
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         side_effect=_black_render,
     ):
         findings = analyzer.analyze(_doc(), events)
@@ -165,7 +165,7 @@ def test_advanced_color_degrades_gracefully_when_render_fails() -> None:
         pdf_bytes=b"%PDF-1.7\n",
     )
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         side_effect=RuntimeError("no backend"),
     ):
         findings = analyzer.analyze(_doc(), events)
@@ -195,7 +195,7 @@ def test_no_pdf_bytes_means_pixel_gate_is_skipped() -> None:
     renderer = _SkippedRenderer()
     analyzer = AdvancedColorAnalyzer(brand_palette_present=True)
     with patch(
-        "siftpdf.rendering.render_page_to_image",
+        "lintpdf.rendering.render_page_to_image",
         side_effect=renderer,
     ):
         findings = analyzer.analyze(_doc(), events)

@@ -13,7 +13,7 @@ import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from siftpdf.api.models import Job, JobFinding, JobStatus, Tenant
+from lintpdf.api.models import Job, JobFinding, JobStatus, Tenant
 
 if TYPE_CHECKING:
     import pytest
@@ -106,7 +106,7 @@ class TestAuditRerun:
         job_id = _seed_complete_job(db_session, tenant.id, finding_count=2)
 
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-stub")
-        from siftpdf.queue import tasks as tasks_mod
+        from lintpdf.queue import tasks as tasks_mod
 
         def fake_run_customer_audit(
             db,
@@ -157,7 +157,7 @@ class TestAuditRerun:
         job_id = _seed_complete_job(db_session, tenant.id, finding_count=1)
 
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-stub")
-        from siftpdf.queue import tasks as tasks_mod
+        from lintpdf.queue import tasks as tasks_mod
 
         monkeypatch.setattr(
             tasks_mod,

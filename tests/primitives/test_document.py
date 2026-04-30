@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.primitives import REGISTRY
-from siftpdf.primitives import document as doc_p
+from lintpdf.primitives import REGISTRY
+from lintpdf.primitives import document as doc_p
 
 
 def test_registry_includes_batch_10_primitives():

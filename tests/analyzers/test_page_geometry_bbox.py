@@ -9,11 +9,11 @@ content bbox.
 
 from __future__ import annotations
 
-from siftpdf.analyzers.page_geometry import (
+from lintpdf.analyzers.page_geometry import (
     _beyond_bleed_violation,
     _safety_margin_violation,
 )
-from siftpdf.semantic.model import PdfBox
+from lintpdf.semantic.model import PdfBox
 
 # -- safety margin ------------------------------------------------------------
 

@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.color import ColorAnalyzer
-from siftpdf.analyzers.finding import Severity
-from siftpdf.semantic.events import (
+from lintpdf.analyzers.color import ColorAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.events import (
     ColorChangedEvent,
     OverprintChangedEvent,
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from siftpdf.semantic.graphics_state import TransformationMatrix
-from siftpdf.semantic.model import (
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

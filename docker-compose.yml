@@ -27,7 +27,7 @@ services:
   # --- Celery Workers ---
   worker-default:
     build: .
-    command: celery -A siftpdf.queue.worker worker --loglevel=info --queues=default --concurrency=${CELERY_DEFAULT_CONCURRENCY:-2}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=default --concurrency=${CELERY_DEFAULT_CONCURRENCY:-2}
     env_file: .env
     environment:
       - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
@@ -45,7 +45,7 @@ services:
 
   worker-priority:
     build: .
-    command: celery -A siftpdf.queue.worker worker --loglevel=info --queues=priority --concurrency=${CELERY_PRIORITY_CONCURRENCY:-2}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=priority --concurrency=${CELERY_PRIORITY_CONCURRENCY:-2}
     env_file: .env
     environment:
       - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
@@ -66,7 +66,7 @@ services:
     # Dedicated worker for AI-enabled jobs. Concurrency tracks Modal's
     # max_containers. Isolated so AI backlog can't head-of-line-block
     # deterministic jobs. Mirrors packages/engine/railway.worker-ai.toml.
-    command: celery -A siftpdf.queue.worker worker --loglevel=info --queues=ai_heavy --concurrency=${CELERY_AI_CONCURRENCY:-6}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=ai_heavy --concurrency=${CELERY_AI_CONCURRENCY:-6}
     env_file: .env
     environment:
       - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
@@ -84,7 +84,7 @@ services:
 
   worker-webhooks:
     build: .
-    command: celery -A siftpdf.queue.worker worker --loglevel=info --queues=webhooks --concurrency=${CELERY_WEBHOOK_CONCURRENCY:-4}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=webhooks --concurrency=${CELERY_WEBHOOK_CONCURRENCY:-4}
     env_file: .env
     environment:
       - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
@@ -97,7 +97,7 @@ services:
 
   beat:
     build: .
-    command: celery -A siftpdf.queue.worker beat --loglevel=info
+    command: celery -A lintpdf.queue.worker beat --loglevel=info
     env_file: .env
     environment:
       - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf

@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.ink_coverage_analyzer import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.ink_coverage_analyzer import (
     InkCoverageAnalyzer,
     get_substrate_tac_limit,
 )
-from siftpdf.semantic.events import (
+from lintpdf.semantic.events import (
     ContentStreamEvent,
     PathPaintingEvent,
 )
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_cmyk_fill_event(

@@ -1,10 +1,10 @@
 """Tests for EpmAnalyzer."""
 
-from siftpdf.analyzers.epm_analyzer import EpmAnalyzer
-from siftpdf.analyzers.finding import Severity
-from siftpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
-from siftpdf.semantic.graphics_state import TransformationMatrix
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.epm_analyzer import EpmAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_doc():

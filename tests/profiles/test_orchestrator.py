@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from siftpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
-from siftpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
+from lintpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
+from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _minimal_doc(
@@ -164,7 +164,7 @@ class TestOrchestratorOnDocument:
         )
         orch = PreflightOrchestrator(fp)
         analyzers = orch._create_analyzers()
-        from siftpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
+        from lintpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
 
         tier_a = next((a for a in analyzers if isinstance(a, EpmTierAAnalyzer)), None)
         assert tier_a is not None, "EpmTierAAnalyzer was not registered"

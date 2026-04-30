@@ -12,8 +12,8 @@ import io
 
 import pikepdf
 
-from siftpdf.analyzers.dieline_quality import check_dieline_quality
-from siftpdf.analyzers.finding import Severity
+from lintpdf.analyzers.dieline_quality import check_dieline_quality
+from lintpdf.analyzers.finding import Severity
 
 
 def _build_pdf(
@@ -239,7 +239,7 @@ def test_save_restore_isolates_alpha() -> None:
 
 def test_checkinfo_registered_with_v2_id() -> None:
     """Reports must surface D-09 as the v2 ID for LPDF_DIE_OPACITY_LOW."""
-    from siftpdf.reports.check_names import CHECK_NAMES
+    from lintpdf.reports.check_names import CHECK_NAMES
 
     info = CHECK_NAMES["LPDF_DIE_OPACITY_LOW"]
     assert info.name == "Dieline Has Reduced Opacity"

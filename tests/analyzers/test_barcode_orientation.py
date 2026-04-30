@@ -9,8 +9,8 @@ synthetic SemanticDocuments directly.
 
 from __future__ import annotations
 
-from siftpdf.analyzers.barcode import BarcodeAnalyzer, _BarcodeCandidate
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.barcode import BarcodeAnalyzer, _BarcodeCandidate
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc_with_page(width: float, height: float) -> SemanticDocument:

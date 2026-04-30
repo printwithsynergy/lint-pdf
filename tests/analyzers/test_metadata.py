@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.metadata import MetadataAnalyzer
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.metadata import MetadataAnalyzer
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document(
@@ -227,8 +227,8 @@ class TestDocumentLang:
     def _doc_with(catalog: dict | None = None, has_text: bool = True) -> tuple:
         """Build (doc, events) pair. ``has_text`` toggles whether
         events contain a TextRenderedEvent."""
-        from siftpdf.semantic.events import TextRenderedEvent
-        from siftpdf.semantic.graphics_state import TransformationMatrix
+        from lintpdf.semantic.events import TextRenderedEvent
+        from lintpdf.semantic.graphics_state import TransformationMatrix
 
         doc = SemanticDocument(
             version="1.7",

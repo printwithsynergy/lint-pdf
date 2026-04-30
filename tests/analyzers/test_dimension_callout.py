@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(content: bytes, pages: int = 1) -> SemanticDocument:

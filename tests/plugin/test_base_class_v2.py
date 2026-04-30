@@ -19,10 +19,10 @@ from typing import Any, ClassVar
 
 import pytest
 
-from siftpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
-from siftpdf.analyzers.base import BaseAnalyzer
-from siftpdf.analyzers.finding import Finding, Severity
-from siftpdf.plugin import AnalyzerContext
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
+from lintpdf.analyzers.base import BaseAnalyzer
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.plugin import AnalyzerContext
 
 
 class _FakeDoc:

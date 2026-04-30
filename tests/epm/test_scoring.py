@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.epm import codes
-from siftpdf.epm.scoring import EpmTier, EpmVerdict, score_epm_candidacy
+from lintpdf.epm import codes
+from lintpdf.epm.scoring import EpmTier, EpmVerdict, score_epm_candidacy
 
 # ---- empty input ---------------------------------------------------------
 
@@ -209,7 +209,7 @@ def test_tier_a_has_5_codes_b_has_5_c_has_6():
 
 def test_each_new_code_has_a_check_info_entry():
     """Every new REJECT id must show up in the CheckInfo registry."""
-    from siftpdf.reports.check_names import CHECK_NAMES
+    from lintpdf.reports.check_names import CHECK_NAMES
 
     for code in codes.V2_ID_BY_CODE:
         assert code in CHECK_NAMES, f"missing CheckInfo entry for {code!r}"
@@ -217,7 +217,7 @@ def test_each_new_code_has_a_check_info_entry():
 
 def test_check_info_entries_carry_correct_v2_ids():
     """The CheckInfo.v2_ids tuple must exactly match codes.V2_ID_BY_CODE."""
-    from siftpdf.reports.check_names import CHECK_NAMES
+    from lintpdf.reports.check_names import CHECK_NAMES
 
     for code, v2 in codes.V2_ID_BY_CODE.items():
         info = CHECK_NAMES[code]

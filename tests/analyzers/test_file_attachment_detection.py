@@ -8,9 +8,9 @@ ISO 32000-2 §12.5.6.15.
 
 from __future__ import annotations
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.structure import StructureAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.structure import StructureAnalyzer
+from lintpdf.semantic.model import (
     PdfAnnotation,
     PdfBox,
     SemanticDocument,

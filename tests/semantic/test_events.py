@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from siftpdf.semantic.events import (
+from lintpdf.semantic.events import (
     ClippingPathSetEvent,
     ColorChangedEvent,
     ContentStreamEvent,
@@ -16,7 +16,7 @@ from siftpdf.semantic.events import (
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from siftpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.graphics_state import TransformationMatrix
 
 
 class TestContentStreamEvent:

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def _make_job(db, *, tenant_id=PLACEHOLDER_TENANT_ID):
-    from siftpdf.api.models import Job, JobStatus
+    from lintpdf.api.models import Job, JobStatus
 
     job = Job(
         id=uuid.uuid4(),
@@ -30,7 +30,7 @@ def _make_job(db, *, tenant_id=PLACEHOLDER_TENANT_ID):
 
 
 def _make_finding(db, *, job_id, inspection_id="LPDF_TST_001"):
-    from siftpdf.api.models import JobFinding
+    from lintpdf.api.models import JobFinding
 
     f = JobFinding(
         id=uuid.uuid4(),
@@ -138,7 +138,7 @@ def test_record_propagates_request_id_header(client: TestClient, db_session: Ses
     )
     assert resp.status_code == 201
     db_session.expire_all()
-    from siftpdf.decisions.models import Decision
+    from lintpdf.decisions.models import Decision
 
     row = db_session.query(Decision).first()
     assert row is not None
@@ -237,7 +237,7 @@ def test_invalid_uuid_returns_404(client: TestClient):
 
 
 def test_cross_tenant_job_404s(client: TestClient, db_session: Session):
-    from siftpdf.api.models import Tenant, TenantPlan
+    from lintpdf.api.models import Tenant, TenantPlan
 
     foreign_id = uuid.uuid4()
     db_session.add(

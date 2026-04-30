@@ -6,7 +6,7 @@ Moves built-in preflight profiles out of the hard-coded
 the per-tenant "soft default" flow.
 
 Seed of ``system_profiles`` from the bundled JSON happens lazily at app
-boot (see ``siftpdf.profiles.seed.seed_system_profiles_from_bundled``)
+boot (see ``lintpdf.profiles.seed.seed_system_profiles_from_bundled``)
 using insert-if-absent semantics, so a modified bundled JSON for an
 existing ``profile_id`` is silently ignored — once a row exists in the
 DB it's authoritative. New ``profile_id``s added in the bundled

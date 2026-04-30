@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from siftpdf.ai.analyzers.regulatory_compliance.alcohol import AlcoholLabelingAnalyzer
-from siftpdf.ai.analyzers.regulatory_compliance.cannabis import CannabisLabelingAnalyzer
-from siftpdf.ai.analyzers.regulatory_compliance.cosmetics import CosmeticsLabelingAnalyzer
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.ai.analyzers.regulatory_compliance.alcohol import AlcoholLabelingAnalyzer
+from lintpdf.ai.analyzers.regulatory_compliance.cannabis import CannabisLabelingAnalyzer
+from lintpdf.ai.analyzers.regulatory_compliance.cosmetics import CosmeticsLabelingAnalyzer
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from siftpdf.plugin.protocol import AnalyzerContext
+    from lintpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

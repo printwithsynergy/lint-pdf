@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.page_geometry import PageGeometryAnalyzer
-from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.page_geometry import PageGeometryAnalyzer
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 # A4 portrait in points: 595.28 x 841.89, ≈ 210.0 x 297.0 mm.
 A4_W_PT = 595.28

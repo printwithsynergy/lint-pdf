@@ -6,8 +6,8 @@ import io
 
 import pikepdf
 
-from siftpdf.analyzers.finding import Severity
-from siftpdf.analyzers.spot_name_normaliser import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.spot_name_normaliser import (
     CANONICAL_NAMES,
     check_spot_naming,
     find_canonical_name,

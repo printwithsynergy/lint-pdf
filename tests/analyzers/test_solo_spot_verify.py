@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from siftpdf.analyzers.solo_spot_verify import SoloSpotVerifyAnalyzer
-from siftpdf.semantic.model import (
+from lintpdf.analyzers.solo_spot_verify import SoloSpotVerifyAnalyzer
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

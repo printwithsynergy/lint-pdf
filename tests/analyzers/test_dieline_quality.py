@@ -16,8 +16,8 @@ import io
 import pikepdf
 import pytest
 
-from siftpdf.analyzers.dieline_quality import check_dieline_quality
-from siftpdf.analyzers.finding import Severity
+from lintpdf.analyzers.dieline_quality import check_dieline_quality
+from lintpdf.analyzers.finding import Severity
 
 
 def _build_pdf_with_content_stream(

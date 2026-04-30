@@ -20,9 +20,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from siftpdf import rendering
-from siftpdf.api.routes.viewer import _TILE_RENDER_VERSION, _tile_cache_key
-from siftpdf.rendering import render_page_to_image
+from lintpdf import rendering
+from lintpdf.api.routes.viewer import _TILE_RENDER_VERSION, _tile_cache_key
+from lintpdf.rendering import render_page_to_image
 
 if TYPE_CHECKING:
     import pytest
@@ -141,7 +141,7 @@ class TestTileCacheKeyVersion:
     @staticmethod
     def test_queue_and_route_agree_on_key() -> None:
         """The warm-task key builder must match the read-path key builder."""
-        from siftpdf.queue.tasks import _tile_s3_key
+        from lintpdf.queue.tasks import _tile_s3_key
 
         warm_key = _tile_s3_key("tenant-x", "job-x", 3, 300)
         read_key = _tile_cache_key("tenant-x", "job-x", 3, 300)

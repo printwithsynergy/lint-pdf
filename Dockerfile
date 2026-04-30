@@ -43,14 +43,14 @@ COPY src/ src/
 COPY pyproject.toml .
 COPY alembic/ alembic/
 COPY alembic.ini .
-COPY scripts/entrypoint.sh /usr/local/bin/siftpdf-entrypoint.sh
+COPY scripts/entrypoint.sh /usr/local/bin/lintpdf-entrypoint.sh
 
 # Install the package itself, normalise the entrypoint, and create the
 # non-root runtime user.
 RUN pip install --no-cache-dir --no-deps . && \
-    chmod +x /usr/local/bin/siftpdf-entrypoint.sh && \
-    useradd --create-home siftpdf
-USER siftpdf
+    chmod +x /usr/local/bin/lintpdf-entrypoint.sh && \
+    useradd --create-home lintpdf
+USER lintpdf
 
 EXPOSE 8000
 ENV PORT=8000
@@ -59,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')" || exit 1
 
 # Default: run migrations then the API server (Railway sets $PORT dynamically).
-CMD ["/usr/local/bin/siftpdf-entrypoint.sh"]
+CMD ["/usr/local/bin/lintpdf-entrypoint.sh"]

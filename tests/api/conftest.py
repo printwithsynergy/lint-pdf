@@ -11,11 +11,11 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from siftpdf.api.app import create_app
-from siftpdf.api.auth import get_current_tenant
-from siftpdf.api.database import get_db
-from siftpdf.api.models import Base, Tenant, TenantPlan
-from siftpdf.api.storage import InMemoryStorage, set_storage
+from lintpdf.api.app import create_app
+from lintpdf.api.auth import get_current_tenant
+from lintpdf.api.database import get_db
+from lintpdf.api.models import Base, Tenant, TenantPlan
+from lintpdf.api.storage import InMemoryStorage, set_storage
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -64,7 +64,7 @@ def db_session() -> Generator[Session, None, None]:
     # so route tests that write ToggleOverride rows don't fail the
     # ``toggle_overrides.toggle_id`` FK. Mirrors the production startup
     # lifespan ``seed_category_toggles`` hook.
-    from siftpdf.tenants.toggle_registry import seed_category_toggles
+    from lintpdf.tenants.toggle_registry import seed_category_toggles
 
     seed_category_toggles(session)
     session.commit()
@@ -78,7 +78,7 @@ def db_session() -> Generator[Session, None, None]:
     # mirrors production by inserting the row directly. Other test
     # files that exercise additional system profiles seed them
     # themselves.
-    from siftpdf.profiles.seed import seed_system_profiles_from_bundled
+    from lintpdf.profiles.seed import seed_system_profiles_from_bundled
 
     seed_system_profiles_from_bundled(session)
     session.commit()
@@ -111,7 +111,7 @@ def _reset_settings_cache():
     would otherwise see the stale value baked by a prior test that
     imported the module first.
     """
-    from siftpdf.api.config import get_settings
+    from lintpdf.api.config import get_settings
 
     get_settings.cache_clear()
     yield
@@ -133,7 +133,7 @@ def _mock_clamav_clean(monkeypatch, request):
     mock_scanner.instream.return_value = {"stream": ("OK", None)}
     mock_clamd = MagicMock()
     mock_clamd.ClamdNetworkSocket.return_value = mock_scanner
-    monkeypatch.setattr("siftpdf.api.upload_security._clamd_mod", mock_clamd)
+    monkeypatch.setattr("lintpdf.api.upload_security._clamd_mod", mock_clamd)
 
 
 @pytest.fixture(autouse=True)
@@ -149,7 +149,7 @@ def _mock_celery_delay(monkeypatch):
     """Prevent Celery tasks from actually dispatching during API tests."""
     from unittest.mock import MagicMock
 
-    from siftpdf.queue import tasks
+    from lintpdf.queue import tasks
 
     monkeypatch.setattr(tasks.run_preflight, "delay", MagicMock())
     monkeypatch.setattr(tasks.run_preflight, "apply_async", MagicMock())
