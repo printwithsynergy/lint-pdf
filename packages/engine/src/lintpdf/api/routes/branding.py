@@ -24,7 +24,7 @@ from lintpdf.api.schemas import (
     TenantCustomDomainResponse,
 )
 
-router = APIRouter(tags=["branding"])
+router = APIRouter(tags=["x:saas-only", "branding"])
 
 
 # --- Custom report domain validation ---

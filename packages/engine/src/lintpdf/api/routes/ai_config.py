@@ -20,7 +20,7 @@ from lintpdf.api.database import get_db
 from lintpdf.api.models import Tenant  # noqa: TC001 — needed at runtime for FastAPI Depends()
 from lintpdf.api.upload_security import PRINT_READY_TYPES, validate_upload
 
-router = APIRouter(prefix="/api/v1/ai/config", tags=["ai-config"])
+router = APIRouter(prefix="/api/v1/ai/config", tags=["x:saas-only", "ai-config"])
 
 
 @router.get("", response_model=AIConfigResponse)

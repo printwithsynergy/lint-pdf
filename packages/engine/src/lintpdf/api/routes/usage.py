@@ -9,7 +9,7 @@ from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.middleware import build_usage_info, get_current_usage
 from lintpdf.api.models import Tenant  # noqa: TC001 — needed at runtime by FastAPI
 
-router = APIRouter(prefix="/api/v1/usage", tags=["usage"])
+router = APIRouter(prefix="/api/v1/usage", tags=["x:saas-only", "usage"])
 
 
 class UsageResponse(BaseModel):

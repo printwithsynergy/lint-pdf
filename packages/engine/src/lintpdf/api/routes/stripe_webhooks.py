@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/billing/stripe",
-    tags=["billing-stripe"],
+    tags=["x:saas-only", "billing-stripe"],
 )
 
 

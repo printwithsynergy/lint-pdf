@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/admin/health", tags=["admin-health"])
+router = APIRouter(prefix="/api/v1/admin/health", tags=["x:saas-only", "admin-health"])
 
 
 # Deferred import trick: the admin key verifier lives inside

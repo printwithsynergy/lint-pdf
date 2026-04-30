@@ -19,7 +19,7 @@ from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
 from lintpdf.api.models import AIUsageLog, Tenant
 
-router = APIRouter(prefix="/api/v1/ai/usage", tags=["ai-usage"])
+router = APIRouter(prefix="/api/v1/ai/usage", tags=["x:saas-only", "ai-usage"])
 
 
 @router.get("", response_model=AIUsageResponse)

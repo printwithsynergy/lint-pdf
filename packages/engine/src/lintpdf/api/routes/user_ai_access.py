@@ -16,7 +16,7 @@ from lintpdf.api.schemas import (
     UserAIAccessUpdateRequest,
 )
 
-router = APIRouter(prefix="/users", tags=["user-ai-access"])
+router = APIRouter(prefix="/users", tags=["x:saas-only", "user-ai-access"])
 
 
 @router.put("/{user_id}/ai-access", response_model=UserAIAccessResponse)

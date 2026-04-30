@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/jobs", tags=["epm"])
+router = APIRouter(prefix="/api/v1/jobs", tags=["x:saas-only", "epm"])
 
 
 class EpmVerdictResponse(BaseModel):
@@ -72,9 +72,7 @@ def _parse_uuid(raw: str, *, kind: str) -> uuid_mod.UUID:
         ) from exc
 
 
-def _load_owned_job(
-    db: Session, *, tenant_id: uuid_mod.UUID, job_id: uuid_mod.UUID
-) -> Job:
+def _load_owned_job(db: Session, *, tenant_id: uuid_mod.UUID, job_id: uuid_mod.UUID) -> Job:
     """404 unless the job is non-deleted and owned by the tenant."""
     row = db.execute(
         select(Job).where(
