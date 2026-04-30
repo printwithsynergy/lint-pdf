@@ -8,6 +8,18 @@ from lintpdf.ai.analyzers.regulatory_compliance.cosmetics import CosmeticsLabeli
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc(text: str) -> SemanticDocument:
     return SemanticDocument(
         version="1.7",
@@ -34,13 +46,13 @@ class TestAlcohol:
     @staticmethod
     def test_silent_on_non_alcohol() -> None:
         doc = _doc("This is a chocolate bar with cocoa, sugar, milk.")
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         assert out == []
 
     @staticmethod
     def test_missing_all_required_elements() -> None:
         doc = _doc("Premium California Chardonnay wine — bottled at our estate.")
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "AI_ALC_001" in ids
         f = next(f for f in out if f.inspection_id == "AI_ALC_001")
@@ -56,14 +68,14 @@ class TestAlcohol:
             "Product of California, USA."
         )
         doc = _doc(text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         assert [f.inspection_id for f in out if f.inspection_id == "AI_ALC_001"] == []
 
     @staticmethod
     def test_format_violation_excess_precision() -> None:
         text = "Whisky 12.555% ALC/VOL. GOVERNMENT WARNING. Made in Scotland."
         doc = _doc(text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "AI_ALC_002" in ids
 
@@ -77,13 +89,13 @@ class TestCannabis:
     @staticmethod
     def test_silent_on_non_cannabis() -> None:
         doc = _doc("Vitamin D supplement 1000 IU per gummy.")
-        out = CannabisLabelingAnalyzer().analyze(doc, [], b"")
+        out = CannabisLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         assert out == []
 
     @staticmethod
     def test_missing_required_warnings() -> None:
         doc = _doc("Premium edibles with 10mg THC per piece. Made by licensed producer.")
-        out = CannabisLabelingAnalyzer().analyze(doc, [], b"")
+        out = CannabisLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "AI_CANN_001" in ids
         f = next(f for f in out if f.inspection_id == "AI_CANN_001")
@@ -98,7 +110,7 @@ class TestCannabis:
             "Licensed producer."
         )
         doc = _doc(text)
-        out = CannabisLabelingAnalyzer().analyze(doc, [], b"")
+        out = CannabisLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         cann001 = [f for f in out if f.inspection_id == "AI_CANN_001"]
         assert cann001 == []
 
@@ -110,7 +122,7 @@ class TestCannabis:
             "Keep out of reach of children. Universal Symbol. Licensed producer."
         )
         doc = _doc(text)
-        out = CannabisLabelingAnalyzer().analyze(doc, [], b"")
+        out = CannabisLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "AI_CANN_002" in ids
 
@@ -124,13 +136,13 @@ class TestCosmetics:
     @staticmethod
     def test_silent_on_non_cosmetic() -> None:
         doc = _doc("Organic almonds — 200g pack. Contains: almonds.")
-        out = CosmeticsLabelingAnalyzer().analyze(doc, [], b"")
+        out = CosmeticsLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         assert out == []
 
     @staticmethod
     def test_missing_required_elements() -> None:
         doc = _doc("Luxury face cream — apply twice daily.")
-        out = CosmeticsLabelingAnalyzer().analyze(doc, [], b"")
+        out = CosmeticsLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "AI_COSM_001" in ids
         f = next(f for f in out if f.inspection_id == "AI_COSM_001")
@@ -149,7 +161,7 @@ class TestCosmetics:
             "Period after opening 12M."
         )
         doc = _doc(text)
-        out = CosmeticsLabelingAnalyzer().analyze(doc, [], b"")
+        out = CosmeticsLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         cosm001 = [f for f in out if f.inspection_id == "AI_COSM_001"]
         assert cosm001 == []
 
@@ -161,6 +173,6 @@ class TestCosmetics:
             "12M after opening. BATCH: B2024-001."
         )
         doc = _doc(text)
-        out = CosmeticsLabelingAnalyzer().analyze(doc, [], b"")
+        out = CosmeticsLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         ids = [f.inspection_id for f in out]
         assert "AI_COSM_002" in ids

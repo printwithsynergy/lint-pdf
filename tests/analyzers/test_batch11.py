@@ -14,6 +14,18 @@ from lintpdf.semantic.graphics_state import TransformationMatrix
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc(**kwargs) -> SemanticDocument:
     return SemanticDocument(
         version="1.7",
@@ -114,7 +126,7 @@ class TestWineSpiritsCompliance:
     def test_wine_without_sulfites_fires() -> None:
         text = b"Cabernet Sauvignon 13.5% ALC/VOL. GOVERNMENT WARNING. Product of California, USA."
         doc = _doc(content_stream=text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         alc003 = [f for f in out if f.inspection_id == "AI_ALC_003"]
         assert len(alc003) >= 1
         assert any("missing_contains_sulfites" in f.details["issues"] for f in alc003)
@@ -126,7 +138,7 @@ class TestWineSpiritsCompliance:
             b"Product of Napa Valley, California. Contains sulfites."
         )
         doc = _doc(content_stream=text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         alc003 = [f for f in out if f.inspection_id == "AI_ALC_003"]
         assert alc003 == []
 
@@ -137,7 +149,7 @@ class TestWineSpiritsCompliance:
             b"Product of USA. Contains sulfites."
         )
         doc = _doc(content_stream=text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         alc003 = [f for f in out if f.inspection_id == "AI_ALC_003"]
         assert any("estate_bottled_without_appellation" in f.details["issues"] for f in alc003)
 
@@ -145,7 +157,7 @@ class TestWineSpiritsCompliance:
     def test_spirits_without_proof_fires() -> None:
         text = b"Premium Whisky 40% ALC/VOL. GOVERNMENT WARNING. Distilled in Scotland."
         doc = _doc(content_stream=text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         alc003 = [f for f in out if f.inspection_id == "AI_ALC_003"]
         assert any("missing_proof_statement" in f.details["issues"] for f in alc003)
 
@@ -153,6 +165,6 @@ class TestWineSpiritsCompliance:
     def test_spirits_with_proof_silent() -> None:
         text = b"Premium Whisky 40% ALC/VOL (80 proof). GOVERNMENT WARNING. Distilled in Scotland."
         doc = _doc(content_stream=text)
-        out = AlcoholLabelingAnalyzer().analyze(doc, [], b"")
+        out = AlcoholLabelingAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
         alc003 = [f for f in out if f.inspection_id == "AI_ALC_003"]
         assert alc003 == []

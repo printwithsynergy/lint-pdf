@@ -21,6 +21,18 @@ from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import (
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _page(text: str, page_num: int = 1) -> SemanticPage:
     return SemanticPage(
         page_num=page_num,
@@ -99,7 +111,7 @@ def test_pages_with_nfp_collects_positive_pages() -> None:
 
 def test_fda_rules_silent_on_non_panel_page() -> None:
     doc = _doc([_page("Nutrition Facts blog post. Visit us online!", page_num=1)])
-    findings = FdaNutritionAnalyzer().analyze(doc, [], pdf_bytes=b"")
+    findings = FdaNutritionAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
     fda_003 = [f for f in findings if f.inspection_id == "AI_FDA_003"]
     fda_004 = [f for f in findings if f.inspection_id == "AI_FDA_004"]
     assert fda_003 == []
@@ -126,7 +138,7 @@ def test_fda_rules_see_real_panel_page() -> None:
     # And at the analyzer level, the no-panel page produces no
     # AI_FDA_004 noise (would previously have emitted "14 missing
     # nutrients").
-    findings = FdaNutritionAnalyzer().analyze(doc, [], pdf_bytes=b"")
+    findings = FdaNutritionAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
     assert [f for f in findings if f.page_num == 1] == []
 
 
@@ -192,7 +204,7 @@ def test_fda_nutrition_skips_supplement_facts_panel() -> None:
     firing on Supplement Facts panels (Nutrops). The analyzer should
     return [] when every detected panel is a Supplement Facts page."""
     doc = _doc([_page(_SUPPLEMENT_FACTS_TEXT)])
-    findings = FdaNutritionAnalyzer().analyze(doc, [], pdf_bytes=b"")
+    findings = FdaNutritionAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
     fda_findings = [f for f in findings if f.inspection_id.startswith("AI_FDA_")]
     assert fda_findings == []
 
@@ -200,7 +212,7 @@ def test_fda_nutrition_skips_supplement_facts_panel() -> None:
 def test_fda_nutrition_still_fires_on_nutrition_facts_panel() -> None:
     """Nutrition Facts panel still triggers AI_FDA_* findings."""
     doc = _doc([_page(_NUTRITION_FACTS_TEXT)])
-    findings = FdaNutritionAnalyzer().analyze(doc, [], pdf_bytes=b"")
+    findings = FdaNutritionAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
     # Should detect the panel and run rules; we don't assert on
     # specific findings (depends on font sizes etc.) but any
     # AI_FDA_* finding proves the path executes.
@@ -222,6 +234,6 @@ def test_fda_nutrition_mixed_pages_only_runs_nutrition() -> None:
             _page(_SUPPLEMENT_FACTS_TEXT, page_num=2),
         ]
     )
-    findings = FdaNutritionAnalyzer().analyze(doc, [], pdf_bytes=b"")
+    findings = FdaNutritionAnalyzer().analyze_v2(_ctx(doc, events=[], pdf_bytes=b""))
     page_2_fda = [f for f in findings if f.page_num == 2 and f.inspection_id.startswith("AI_FDA_")]
     assert page_2_fda == []

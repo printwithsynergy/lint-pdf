@@ -19,6 +19,18 @@ from lintpdf.semantic.graphics_state import TransformationMatrix
 from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
+def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
+    """Build an AnalyzerContext for analyze_v2 calls."""
+    from lintpdf.plugin.protocol import AnalyzerContext
+
+    return AnalyzerContext(
+        document=document,
+        events=events or [],
+        pdf_bytes=pdf_bytes,
+        config={"ai_config": ai_config} if ai_config is not None else {},
+    )
+
+
 def _doc_with_ingredients(page_num: int = 1) -> SemanticDocument:
     """EU_FIR_1169 only runs when 'ingredients' keyword is on a
     page — add it to the content stream so the analyzer doesn't
@@ -70,7 +82,7 @@ def test_nutrops_logo_scenario_does_not_flag() -> None:
     ``Test1_Nutrops_LS_Dieline.pdf``."""
     doc = _doc_with_ingredients()
     event = _text_event(font_size=1.0, tm_scale=72.0, ctm_scale=1.5)
-    findings = EuFir1169Analyzer().analyze(doc, [event], pdf_bytes=b"")
+    findings = EuFir1169Analyzer().analyze_v2(_ctx(doc, events=[event], pdf_bytes=b""))
     x_height_findings = [f for f in findings if f.inspection_id == "AI_EU1169_001"]
     assert x_height_findings == [], (
         f"expected no x-height finding for a 108pt logo; got {len(x_height_findings)}: "
@@ -83,7 +95,7 @@ def test_genuinely_tiny_text_still_flags() -> None:
     below the 1.2 mm threshold. True positive must still fire."""
     doc = _doc_with_ingredients()
     event = _text_event(font_size=0.8)
-    findings = EuFir1169Analyzer().analyze(doc, [event], pdf_bytes=b"")
+    findings = EuFir1169Analyzer().analyze_v2(_ctx(doc, events=[event], pdf_bytes=b""))
     x_height_findings = [f for f in findings if f.inspection_id == "AI_EU1169_001"]
     assert len(x_height_findings) == 1, (
         f"expected a finding on 0.8pt body text; got {len(x_height_findings)}"

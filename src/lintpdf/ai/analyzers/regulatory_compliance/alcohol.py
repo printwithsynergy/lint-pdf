@@ -27,8 +27,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.model import SemanticDocument
 
 
@@ -100,13 +99,11 @@ class AlcoholLabelingAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document only.
+        # events + pdf_bytes + ai_config declared but never used.
+        document = ctx.document
+
         text = _collect_text(document)
         abv_match = _ABV_PATTERN.search(text)
         class_match = _ALC_CLASS_PATTERN.search(text)
