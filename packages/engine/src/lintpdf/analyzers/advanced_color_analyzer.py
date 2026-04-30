@@ -63,7 +63,7 @@ def _dark_ink_fraction(pdf_bytes: bytes | None, page_num: int) -> float | None:
 
         from PIL import Image
 
-        from lintpdf.ai.rendering import render_page_to_image
+        from lintpdf.rendering import render_page_to_image
     except Exception:
         logger.debug("WS-8 pixel gate disabled: rendering stack unavailable")
         return None

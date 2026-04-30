@@ -81,8 +81,8 @@ def detect_dieline_via_claude(pdf_bytes: bytes) -> Any | None:
     returned in the tool call). Import kept lazy so the analyzer
     doesn't pull Anthropic at module-load time.
     """
-    from lintpdf.ai.rendering import render_page_to_image
     from lintpdf.analyzers.dieline import DielineResult
+    from lintpdf.rendering import render_page_to_image
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return None

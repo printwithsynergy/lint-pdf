@@ -191,7 +191,7 @@ class TestRunPass:
         with (
             patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
             patch(
-                "lintpdf.ai.rendering.render_page_to_image",
+                "lintpdf.rendering.render_page_to_image",
                 return_value=b"\x89PNG\r\n\x1a\n",
             ),
         ):
@@ -218,7 +218,7 @@ class TestRunPass:
         with (
             patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
             patch(
-                "lintpdf.ai.rendering.render_page_to_image",
+                "lintpdf.rendering.render_page_to_image",
                 return_value=b"\x89PNG\r\n\x1a\n",
             ),
         ):

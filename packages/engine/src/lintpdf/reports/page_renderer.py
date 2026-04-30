@@ -339,7 +339,7 @@ def render_annotated_page(
     Returns:
         AnnotatedPageResult with the image and callout information.
     """
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     # Render page to PNG
     png_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
@@ -435,7 +435,7 @@ def render_page_thumbnail(
     Used for pages that have findings but no bounding boxes,
     to still give visual context.
     """
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     try:
         png_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
@@ -580,7 +580,7 @@ def render_finding_thumbnails(
     if not _check_poppler():
         return
 
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     # Cache rendered page images + media boxes
     page_cache: dict[int, tuple[Image.Image, tuple[float, float, float, float]]] = {}

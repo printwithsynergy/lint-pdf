@@ -20,9 +20,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from lintpdf.ai import rendering
-from lintpdf.ai.rendering import render_page_to_image
+from lintpdf import rendering
 from lintpdf.api.routes.viewer import _TILE_RENDER_VERSION, _tile_cache_key
+from lintpdf.rendering import render_page_to_image
 
 if TYPE_CHECKING:
     import pytest

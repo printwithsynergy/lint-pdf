@@ -140,9 +140,9 @@ class TestWarmViewerTiles:
         we patch at the source modules (what the ``from ... import``
         inside the task resolves to).
         """
-        import lintpdf.ai.rendering as rendering
         import lintpdf.api.database as database
         import lintpdf.api.middleware as mw
+        import lintpdf.rendering as rendering
         from lintpdf.queue import tasks as qtasks
 
         monkeypatch.setattr(database, "get_db_session", lambda: db)

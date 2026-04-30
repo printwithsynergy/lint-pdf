@@ -153,7 +153,7 @@ def run(
     # Lazy imports keep this module importable in unit-test sandboxes that
     # don't have httpx / pillow / paddleocr available.
     from lintpdf.ai.gpu_client import get_gpu_client
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     pages_to_run: list[SemanticPage] = [
         page for page in document.pages if should_run_for_page(page, events)

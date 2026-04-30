@@ -56,7 +56,7 @@ def _stub_anthropic(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 @pytest.fixture(autouse=True)
 def _stub_renderer(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Avoid shelling out to Ghostscript for the unit tests."""
-    from lintpdf.ai import rendering
+    from lintpdf import rendering
 
     renderer_mock = MagicMock(return_value=b"\x89PNG\r\n\x1a\n-fake")
     monkeypatch.setattr(rendering, "render_page_to_image", renderer_mock)
