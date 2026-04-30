@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
-from lintpdf.ai.types import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.types import GPUServiceUnavailableError
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
@@ -21,14 +21,6 @@ if TYPE_CHECKING:
     from lintpdf.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
 
 
 def _extract_spot_colors(document: SemanticDocument) -> list[dict[str, Any]]:
@@ -77,10 +69,7 @@ class CrossDocumentConsistencyAnalyzer(BaseAIAnalyzer):
     credits_per_run = 2
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        # Phase 2 α-stream: signature migration. Internal globals
-        # (_get_gpu_client) intentionally unchanged in α — migrate to
-        # ctx.services.gpu_client in β-stream. ai_config parameter
-        # was declared but never used; dropped.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         document = ctx.document
         pdf_bytes = ctx.pdf_bytes
 
@@ -90,22 +79,27 @@ class CrossDocumentConsistencyAnalyzer(BaseAIAnalyzer):
         if not spot_colors:
             return findings
 
-        # Attempt GPU-based Lab value extraction for more precise tracking
+        # Attempt GPU-based Lab value extraction for more precise tracking.
+        # Skip if services unavailable (e.g. OSS host).
         lab_values: dict[str, dict[str, float]] = {}
-        try:
-            from lintpdf.ai.rendering import render_all_pages
-
-            page_images = render_all_pages(pdf_bytes, dpi=150)
-            gpu = _get_gpu_client()
-
-            if page_images:
-                try:
-                    result = gpu._post("/inference/extract-lab", page_images[0])
-                    lab_values = result.get("lab_values", {})
-                except GPUServiceUnavailableError:
-                    logger.debug("cross_document_consistency: GPU unavailable for Lab extraction")
-        except RuntimeError:
-            logger.debug("cross_document_consistency: PDF rendering backend unavailable")
+        services = ctx.services
+        if (
+            services is not None
+            and services.gpu_client is not None
+            and services.renderer is not None
+        ):
+            try:
+                page_images = services.renderer.render_all_pages(pdf_bytes, dpi=150)
+                if page_images:
+                    try:
+                        result = services.gpu_client._post("/inference/extract-lab", page_images[0])
+                        lab_values = result.get("lab_values", {})
+                    except GPUServiceUnavailableError:
+                        logger.debug(
+                            "cross_document_consistency: GPU unavailable for Lab extraction"
+                        )
+            except RuntimeError:
+                logger.debug("cross_document_consistency: PDF rendering backend unavailable")
 
         # Build spot color inventory summary
         color_names = [sc["colorant_name"] for sc in spot_colors]

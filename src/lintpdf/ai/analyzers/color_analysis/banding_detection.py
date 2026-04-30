@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
-from lintpdf.ai.types import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.types import GPUServiceUnavailableError
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
@@ -25,14 +25,6 @@ _BANDING_THRESHOLD = 5.0  # Above this indicates visible banding
 _MILD_BANDING_THRESHOLD = 2.0  # Below _BANDING but above this is mild
 
 
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
-
-
 @register_ai_analyzer
 class BandingDetectionAnalyzer(BaseAIAnalyzer):
     """Detect banding artifacts in PDF page renders using CAMBI algorithm."""
@@ -43,24 +35,27 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
     credits_per_run = 2
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        # Phase 2 α-stream: signature migration from legacy
-        # analyze(document, events, pdf_bytes, ai_config) to
-        # analyze_v2(ctx). Internal globals (_get_gpu_client,
-        # render_all_pages lazy import) intentionally unchanged in
-        # α — they migrate to ctx.services.gpu_client in β-stream.
-        # ai_config parameter was declared but never used; dropped.
+        # Phase 2 beta-stream: SaaS coupling routed through
+        # ctx.services. _get_gpu_client() and lazy lintpdf.ai.rendering
+        # imports replaced with ctx.services.gpu_client and
+        # ctx.services.renderer respectively. text_mask remains a
+        # direct import (CPU-only helper, not SaaS-coupled — η6
+        # tracks it but it doesn't need a Service).
         document = ctx.document
         pdf_bytes = ctx.pdf_bytes
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("banding_detection: ctx.services unavailable, skipping")
+            return []
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=150)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=150)
         except RuntimeError:
             logger.debug("banding_detection: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         for page_idx, png_bytes in enumerate(page_images):

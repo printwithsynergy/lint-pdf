@@ -5,17 +5,9 @@ src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py:152:from lintpdf.ai.rende
 src/lintpdf/ai/analyzers/barcode/pharma_serialization.py:154:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/barcode/qr_human_readable.py:159:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/barcode/qr_validation.py:125:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:31:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:55:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:89:from lintpdf.ai.text_mask
-src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:103:from lintpdf.ai.text_mask
-src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:31:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:67:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:29:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py:96:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:104:from lintpdf.ai.text_mask
-src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:28:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:67:from lintpdf.ai.rendering
+src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:84:from lintpdf.ai.text_mask
+src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:95:from lintpdf.ai.text_mask
+src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:96:from lintpdf.ai.text_mask
 src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py:65:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:66:from lintpdf.ai.types import get_gpu_client
 src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py:93:from lintpdf.ai.rendering
