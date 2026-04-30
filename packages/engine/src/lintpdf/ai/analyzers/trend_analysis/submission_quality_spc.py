@@ -10,14 +10,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
+    from lintpdf.plugin.protocol import AnalyzerContext
 
 logger = logging.getLogger(__name__)
 
@@ -258,13 +256,17 @@ class SubmissionQualitySPCAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 2
 
-    def analyze(  # skipcq: PY-R1000
+    def analyze_v2(  # skipcq: PY-R1000
         self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
+        ctx: AnalyzerContext,
     ) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses ai_config
+        # (.tenant_id). Reconstituted via _reconstitute_ai_config to
+        # preserve attribute access. document + events + pdf_bytes
+        # declared but never used.
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         if not _HAS_SCIPY or not _HAS_NUMPY:
             logger.debug("scipy or numpy not installed — skipping SPC analysis")
             return []
