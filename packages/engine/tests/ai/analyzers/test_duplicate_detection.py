@@ -8,16 +8,38 @@ from lintpdf.analyzers.finding import Severity
 from lintpdf.plugin import AnalyzerContext
 
 
-def _ctx(document: MagicMock) -> AnalyzerContext:
+def _ctx(
+    document: MagicMock,
+    page_images: list[bytes] | None = None,
+    render_raises: BaseException | None = None,
+) -> AnalyzerContext:
     """Build an AnalyzerContext mirroring orchestrator-driven analyze_v2 calls.
 
     Phase 2 alpha-stream batch 3 migrated DuplicateDetectionAnalyzer
-    from legacy analyze() to analyze_v2(ctx).
+    from legacy analyze() to analyze_v2(ctx). Phase 2 beta-stream
+    batch 3 routed render_all_pages through ctx.services.renderer,
+    so the test harness must provide a services mock with a
+    renderer that returns the desired page images (or raises).
+
+    Pass ``page_images=[...]`` for happy-path tests, or
+    ``render_raises=RuntimeError(...)`` to simulate a renderer
+    backend failure. Pass neither and ``ctx.services`` is None,
+    which causes the analyzer to self-skip.
     """
+    services = None
+    if page_images is not None or render_raises is not None:
+        renderer = MagicMock()
+        if render_raises is not None:
+            renderer.render_all_pages.side_effect = render_raises
+        else:
+            renderer.render_all_pages.return_value = page_images
+        services = MagicMock()
+        services.renderer = renderer
     return AnalyzerContext(
         document=document,
         events=[],
         pdf_bytes=b"fake_pdf",
+        services=services,
     )
 
 
@@ -69,17 +91,13 @@ class TestDuplicateDetectionAnalyzer:
                 "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
                 True,
             ),
-            patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                return_value=[fake_png],  # Only 1 page
-            ),
         ):
             from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
+            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, page_images=[fake_png]))
 
         assert findings == []
 
@@ -102,10 +120,6 @@ class TestDuplicateDetectionAnalyzer:
                 True,
             ),
             patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                return_value=[fake_png, fake_png],
-            ),
-            patch(
                 "lintpdf.ai.analyzers.content_quality.duplicate_detection.imagehash"
             ) as mock_imagehash,
             patch("lintpdf.ai.analyzers.content_quality.duplicate_detection.PILImage") as mock_pil,
@@ -118,7 +132,9 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
+            findings = analyzer.analyze_v2(
+                _ctx(minimal_semantic_doc, page_images=[fake_png, fake_png])
+            )
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DUP_001"
@@ -147,10 +163,6 @@ class TestDuplicateDetectionAnalyzer:
                 True,
             ),
             patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                return_value=[fake_png, fake_png],
-            ),
-            patch(
                 "lintpdf.ai.analyzers.content_quality.duplicate_detection.imagehash"
             ) as mock_imagehash,
             patch("lintpdf.ai.analyzers.content_quality.duplicate_detection.PILImage") as mock_pil,
@@ -163,7 +175,9 @@ class TestDuplicateDetectionAnalyzer:
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
+            findings = analyzer.analyze_v2(
+                _ctx(minimal_semantic_doc, page_images=[fake_png, fake_png])
+            )
 
         assert len(findings) == 0
 
@@ -178,17 +192,15 @@ class TestDuplicateDetectionAnalyzer:
                 "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
                 True,
             ),
-            patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                side_effect=RuntimeError("No backend"),
-            ),
         ):
             from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
             analyzer = DuplicateDetectionAnalyzer()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc))
+            findings = analyzer.analyze_v2(
+                _ctx(minimal_semantic_doc, render_raises=RuntimeError("No backend"))
+            )
 
         assert findings == []
 
