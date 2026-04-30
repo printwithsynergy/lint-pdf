@@ -9,14 +9,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
 
@@ -168,13 +167,22 @@ class BrandPaletteAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(  # skipcq: PY-R1000
+    def analyze_v2(  # skipcq: PY-R1000
         self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
+        ctx: AnalyzerContext,
     ) -> list[Finding]:
+        # Phase 2 α-stream: signature migration. ai_config is
+        # genuinely used (.brand_palette, .delta_e_warning_threshold,
+        # .delta_e_error_threshold) so we reconstitute it via the
+        # same helper BaseAIAnalyzer.analyze_v2's default uses. The
+        # lazy `from lintpdf.ai.base import _reconstitute_ai_config`
+        # is engine-internal; β-stream may switch to plain dict
+        # access on ctx.config["ai_config"] directly once analyzers
+        # standardise on dict-style reads.
+        events = ctx.events
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         if not _HAS_COLOUR or not _HAS_NUMPY:
             logger.debug("color-science or numpy not installed — skipping brand palette check")
             return []

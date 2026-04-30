@@ -15,9 +15,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
-    from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
+    from lintpdf.plugin.protocol import AnalyzerContext
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +52,12 @@ class DielineByColorNameAnalyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(
-        self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
-    ) -> list[Finding]:
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
+        # Phase 2 α-stream: signature migration. Pure deterministic
+        # analyzer (no GPU calls, no rendering); body unchanged.
+        # ai_config parameter was declared but never used; dropped.
+        document = ctx.document
+
         findings: list[Finding] = []
         seen: set[str] = set()
 
