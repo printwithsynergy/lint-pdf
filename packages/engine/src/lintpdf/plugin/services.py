@@ -97,16 +97,28 @@ class GPUClient(Protocol):
 
 
 class LLMClient(Protocol):
-    """Anthropic / OpenAI-style chat completion for AI analyzers."""
+    """LLM completion service for analyzers that need vision /
+    tool-use access (currently dieline_claude + legend_claude).
 
-    def complete(
+    Phase 2 ``complete(system, user, ...)`` was too narrow — those
+    helpers need images, tool definitions, and ephemeral cache
+    control. ``messages_create`` mirrors Anthropic's
+    ``client.messages.create`` shape so the existing call sites
+    migrate cleanly. OSS hosts can implement a translator (OpenAI
+    Vision, local LLM) or wire the no-op stub and the analyzers
+    will self-skip.
+    """
+
+    def messages_create(
         self,
         *,
-        system: str,
-        user: str,
-        max_tokens: int = 1024,
-        temperature: float = 0.0,
-    ) -> str: ...
+        model: str,
+        max_tokens: int,
+        system: list[dict[str, Any]] | str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: dict[str, Any] | None = None,
+    ) -> Any: ...
 
 
 class Renderer(Protocol):

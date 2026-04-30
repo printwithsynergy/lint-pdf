@@ -748,7 +748,10 @@ def _extract_dieline_paths(
 
 
 def detect_dieline(
-    pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] | None = None
+    pdf_bytes: bytes,
+    *,
+    ai_features: set[str] | frozenset[str] | None = None,
+    llm_client: Any | None = None,
 ) -> DielineResult:
     """Run the dieline detection pipeline.
 
@@ -756,6 +759,11 @@ def detect_dieline(
     Sonnet call. When it misses AND the tenant has the
     ``sonnet_fallback`` grant, Sonnet runs on page 1 and the
     verdict lands as ``source="vision"``. Otherwise ``source="missing"``.
+
+    Phase 3d: ``llm_client`` is the LLMClient service instance from
+    ``ctx.services.llm_client``. The orchestrator passes it through;
+    the helper falls back to direct Anthropic SDK instantiation when
+    ``llm_client`` is ``None`` so existing callers don't break.
     """
     try:
         import pikepdf
@@ -858,7 +866,7 @@ def detect_dieline(
             from lintpdf.ai.dieline_claude import detect_dieline_via_claude
 
             logger.info("dieline: name + geometry missed, calling Sonnet fallback")
-            vision = detect_dieline_via_claude(pdf_bytes)
+            vision = detect_dieline_via_claude(pdf_bytes, llm_client=llm_client)
             if vision is not None:
                 logger.info(
                     "dieline: Sonnet verdict source=%s confidence=%.2f polylines=%d",
