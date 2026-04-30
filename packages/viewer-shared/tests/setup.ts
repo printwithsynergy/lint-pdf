@@ -19,6 +19,13 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   } as unknown as typeof ResizeObserver;
 }
 
+// `scrollIntoView` isn't implemented in jsdom. PageNavigator (and any
+// component that auto-scrolls the active item into view) calls it
+// from a ref-effect on mount.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function () {};
+}
+
 // matchMedia is a similar story — components that branch on
 // `prefers-reduced-motion` etc. trip without it.
 if (typeof globalThis.matchMedia === "undefined") {
