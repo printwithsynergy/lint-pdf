@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
-from lintpdf.ai.types import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.types import GPUServiceUnavailableError
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
@@ -23,14 +23,6 @@ logger = logging.getLogger(__name__)
 # Cast severity thresholds (deviation from neutral)
 _SIGNIFICANT_CAST_THRESHOLD = 15.0  # Channel mean deviation above this is significant
 _MILD_CAST_THRESHOLD = 8.0  # Above this but below significant is mild
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
 
 
 def _describe_cast_direction(dominant_channel: str) -> str:
@@ -56,23 +48,23 @@ class ColorCastDetectionAnalyzer(BaseAIAnalyzer):
     credits_per_run = 2
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        # Phase 2 α-stream: signature migration. Internal globals
-        # (_get_gpu_client, lazy lintpdf.ai.rendering import,
-        # lintpdf.ai.text_mask import) intentionally unchanged in
-        # α — they migrate to ctx.services.gpu_client in β-stream.
-        # ai_config parameter was declared but never used; dropped.
+        # Phase 2 beta-stream: SaaS coupling routed through
+        # ctx.services. text_mask remains a direct import (CPU helper).
         document = ctx.document
         pdf_bytes = ctx.pdf_bytes
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("color_cast_detection: ctx.services unavailable, skipping")
+            return []
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=150)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=150)
         except RuntimeError:
             logger.debug("color_cast_detection: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         for page_idx, png_bytes in enumerate(page_images):
