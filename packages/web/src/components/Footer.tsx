@@ -19,7 +19,8 @@ export function Footer() {
             <p className="text-sm text-slate-500 max-w-sm mb-4">
               Detection-only PDF preflight engine. 500+ checks, PDF/X-1a,
               PDF/X-3, PDF/X-4, and PDF/A conformance verification, zero file
-              modifications. API-first, self-service pricing.
+              modifications.
+              {showLogin && " API-first, self-service pricing."}
             </p>
             {showLogin && (
               <a
