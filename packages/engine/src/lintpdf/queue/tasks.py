@@ -2699,11 +2699,11 @@ def warm_viewer_tiles(
     import datetime as _dt
     import uuid as uuid_mod
 
-    from lintpdf.ai.rendering import render_page_to_image
     from lintpdf.api.database import get_db_session
     from lintpdf.api.middleware import get_redis_client
     from lintpdf.api.models import Job, JobStatus
     from lintpdf.api.storage import get_storage
+    from lintpdf.rendering import render_page_to_image
 
     redis = get_redis_client()
     if redis is None:

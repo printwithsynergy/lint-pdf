@@ -175,9 +175,9 @@ def _wrap_llm_client() -> Any:
 
 def _wrap_renderer() -> Any:
     try:
-        from lintpdf.ai.rendering import render_all_pages, render_page_to_image
+        from lintpdf.rendering import render_all_pages, render_page_to_image
     except ImportError:
-        logger.info("lintpdf.ai.rendering unavailable")
+        logger.info("lintpdf.rendering unavailable")
         return None
 
     class _RendererWrap:

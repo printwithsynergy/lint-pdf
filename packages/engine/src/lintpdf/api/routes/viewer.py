@@ -480,7 +480,7 @@ async def get_page_tile(
     # with a fixed subtractive ink model) and only fall back to the
     # Ghostscript path when the PDF has no spots or the composite
     # rejects the file.
-    from lintpdf.ai.rendering import OCGError, render_page_to_image
+    from lintpdf.rendering import OCGError, render_page_to_image
 
     tile_bytes: bytes | None = None
 
@@ -1432,7 +1432,7 @@ async def sample_color(
     """
     from PIL import Image
 
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
@@ -1766,7 +1766,7 @@ async def _get_layer_tile_bytes(
             ),
         )
 
-    from lintpdf.ai.rendering import render_isolated_layer_tile
+    from lintpdf.rendering import render_isolated_layer_tile
 
     loop = asyncio.get_running_loop()
     try:
@@ -1948,7 +1948,7 @@ async def create_comparison(
     import numpy as np
     from PIL import Image
 
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     # Validate both jobs belong to this tenant
     try:
@@ -2126,7 +2126,7 @@ async def public_get_tile(
     job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     png: bytes | None = None
     try:
@@ -2386,7 +2386,7 @@ async def public_sample(
     _validate_page_num(pdf_bytes, page_num)
     from PIL import Image
 
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
     img = Image.open(io.BytesIO(png)).convert("RGB")
@@ -2480,7 +2480,7 @@ async def public_layer_tile(
             detail=(f"Layer index {layer_index} not in this PDF (valid: {all_layer_indices})."),
         )
 
-    from lintpdf.ai.rendering import render_isolated_layer_tile
+    from lintpdf.rendering import render_isolated_layer_tile
 
     loop = asyncio.get_running_loop()
     try:

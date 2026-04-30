@@ -93,7 +93,7 @@ _TOOL_DEFINITION = {
 
 def _render_pages(pdf_bytes: bytes, page_numbers: list[int]) -> dict[int, bytes]:
     """Render each needed page once, memoize for the batch."""
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.rendering import render_page_to_image
 
     cache: dict[int, bytes] = {}
     for page_num in sorted(set(page_numbers)):

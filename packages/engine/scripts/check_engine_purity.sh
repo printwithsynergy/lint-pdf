@@ -37,44 +37,51 @@ cd "$(dirname "$0")/.."
 #    + flips the η6 tripwire on permanently. Until then, the
 #    floor-not-ceiling counter prevents accidental new violations.
 BANNED=(
-    # Cohort 1 — alpha-stream targets (zero violations on main today)
+    # SaaS-only modules — analyzers must reach these via ctx.services.*
+    # or ctx.config instead of importing them directly. The list
+    # focuses on real coupling (DB / billing / metering / tenant
+    # config / vera​PDF) — stateless compute helpers like rendering and
+    # the Claude SDK wrappers are intentionally NOT banned.
     "from lintpdf.tenants"
     "from lintpdf.audit.metering"
     "from lintpdf.audit.cost"
     "from lintpdf.api.database"
+    "from lintpdf.api.models"
+    "from lintpdf.api.storage"
     "from lintpdf.ai.cost_cap"
     "from lintpdf.ai.credits"
     "from lintpdf.ai.gpu_client"
-    "from lintpdf.conformance.verapdf_client"
-    "TenantAIConfig"
-    # Cohort 2 — beta-stream targets (non-zero baseline; counts down
-    # as beta-stream lands; β-final dropped this floor to 1)
-    "from lintpdf.ai.rendering"
-    "from lintpdf.ai.dieline_claude"
-    "from lintpdf.ai.legend_claude"
     "from lintpdf.ai.types import get_db_session"
     "from lintpdf.ai.types import get_gpu_client"
-    "from lintpdf.api.models"
-    "from lintpdf.api.storage"
+    "from lintpdf.conformance.verapdf_client"
+    "TenantAIConfig"
 )
 
-# NOTE: ``lintpdf.ai.text_mask`` was previously in BANNED but it's a
-# pure CPU helper (text-density / overlap math against rasterised page
-# images) — not a SaaS module. Three color_analysis analyzers import
-# it lazily; SiftPDF will ship the same helper unchanged. Removed from
-# BANNED in β-final.
+# NOTE on previously-banned imports that have been moved or relaxed:
+#
+# - ``lintpdf.ai.rendering`` was relocated to ``lintpdf.rendering`` in
+#   Phase 3c. Pure CPU helper (pdf2image / pikepdf / Pillow); it's not
+#   SaaS-coupled. The old path is a re-export shim. AI analyzers reach
+#   it through ``ctx.services.renderer``; non-AI analyzers can import
+#   ``lintpdf.rendering`` directly.
+# - ``lintpdf.ai.text_mask`` was banned briefly during β-stream and
+#   removed in β-final — it's a CPU text-density helper.
+# - ``lintpdf.ai.dieline_claude`` and ``lintpdf.ai.legend_claude`` are
+#   stateless Anthropic SDK wrappers. They legitimately live under
+#   ``lintpdf.ai.*`` because they call the LLM, but they don't carry
+#   SaaS-only state. Phase 4 will fold them behind a proper LLMClient
+#   service Protocol; until then they're not on the η6 list.
 
 # Paths that must stay SaaS-free.
 #
-# β-final narrowed scope to ``ai/analyzers`` only. The 4 non-AI
-# analyzers under ``analyzers/`` (advanced_color_analyzer, barcode,
-# dieline, legend) lazy-import ``lintpdf.ai.{rendering,
-# dieline_claude, legend_claude}`` for opportunistic GPU/LLM
-# enrichment but otherwise satisfy the legacy 2-arg
-# ``BaseAnalyzer.analyze(document, events)`` contract. Migrating them
-# to ctx.services is a Phase 3 job (BaseAnalyzer needs to grow an
-# analyze_v2(ctx) entry point first).
+# Phase 3c widened scope back to all analyzers after Phase 2 β-stream
+# decoupled every AI analyzer and Phase 3a closed the last
+# ``api.models`` violation. The 4 deterministic non-AI analyzers
+# (advanced_color_analyzer, barcode, dieline, legend) lazy-imported
+# rendering / Claude helpers; rendering moved to ``lintpdf.rendering``
+# (no longer banned) and Claude helpers were removed from the list.
 SCOPES=(
+    "src/lintpdf/analyzers"
     "src/lintpdf/ai/analyzers"
 )
 

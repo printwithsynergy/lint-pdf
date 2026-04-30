@@ -112,7 +112,7 @@ class ClaudeOCR:
         tenant_id: Any | None = None,
         job_id: Any | None = None,
     ) -> list[OCRPage]:
-        from lintpdf.ai.rendering import render_page_to_image
+        from lintpdf.rendering import render_page_to_image
 
         out: list[OCRPage] = []
         for page_num in sorted(set(page_nums)):

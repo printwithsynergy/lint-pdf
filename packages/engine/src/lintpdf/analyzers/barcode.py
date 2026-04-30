@@ -568,7 +568,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
             return {"decoded": False}
 
         try:
-            from lintpdf.ai.rendering import render_page_to_image
+            from lintpdf.rendering import render_page_to_image
 
             png_bytes = render_page_to_image(pdf_bytes, page_num=candidate.page_num, dpi=300)
         except (RuntimeError, ImportError):

@@ -56,8 +56,8 @@ def classify_swatches_via_claude(pdf_bytes: bytes, swatches: list[dict[str, Any]
     ``swatches``. Lazy-imports ``SwatchClassification`` to keep
     this module free of analyzer imports at load time.
     """
-    from lintpdf.ai.rendering import render_page_to_image
     from lintpdf.analyzers.legend import SwatchClassification
+    from lintpdf.rendering import render_page_to_image
 
     if not swatches or not os.environ.get("ANTHROPIC_API_KEY"):
         return [None] * len(swatches)
