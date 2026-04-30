@@ -83,7 +83,7 @@ def read_baseline() -> int:
 def write_baseline(count: int) -> None:
     BASELINE_FILE.write_text(
         "# Route classification baseline (Q4-B / Phase 2).\n"
-        "# Number of route files in packages/engine/src/lintpdf/api/routes/\n"
+        "# Number of route files in packages/engine/src/siftpdf/api/routes/\n"
         "# that declare tags=['x:saas-only', ...].\n"
         "#\n"
         "# Regenerate with `python scripts/check_route_classification.py\n"

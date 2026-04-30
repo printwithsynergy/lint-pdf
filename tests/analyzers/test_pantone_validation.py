@@ -240,7 +240,7 @@ class TestEnrichedPantoneReference:
         import json
         from pathlib import Path
 
-        ref_path = Path(__file__).parent / "../../src/lintpdf/profiles/icc/pantone_reference.json"
+        ref_path = Path(__file__).parent / "../../src/siftpdf/profiles/icc/pantone_reference.json"
         data = json.loads(ref_path.read_text(encoding="utf-8"))
         assert data["_meta"]["count"] >= 2162
 
@@ -291,7 +291,7 @@ class TestEnrichedPantoneReference:
         import json
         from pathlib import Path
 
-        ref_path = Path(__file__).parent / "../../src/lintpdf/profiles/icc/pantone_reference.json"
+        ref_path = Path(__file__).parent / "../../src/siftpdf/profiles/icc/pantone_reference.json"
         data = json.loads(ref_path.read_text(encoding="utf-8"))
         fg_colors = {
             k: v

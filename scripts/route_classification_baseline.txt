@@ -1,5 +1,5 @@
 # Route classification baseline (Q4-B / Phase 2).
-# Number of route files in packages/engine/src/lintpdf/api/routes/
+# Number of route files in packages/engine/src/siftpdf/api/routes/
 # that declare tags=['x:saas-only', ...].
 #
 # Regenerate with `python scripts/check_route_classification.py

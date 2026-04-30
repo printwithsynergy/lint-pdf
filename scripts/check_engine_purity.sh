@@ -85,8 +85,8 @@ BANNED=(
 # rendering / Claude helpers; rendering moved to ``siftpdf.rendering``
 # (no longer banned) and Claude helpers were removed from the list.
 SCOPES=(
-    "src/lintpdf/analyzers"
-    "src/lintpdf/ai/analyzers"
+    "src/siftpdf/analyzers"
+    "src/siftpdf/ai/analyzers"
 )
 
 BASELINE_FILE="scripts/engine_purity_baseline.txt"
