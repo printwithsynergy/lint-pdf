@@ -177,6 +177,23 @@ class TenantsService(Protocol):
 
     def get_entitlements(self, tenant_id: str) -> dict[str, Any]: ...
 
+    def get_historical_quality_data(
+        self, tenant_id: str, *, limit: int = 100
+    ) -> list[dict[str, Any]] | None:
+        """Return historical preflight quality time-series for the tenant.
+
+        Each entry is a dict with at least:
+        ``job_id``, ``created_at`` (ISO 8601 string or None),
+        ``status`` (e.g. "complete", "failed", "passed", "approved"),
+        ``finding_count``, ``error_count``, ``warning_count``.
+
+        Returns ``None`` when the SaaS host can't fulfil the query
+        (DB unavailable, no historical data, OSS host without job
+        history). Analyzers that consume this MUST handle ``None``
+        gracefully.
+        """
+        ...
+
 
 class Services(Protocol):
     """Aggregate service surface exposed to plugins via ``ctx.services``.
@@ -230,6 +247,11 @@ class _NoOpTenants:
 
     def get_entitlements(self, _tenant_id: str) -> dict[str, Any]:
         return {}
+
+    def get_historical_quality_data(
+        self, _tenant_id: str, *, limit: int = 100
+    ) -> list[dict[str, Any]] | None:
+        return None
 
 
 class _NoOpStorage:
