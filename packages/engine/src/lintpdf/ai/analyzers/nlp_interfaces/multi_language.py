@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -29,14 +28,6 @@ logger = logging.getLogger(__name__)
 
 # Default source language when not configured
 _DEFAULT_SOURCE_LANG = "en"
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
 
 
 def _extract_document_text(document: SemanticDocument) -> str:
@@ -118,7 +109,12 @@ class MultiLanguageReportsAnalyzer(BaseAIAnalyzer):
         text_to_translate = doc_text[:max_chars]
         truncated = len(doc_text) > max_chars
 
-        gpu = _get_gpu_client()
+        services = ctx.services
+        if services is None or services.gpu_client is None:
+            logger.debug("multi_language: ctx.services.gpu_client unavailable, skipping")
+            return []
+
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         for target_lang in target_languages:
