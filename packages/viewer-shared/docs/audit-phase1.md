@@ -16,21 +16,71 @@ Phase 2 component-by-component move.
 
 ## Component classification
 
-### Pure core (16) — Phase 2 moves to `src/core/components/`
+### Pure core (17) — moved to `src/core/components/` in PR #332
 
 `PageCanvas`, `PageNavigator`, `ZoomControls`, `LayerPanel`,
 `LayerCanvas`, `AnnotationToolbar`, `AnnotationCanvas`,
 `AnnotationThread`, `ColorPickerTool`, `DensitometerTool`,
 `DielineOverlay`, `SeparationCanvas`, `BoxOverlay`,
-`TACHeatmapOverlay`, `MobileBottomSheet`, `MobileDrawer`.
+`TACHeatmapOverlay`, `MobileBottomSheet`, `MobileDrawer`,
+`MeasureTool` (defaulted to core with the `MeasurementUnit` plugin
+slot).
 
-Notes:
+#### Phase-3 abstraction debt (11 of 17 still couple to LintPDF types)
 
-- `PageCanvas` accepts `ViewerFinding[]` today. Phase 2 abstracts it
-  to a generic overlay-item interface so `core/` stays LintPDF-clean.
-- `AnnotationCanvas` and `AnnotationLayer` use Fabric.js 6 (already a
-  workspace dep). Both stay core — Fabric is the rendering engine,
-  not a LintPDF concept.
+Verification post-PR #332 surfaced that **11 of the 17 moved
+components still import LintPDF-domain symbols** (`useViewerApi`,
+`ViewerFinding`) from `../../types`. The Track B Phase-1 ESLint
+boundary rule blocks `@lintpdf/*` and `**/lintpdf/**` imports — but
+`../../types` is in `src/types.ts`, neither pattern, so the rule did
+not fire.
+
+The Phase-1 audit explicitly flagged this work as Phase-2/3 follow-up
+("`PageCanvas` accepts `ViewerFinding[]` today. Phase 2 abstracts it
+to a generic overlay-item interface so `core/` stays LintPDF-clean.").
+Tracking the full coupling surface here so the migration can land
+component-by-component without losing accuracy:
+
+**`useViewerApi` consumers (11 files)** — read `apiBase`, `readOnly`,
+`currentUserId` from a LintPDF-supplied React context:
+
+`AnnotationCanvas`, `AnnotationThread`, `ColorPickerTool`,
+`DensitometerTool`, `LayerCanvas`, `LayerPanel`, `MobileDrawer`,
+`PageCanvas`, `PageNavigator`, `SeparationCanvas`, `TACHeatmapOverlay`.
+
+Migration target: each component takes a `services: ViewerServices`
+prop (or reads it from a core-namespace context) and replaces
+`${apiBase}/pages/...` URL construction with
+`services.pageImages.getPageImageUrl(...)`,
+`services.annotations.list()`, etc.
+
+**`ViewerFinding[]` consumers (2 files)** — `PageCanvas`,
+`PageNavigator`. Migration target: take `OverlayItem[]` instead.
+
+#### Phase 2 abstraction primitives (in place)
+
+- **`OverlayItem`** — generic, LintPDF-free shape rendered on top of
+  the page canvas. Fields: `id`, `page`, `bbox`, optional `tier`,
+  `color`, `label`, `data`. Defined in
+  `src/core/plugin/types.ts`; exported from
+  `@lintpdf/viewer-shared/core`.
+- **`findingsToOverlayItems(findings)` / `findingToOverlayItem(finding)`**
+  — adapters in `src/lintpdf/sources/finding-overlay.ts`. The single
+  bridge that knows the LintPDF severity → tier mapping. Tested in
+  `tests/lintpdf/finding-overlay.test.ts` (10 tests / 0 snapshots
+  — pure function semantics).
+- **`ViewerServices`** — already-defined Protocol in
+  `src/core/plugin/services.ts` from Track B Phase 1. Includes the
+  `pageImages`, `annotations`, `telemetry`, `i18n`, `tokens` slots
+  that the 11 components will eventually read instead of
+  `useViewerApi`.
+
+Subsequent PRs do the file-by-file migration. The
+`ZoomControls` snapshot from PR #331 is the proven behaviour-locking
+pattern; each migrated component lands with an equivalent snapshot
+in the same PR.
+
+### LintPDF-flavoured (11) — Phase 2 wraps as plugins in `src/lintpdf/plugins/`
 
 ### LintPDF-flavoured (11) — Phase 2 wraps as plugins in `src/lintpdf/plugins/`
 
