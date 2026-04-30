@@ -41,26 +41,48 @@ to a generic overlay-item interface so `core/` stays LintPDF-clean.").
 Tracking the full coupling surface here so the migration can land
 component-by-component without losing accuracy:
 
-**`useViewerApi` consumers (11 files)** — read `apiBase`, `readOnly`,
-`currentUserId` from a LintPDF-supplied React context:
+**`useViewerApi` → `useViewerHost` (0 import-path consumers remaining
+inside `core/components/`)** — Phase 2 split this in two stages:
 
-`AnnotationCanvas`, `AnnotationThread`, `ColorPickerTool`,
-`DensitometerTool`, `LayerCanvas`, `LayerPanel`, `MobileDrawer`,
-`PageCanvas`, `PageNavigator`, `SeparationCanvas`, `TACHeatmapOverlay`.
-
-Migration target: each component takes a `services: ViewerServices`
-prop (or reads it from a core-namespace context) and replaces
-`${apiBase}/pages/...` URL construction with
-`services.pageImages.getPageImageUrl(...)`,
-`services.annotations.list()`, etc.
+- **Stage 1 (PR #336)** — moved the React context out of
+  `src/types.ts` and into `src/core/host/index.ts` as
+  `ViewerHostContext` / `useViewerHost`. The 11 components that
+  previously imported `useViewerApi` from `../../types` now import
+  `useViewerHost` from `../host`. The legacy `useViewerApi` /
+  `ViewerApiContext` / `ViewerApiContextValue` names are
+  re-exported from `src/types.ts` so consumers outside `core/`
+  (PdfViewer, ViewerToolbar, AnnotationLayer, etc.) keep working
+  without changes. Both names point at the same React context
+  object.
+- **Stage 2 (next PRs)** — replace `apiBase`-based URL string
+  building (`${apiBase}/pages/.../tile?dpi=...`,
+  `${apiBase}/layers`, etc.) with `services.pageImages.getPageImageUrl(...)`,
+  `services.annotations.list()`, etc. Requires expanding
+  `ViewerServices` from its current 5-protocol surface
+  (pageImages, annotations, telemetry, i18n, tokens) to also
+  cover layers, separations, tac-heatmap, color-sampling, and
+  densitometer reads. Each new sub-service lands together with
+  the component(s) that consume it, with a snapshot test per
+  component.
 
 **`ViewerFinding[]` consumers (0 files remaining)** — both
-`PageNavigator` (PR #334) and `PageCanvas` (this PR) have migrated.
+`PageNavigator` (PR #334) and `PageCanvas` (PR #335) have migrated.
 Their public props now take `items: readonly OverlayItem[]` /
 `selectedItem: OverlayItem | null` instead of `findings: ViewerFinding[]`
 / `selectedFinding: ViewerFinding`, with `PdfViewer.tsx` calling
 `findingsToOverlayItems(findings)` / `findingToOverlayItem(selectedFinding)`
 once at the call site.
+
+**Type-shaped `../../types` imports (still 9 files remaining inside
+`core/components/`)** — `PageInfo`, `LayerInfo`, `ColorSample`,
+`DensitometerSample`, `ViewerConfig`, `DEFAULT_DPI`,
+`THUMBNAIL_DPI`, `SEVERITY_COLORS`. These are LintPDF-domain
+types/constants currently defined in `src/types.ts`. Subsequent
+PRs will move them to `src/core/types/` (or replace
+`SEVERITY_COLORS` with a `ViewerServices.tokens` palette). The
+ESLint rule that flags `../../types` imports inside
+`core/components/` will be added in the PR that drives the count
+to zero.
 
 #### Phase 2 abstraction primitives (in place)
 

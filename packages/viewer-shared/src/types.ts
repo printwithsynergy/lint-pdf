@@ -1,32 +1,17 @@
 /** Shared types for the PDF viewer components. */
 
-import { createContext, useContext } from "react";
-
-/**
- * Context that provides the API base URL and read-only mode to all
- * viewer child components. In authenticated mode the base is
- * `/api/lintpdf/viewer/{jobId}`. In public-token mode it becomes
- * `/api/lintpdf/viewer/public/{token}` and `readOnly` is true (no
- * annotation writing, verdict setting, or comparison initiation).
- */
-export interface ViewerApiContextValue {
-  /** Base path for viewer API calls (no trailing slash). */
-  apiBase: string;
-  /** Base path for job-level API calls (findings, reports). */
-  jobApiBase: string;
-  /** When true, hide write-only UI (annotations, verdict, comparison). */
-  readOnly: boolean;
-}
-
-export const ViewerApiContext = createContext<ViewerApiContextValue>({
-  apiBase: "",
-  jobApiBase: "",
-  readOnly: false,
-});
-
-export function useViewerApi(): ViewerApiContextValue {
-  return useContext(ViewerApiContext);
-}
+// ViewerHostContext / useViewerHost moved to src/core/host/ in Phase 2
+// so src/core/** no longer needs to import from ../../types. The
+// legacy `useViewerApi` / `ViewerApiContext` / `ViewerApiContextValue`
+// names are re-exported below for back-compat — both the legacy and
+// the new names point at the *same* React context object, so a
+// `<ViewerApiContext.Provider>` mounted from outside `core/` is
+// readable via `useViewerHost()` from inside `core/`.
+export {
+  ViewerHostContext as ViewerApiContext,
+  useViewerHost as useViewerApi,
+} from "./core/host";
+export type { ViewerHostContextValue as ViewerApiContextValue } from "./core/host";
 
 export interface PageBox {
   x0: number;
