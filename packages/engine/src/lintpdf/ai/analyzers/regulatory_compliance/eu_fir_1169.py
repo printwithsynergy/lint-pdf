@@ -15,7 +15,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from lintpdf.ai.analyzers.regulatory_compliance._gates import is_eu_food_applicable
-from lintpdf.ai.base import BaseAIAnalyzer
+from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 from lintpdf.analyzers.text_metrics import (
@@ -24,7 +24,7 @@ from lintpdf.analyzers.text_metrics import (
 )
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -170,13 +170,18 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
     tier = "cpu"
     credits_per_run = 1
 
-    def analyze(  # skipcq: PY-R1000
+    def analyze_v2(  # skipcq: PY-R1000
         self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
+        ctx: AnalyzerContext,
     ) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + events + ai_config (passed to is_eu_food_applicable;
+        # reconstituted). pdf_bytes declared but never used.
+        document = ctx.document
+        events = ctx.events
+        ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
+        ai_config = _reconstitute_ai_config(ai_config_dict)
+
         from lintpdf.semantic.events import TextRenderedEvent
 
         findings: list[Finding] = []
