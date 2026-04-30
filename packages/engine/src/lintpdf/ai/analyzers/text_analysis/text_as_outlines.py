@@ -22,7 +22,7 @@ from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from lintpdf.ai.types import AIConfig
+    from lintpdf.plugin.protocol import AnalyzerContext
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -77,13 +77,15 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
     tier = "gpu"
     credits_per_run = 2
 
-    def analyze(  # skipcq: PY-R1000
+    def analyze_v2(  # skipcq: PY-R1000
         self,
-        document: SemanticDocument,
-        events: list[ContentStreamEvent],
-        pdf_bytes: bytes,
-        ai_config: AIConfig = None,
+        ctx: AnalyzerContext,
     ) -> list[Finding]:
+        # Phase 2 alpha-stream: signature migration. Uses document
+        # + events. pdf_bytes + ai_config declared but never used.
+        document = ctx.document
+        events = ctx.events
+
         findings: list[Finding] = []
         suspect_pages: list[int] = []
 
