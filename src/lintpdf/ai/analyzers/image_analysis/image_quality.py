@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -26,14 +25,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
-
-
 @register_ai_analyzer
 class ImageQualityAnalyzer(BaseAIAnalyzer):
     """Assess perceptual quality of raster images embedded in the PDF."""
@@ -44,26 +35,27 @@ class ImageQualityAnalyzer(BaseAIAnalyzer):
     credits_per_run = 2
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
-        # + ai_config (.min_image_quality_score). Reconstituted via
-        # _reconstitute_ai_config to preserve attribute access.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         pdf_bytes = ctx.pdf_bytes
         ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
         ai_config = _reconstitute_ai_config(ai_config_dict)
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("image_quality: ctx.services unavailable, skipping")
+            return []
 
         min_score = 50
         if ai_config is not None:
             min_score = int(getattr(ai_config, "min_image_quality_score", 50) or 50)
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=150)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=150)
         except RuntimeError:
             logger.debug("image_quality: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         for page_idx, png_bytes in enumerate(page_images):

@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -44,14 +43,6 @@ _SUGGESTIVE_LABELS = frozenset(
 )
 
 
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
-
-
 @register_ai_analyzer
 class NSFWDetectionAnalyzer(BaseAIAnalyzer):
     """Detect NSFW / explicit content in PDF page images."""
@@ -65,19 +56,21 @@ class NSFWDetectionAnalyzer(BaseAIAnalyzer):
         self,
         ctx: AnalyzerContext,
     ) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
-        # only. ai_config + document + events declared but never used.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         pdf_bytes = ctx.pdf_bytes
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("nsfw_detection: ctx.services unavailable, skipping")
+            return []
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=150)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=150)
         except RuntimeError:
             logger.debug("nsfw_detection: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         for page_idx, png_bytes in enumerate(page_images):
