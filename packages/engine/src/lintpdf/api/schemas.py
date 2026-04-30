@@ -549,8 +549,18 @@ class ProfileDetailResponse(BaseModel):
     version: str = "1.0"
     conformance: str | None = None
     workflow: str = "CMYK"
-    checks: dict[str, object] = Field(default_factory=dict)
-    thresholds: dict[str, object] = Field(default_factory=dict)
+    checks: dict[str, object] = Field(
+        default_factory=dict,
+        description="Per-check configuration overrides keyed by inspection_id.",
+    )
+    thresholds: dict[str, object] = Field(
+        default_factory=dict,
+        description=(
+            "Numeric threshold overrides for the profile (e.g., minimum image "
+            "DPI, maximum hairline width). Keys depend on which checks are "
+            "enabled in ``checks``."
+        ),
+    )
     is_builtin: bool = True
 
 
@@ -671,10 +681,39 @@ class WebhookUpdateRequest(BaseModel):
     url: str | None = Field(default=None, max_length=2048, description="New webhook URL.")
     events: list[str] | None = Field(default=None, description="New event subscriptions.")
     is_active: bool | None = Field(default=None, description="Enable or disable the webhook.")
-    max_retries: int | None = Field(default=None, ge=0, le=10)
-    retry_base_delay_seconds: int | None = Field(default=None, ge=1, le=600)
-    retry_max_delay_seconds: int | None = Field(default=None, ge=1, le=3600)
-    delivery_retention_days: int | None = Field(default=None, ge=1, le=365)
+    max_retries: int | None = Field(
+        default=None,
+        ge=0,
+        le=10,
+        description="New maximum retry count (0-10). ``None`` leaves the existing value unchanged.",
+    )
+    retry_base_delay_seconds: int | None = Field(
+        default=None,
+        ge=1,
+        le=600,
+        description=(
+            "New base delay between retries in seconds (1-600). ``None`` "
+            "leaves the existing value unchanged."
+        ),
+    )
+    retry_max_delay_seconds: int | None = Field(
+        default=None,
+        ge=1,
+        le=3600,
+        description=(
+            "New maximum delay between retries in seconds (1-3600). ``None`` "
+            "leaves the existing value unchanged."
+        ),
+    )
+    delivery_retention_days: int | None = Field(
+        default=None,
+        ge=1,
+        le=365,
+        description=(
+            "New delivery-log retention window in days (1-365). ``None`` "
+            "leaves the existing value unchanged."
+        ),
+    )
     retention_overrides: dict[str, int] | None = None
 
 
@@ -700,7 +739,11 @@ class EndpointCreateRequest(BaseModel):
         description="Lowercase kebab-case URL slug.",
     )
     profile_id: str = Field(description="Profile ID to bind this endpoint to.")
-    description: str = Field(default="", max_length=1024)
+    description: str = Field(
+        default="",
+        max_length=1024,
+        description="Human-readable description of the endpoint, shown in the dashboard.",
+    )
     response_mode: str = Field(
         default="async",
         description=(
@@ -755,7 +798,14 @@ class EndpointResponse(BaseModel):
 class EndpointUpdateRequest(BaseModel):
     """Request to update a custom endpoint. All fields optional."""
 
-    slug: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
+    slug: str | None = Field(
+        default=None,
+        pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+        description=(
+            "New URL slug for the endpoint. Must be lowercase kebab-case. "
+            "``None`` leaves the existing slug unchanged."
+        ),
+    )
     profile_id: str | None = None
     description: str | None = None
     is_active: bool | None = None
@@ -824,10 +874,24 @@ class BrandSpecRichBlackSpec(BaseModel):
 class BrandSpecCreateRequest(BaseModel):
     """Create a new BrandSpec for the authenticated tenant."""
 
-    name: str = Field(min_length=1, max_length=255)
-    customer_name: str | None = Field(default=None, max_length=255)
+    name: str = Field(
+        min_length=1,
+        max_length=255,
+        description="Display name for the brand spec.",
+    )
+    customer_name: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Optional customer name this brand spec is associated with.",
+    )
     description: str | None = None
-    colors: list[BrandSpecColorEntry] = Field(default_factory=list)
+    colors: list[BrandSpecColorEntry] = Field(
+        default_factory=list,
+        description=(
+            "Brand colour palette entries (CMYK + optional spot). May be "
+            "empty when creating an initial spec to be filled in later."
+        ),
+    )
     rich_black_spec: BrandSpecRichBlackSpec | None = None
     is_default: bool = Field(
         default=False,
@@ -843,7 +907,12 @@ class BrandSpecCreateRequest(BaseModel):
 class BrandSpecUpdateRequest(BaseModel):
     """Patch a BrandSpec. All fields optional."""
 
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="New display name for the brand spec. ``None`` leaves the existing value unchanged.",
+    )
     customer_name: str | None = None
     description: str | None = None
     colors: list[BrandSpecColorEntry] | None = None
@@ -892,7 +961,10 @@ class StatusResponse(BaseModel):
     database: str = "unknown"
     redis: str = "unknown"
     queue_depth: int = 0
-    queue_depths: dict[str, int] = Field(default_factory=dict)
+    queue_depths: dict[str, int] = Field(
+        default_factory=dict,
+        description="Per-queue depth measurement keyed by queue name (e.g., default, ai, reports, tiles, webhooks).",
+    )
     worker_count: int = 0
 
 
@@ -1061,18 +1133,49 @@ class BrandProfileCreateRequest(BaseModel):
         default="custom",
         description="Profile type: custom, lintpdf, or none.",
     )
-    brand_name: str | None = Field(default=None, max_length=255)
-    logo_url: str | None = Field(default=None, max_length=2048)
-    primary_color: str | None = Field(default=None, max_length=7)
-    accent_color: str | None = Field(default=None, max_length=7)
-    footer_text: str | None = Field(default=None, max_length=500)
+    brand_name: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Brand name shown on reports and the dashboard. ``None`` defers to the tenant default.",
+    )
+    logo_url: str | None = Field(
+        default=None,
+        max_length=2048,
+        description="URL of the brand logo (PNG/SVG). ``None`` defers to the tenant default.",
+    )
+    primary_color: str | None = Field(
+        default=None,
+        max_length=7,
+        description=(
+            "Primary brand colour as a 7-character hex string (e.g., "
+            "``#0f172a``). ``None`` defers to the tenant default."
+        ),
+    )
+    accent_color: str | None = Field(
+        default=None,
+        max_length=7,
+        description=(
+            "Accent brand colour as a 7-character hex string (e.g., "
+            "``#3b82f6``). ``None`` defers to the tenant default."
+        ),
+    )
+    footer_text: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Custom footer text for branded reports. ``None`` defers to the tenant default.",
+    )
     hide_footer: bool = False
 
 
 class BrandProfileUpdateRequest(BaseModel):
     """Request to update a brand profile. All fields optional."""
 
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="New display name for the brand profile. ``None`` leaves the existing value unchanged.",
+    )
     profile_type: str | None = None
     brand_name: str | None = None
     logo_url: str | None = None
