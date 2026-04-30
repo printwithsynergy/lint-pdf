@@ -7,15 +7,39 @@ from unittest.mock import MagicMock, patch
 from lintpdf.analyzers.finding import Severity
 
 
-def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
-    """Build an AnalyzerContext for analyze_v2 calls."""
+def _ctx(
+    document,
+    events=None,
+    pdf_bytes=b"",
+    ai_config=None,
+    page_images=None,
+    render_raises=None,
+):
+    """Build an AnalyzerContext for analyze_v2 calls.
+
+    Phase 2 beta-stream: render_all_pages is now reached via
+    ctx.services.renderer. Tests pass page_images=[...] or
+    render_raises=RuntimeError(...) to construct a MagicMock
+    services.renderer with the desired behaviour.
+    """
     from lintpdf.plugin.protocol import AnalyzerContext
+
+    services = None
+    if page_images is not None or render_raises is not None:
+        renderer = MagicMock()
+        if render_raises is not None:
+            renderer.render_all_pages.side_effect = render_raises
+        else:
+            renderer.render_all_pages.return_value = page_images
+        services = MagicMock()
+        services.renderer = renderer
 
     return AnalyzerContext(
         document=document,
         events=events or [],
         pdf_bytes=pdf_bytes,
         config={"ai_config": ai_config} if ai_config is not None else {},
+        services=services,
     )
 
 
@@ -63,10 +87,6 @@ class TestBarcodeDecode:
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_DMTX", False),
-            patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                return_value=[fake_png],
-            ),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._pyzbar") as mock_pyzbar,
             patch("lintpdf.ai.analyzers.barcode.barcode_decode.PILImage") as mock_pil,
         ):
@@ -76,7 +96,9 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
+            findings = analyzer.analyze_v2(
+                _ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf", page_images=[fake_png])
+            )
 
         assert len(findings) == 1
         f = findings[0]
@@ -97,10 +119,6 @@ class TestBarcodeDecode:
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_DMTX", False),
-            patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                return_value=[fake_png],
-            ),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._pyzbar") as mock_pyzbar,
             patch("lintpdf.ai.analyzers.barcode.barcode_decode.PILImage") as mock_pil,
         ):
@@ -110,7 +128,9 @@ class TestBarcodeDecode:
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
+            findings = analyzer.analyze_v2(
+                _ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf", page_images=[fake_png])
+            )
 
         assert len(findings) == 1
         assert "No barcodes detected" in findings[0].message
@@ -120,15 +140,17 @@ class TestBarcodeDecode:
         with (
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
             patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
-            patch(
-                "lintpdf.ai.rendering.render_all_pages",
-                side_effect=RuntimeError("No rendering backend"),
-            ),
         ):
             from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
-            findings = analyzer.analyze_v2(_ctx(minimal_semantic_doc, pdf_bytes=b"fake_pdf"))
+            findings = analyzer.analyze_v2(
+                _ctx(
+                    minimal_semantic_doc,
+                    pdf_bytes=b"fake_pdf",
+                    render_raises=RuntimeError("No rendering backend"),
+                )
+            )
 
         assert findings == []
 

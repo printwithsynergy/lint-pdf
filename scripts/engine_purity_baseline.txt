@@ -1,10 +1,3 @@
-src/lintpdf/ai/analyzers/barcode/barcode_content.py:196:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py:195:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/barcode/barcode_decode.py:80:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py:152:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/barcode/pharma_serialization.py:154:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/barcode/qr_human_readable.py:159:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/barcode/qr_validation.py:125:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/color_analysis/banding_detection.py:84:from lintpdf.ai.text_mask
 src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py:95:from lintpdf.ai.text_mask
 src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py:96:from lintpdf.ai.text_mask
