@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
-from lintpdf.ai.types import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.types import GPUServiceUnavailableError
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
@@ -68,14 +68,6 @@ _INDUSTRY_EXPECTED_SYMBOLS: dict[str, list[str]] = {
 }
 
 
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
-
-
 @register_ai_analyzer
 class RegulatorySymbolDetectionAnalyzer(BaseAIAnalyzer):
     """Detect regulatory and recycling symbols and check their sizing."""
@@ -90,23 +82,25 @@ class RegulatorySymbolDetectionAnalyzer(BaseAIAnalyzer):
         ctx: AnalyzerContext,
     ) -> list[Finding]:
         # Phase 2 alpha-stream: signature migration. Uses document
-        # + pdf_bytes + ai_config (.industry_type). Reconstituted
-        # via _reconstitute_ai_config to preserve attribute access.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         document = ctx.document
         pdf_bytes = ctx.pdf_bytes
         ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
         ai_config = _reconstitute_ai_config(ai_config_dict)
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("regulatory_symbols: ctx.services unavailable, skipping")
+            return []
 
         render_dpi = 200
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=render_dpi)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=render_dpi)
         except RuntimeError:
             logger.debug("regulatory_symbols: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         # Determine which symbols are expected based on industry
