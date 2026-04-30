@@ -14,14 +14,6 @@ src/lintpdf/ai/analyzers/document_classification/file_classification.py:33:from 
 src/lintpdf/ai/analyzers/document_classification/file_classification.py:52:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/file_comparison/version_diff.py:189:from lintpdf.api.storage
 src/lintpdf/ai/analyzers/file_comparison/version_diff.py:89:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/image_analysis/image_quality.py:32:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/image_analysis/image_quality.py:54:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:32:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/image_analysis/image_similarity.py:51:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:50:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py:72:from lintpdf.ai.rendering
-src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:33:from lintpdf.ai.types import get_gpu_client
-src/lintpdf/ai/analyzers/logo_verification/logo_detection.py:58:from lintpdf.ai.rendering
 src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py:37:from lintpdf.ai.types import get_gpu_client
 src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:35:from lintpdf.ai.types import get_gpu_client
 src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py:66:from lintpdf.ai.rendering

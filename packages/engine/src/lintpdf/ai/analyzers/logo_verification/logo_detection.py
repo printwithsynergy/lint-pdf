@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -25,14 +24,6 @@ if TYPE_CHECKING:
     from lintpdf.plugin.protocol import AnalyzerContext
 
 logger = logging.getLogger(__name__)
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
 
 
 @register_ai_analyzer
@@ -48,14 +39,15 @@ class LogoDetectionAnalyzer(BaseAIAnalyzer):
         self,
         ctx: AnalyzerContext,
     ) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
-        # + ai_config (.reference_logos). Reconstituted via
-        # _reconstitute_ai_config to preserve attribute access.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         pdf_bytes = ctx.pdf_bytes
         ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
         ai_config = _reconstitute_ai_config(ai_config_dict)
 
-        from lintpdf.ai.rendering import render_all_pages
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("logo_detection: ctx.services unavailable, skipping")
+            return []
 
         # Extract reference logos from tenant AI config
         reference_logos: list[dict[str, Any]] = []
@@ -63,12 +55,12 @@ class LogoDetectionAnalyzer(BaseAIAnalyzer):
             reference_logos = list(ai_config.reference_logos)
 
         try:
-            page_images = render_all_pages(pdf_bytes, dpi=200)
+            page_images = services.renderer.render_all_pages(pdf_bytes, dpi=200)
         except RuntimeError:
             logger.debug("logo_detection: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
         findings: list[Finding] = []
 
         # Track which reference logos have been matched across all pages
