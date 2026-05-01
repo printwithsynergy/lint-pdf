@@ -123,6 +123,5 @@ def test_missing_saas_modules_fallback_to_oss(_reset_app_module, monkeypatch, ca
 
     # The fallback warning is the user-visible signal.
     assert any(
-        "SaaS-only route modules are unavailable" in rec.message
-        for rec in caplog.records
+        "SaaS-only route modules are unavailable" in rec.message for rec in caplog.records
     ), "expected a fallback warning when SAAS_MODE=true but modules absent"
