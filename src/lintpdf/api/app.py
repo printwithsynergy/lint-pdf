@@ -14,6 +14,7 @@ from fastapi import FastAPI
 # with ``Base.metadata`` before ``create_all`` runs in test fixtures and
 # any code path queries the table.
 from lintpdf import decisions as _decisions  # noqa: F401  (registration import)
+
 # OSS-always imports — engine surface routes that ship in every deploy.
 from lintpdf.api.routes import (
     ai_explain,
