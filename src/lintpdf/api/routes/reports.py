@@ -19,6 +19,7 @@ from lintpdf.overrides import (
     OverridesEnvelope,
     enforce_report_entitlements,
 )
+from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 
 if TYPE_CHECKING:
     from lintpdf.reports.service import BrandingContext
@@ -373,6 +374,7 @@ async def generate_reports(  # skipcq: PY-R1000
     body: GenerateReportsRequest | None = None,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> GenerateReportsResponse:
     """Generate hosted reports for a completed job."""
     from lintpdf.api.config import get_settings
@@ -468,9 +470,7 @@ async def generate_reports(  # skipcq: PY-R1000
                 )
 
     # Enforce tier-based restrictions
-    from lintpdf.tenants.entitlements import resolve_entitlements
-
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
 
     # Report format entitlements — resolver owns the message formatting so
     # there's only one place to update when plan gates change. The

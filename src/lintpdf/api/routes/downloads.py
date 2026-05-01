@@ -32,7 +32,7 @@ from lintpdf.api.auth import verify_admin_key
 from lintpdf.api.database import get_db
 from lintpdf.api.models import Tenant
 from lintpdf.api.storage import get_storage
-from lintpdf.tenants.entitlements import resolve_entitlements
+from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +166,7 @@ async def get_desktop_manifest_for_tenant(
     tenant_id: str,
     db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> DesktopManifestResponse:
     """Return the latest desktop manifest with presigned URLs for ``tenant_id``.
 
@@ -185,7 +186,7 @@ async def get_desktop_manifest_for_tenant(
             detail="Tenant not found.",
         )
 
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
     if not entitlements.desktop_app_enabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
