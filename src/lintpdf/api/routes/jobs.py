@@ -54,6 +54,7 @@ from lintpdf.api.schemas import (
 )
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
+from lintpdf.services.email import EmailService, get_email_service
 from lintpdf.tenants.models import RATE_LIMIT_WARN_THRESHOLD
 
 logger = logging.getLogger(__name__)
@@ -173,10 +174,17 @@ _overrides_param = Form(
 )
 
 
-def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skipcq: PY-R1000
+def _send_rate_warning_if_needed(
+    tenant: Tenant,
+    usage: object,
+    email: EmailService,
+) -> None:  # skipcq: PY-R1000
     """Fire a rate-limit warning or overage notice email.
 
-    Uses a Redis key to deduplicate — only one email per threshold per day.
+    Uses a Redis key to deduplicate — only one email per threshold per
+    day. Email service is injected (Phase 5 W2): SaaS hosts wire a
+    real Resend impl via ``app.dependency_overrides[get_email_service]``,
+    OSS hosts get a NoOp that skips the send.
     """
     from lintpdf.api.middleware import UsageInfo, get_redis_client
     from lintpdf.tenants.models import RATE_LIMIT_OVERAGE_THRESHOLD
@@ -212,9 +220,7 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
 
     try:
         if threshold == RATE_LIMIT_OVERAGE_THRESHOLD and usage.overage_enabled:
-            from lintpdf.email.service import send_overage_started
-
-            send_overage_started(
+            email.send_overage_started(
                 to=contact,
                 tenant_name=tenant.name,
                 used=usage.used,
@@ -223,9 +229,7 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
                 cost_cents=usage.overage_cost_cents,
             )
         else:
-            from lintpdf.email.service import send_rate_limit_warning
-
-            send_rate_limit_warning(
+            email.send_rate_limit_warning(
                 to=contact,
                 tenant_name=tenant.name,
                 used=usage.used,
@@ -288,6 +292,7 @@ async def submit_job(  # skipcq: PY-R1000
     ),
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    email: EmailService = Depends(get_email_service),
     x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> JSONResponse:
     """Submit a PDF for preflight checking.
@@ -836,7 +841,7 @@ async def submit_job(  # skipcq: PY-R1000
 
     # Send rate warning email if approaching or exceeding limit
     if usage is not None and (usage.warning or usage.in_overage):
-        _send_rate_warning_if_needed(tenant, usage)
+        _send_rate_warning_if_needed(tenant, usage, email)
 
     # Build rate-limit headers once — they apply to both the async 202
     # and the sync 200 variants below.
