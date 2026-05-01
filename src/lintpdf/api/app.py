@@ -312,6 +312,41 @@ def create_app() -> FastAPI:
         "yes",
     )
 
+    # Phase 5 W5: ``LINTPDF_SAAS_MODE`` toggle.
+    #
+    # When ``LINTPDF_SAAS_MODE`` is unset OR ``"true"``/``"1"``/``"yes"``
+    # (the default — preserves the hosted SaaS deploy), every router is
+    # mounted as before: tenant CRUD admin endpoints, Stripe webhooks,
+    # billing portal, branding management, custom domains, the trial
+    # intake, etc. all live alongside the engine routes.
+    #
+    # When ``LINTPDF_SAAS_MODE=false`` the FastAPI app skips the
+    # SaaS-only routers entirely. The OSS preflight engine surface
+    # remains: jobs, reports, viewer, AI explain, EPM, decisions,
+    # annotations, ICC profiles, profiles, batch, endpoints,
+    # downloads, health/ready. SaaS-coupled features (admin tenant
+    # management, billing/Stripe, branding, custom-domain probes,
+    # trial intake, webhooks, approvals workflows, file-pack
+    # purchases, AI credit grants, ai_config, ai_usage, ai_presets,
+    # toggles, workflows, brand_specs, edge, dev_auth, user_ai_access,
+    # color_config, import_mappings) are NOT mounted — those routes
+    # 404 cleanly because they were never registered.
+    #
+    # The W5 long-term plan is to physically extract the SaaS-only
+    # route handlers + their backing modules
+    # (lintpdf.tenants, lintpdf.billing, lintpdf.email, etc.) to
+    # lint-pdf-saas; until that lands, this toggle is the deployment-
+    # surface gate. Both states keep importing the same module set —
+    # the toggle only controls router registration, not module load.
+    saas_mode_raw = _os.environ.get("LINTPDF_SAAS_MODE", "true").lower()
+    saas_mode = saas_mode_raw in ("1", "true", "yes")
+    if not saas_mode:
+        logger.warning(
+            "LINTPDF_SAAS_MODE=false — SaaS-only routes will NOT be mounted "
+            "(admin/billing/branding/trial/webhooks/approvals/etc.). OSS "
+            "preflight engine surface only."
+        )
+
     # Mount routers
     app.include_router(health.router)  # /ready, /health — always mounted
     app.include_router(ai_health.router)  # /api/v1/ai/health — unauthenticated outage probe
@@ -322,55 +357,64 @@ def create_app() -> FastAPI:
         app.include_router(decisions.router)  # V-05 decisions audit
         app.include_router(icc_profiles.router)  # substrate ICC profile (EPM-A1)
     app.include_router(profiles.router)
-    app.include_router(webhooks.router)
-    app.include_router(usage.router)
+    if saas_mode:
+        app.include_router(webhooks.router)
+        app.include_router(usage.router)
     if not control_plane_only:
         app.include_router(reports.router)
-    app.include_router(admin.router)
-    app.include_router(admin_health.router)
-    app.include_router(admin_warming.router)
-    if not control_plane_only:
+    if saas_mode:
+        app.include_router(admin.router)
+        app.include_router(admin_health.router)
+        app.include_router(admin_warming.router)
+    if not control_plane_only and saas_mode:
         app.include_router(trial.router)
-    app.include_router(edge.router)
+    if saas_mode:
+        app.include_router(edge.router)
     if not control_plane_only:
         app.include_router(viewer.router)
-    app.include_router(branding.router)
-    app.include_router(brand_specs.router)
-    app.include_router(toggles.router)  # V-07 toggle resolver + tenant overrides
-    app.include_router(workflows.router)  # Phase 0.7 PR-A workflow CRUD + workflow overrides
+    if saas_mode:
+        app.include_router(branding.router)
+        app.include_router(brand_specs.router)
+        app.include_router(toggles.router)  # V-07 toggle resolver + tenant overrides
+        app.include_router(workflows.router)  # Phase 0.7 PR-A workflow CRUD + workflow overrides
     if not control_plane_only:
-        app.include_router(approvals.router)
+        if saas_mode:
+            app.include_router(approvals.router)
         app.include_router(annotations.router, prefix="/api/v1/viewer")
-        app.include_router(import_mappings.router)
+        if saas_mode:
+            app.include_router(import_mappings.router)
 
     # AI feature routers — admin-visible, skipped in control-plane-only.
     if not control_plane_only:
-        app.include_router(ai_config.router)
-        app.include_router(ai_credits.router)
-        app.include_router(ai_usage.router)
-        app.include_router(ai_presets.router)
-        app.include_router(ai_generate.router)
-        app.include_router(ai_interpret.router)
-        # Legacy /api/v1/captains-log/* prefix kept as a deprecated alias so
-        # existing integrations keep working after the rebrand. Hidden from
-        # the public OpenAPI schema.
-        app.include_router(ai_interpret.legacy_router)
-        # Metered-resource counterparts to the AI credit endpoints.
-        app.include_router(file_packs.router)
-        # Stripe webhook endpoint handles metered-resource fulfillment
-        # (checkout.session.completed) and plan-monthly grants (invoice.paid).
-        app.include_router(stripe_webhooks.router)
+        if saas_mode:
+            app.include_router(ai_config.router)
+            app.include_router(ai_credits.router)
+            app.include_router(ai_usage.router)
+            app.include_router(ai_presets.router)
+            app.include_router(ai_generate.router)
+            app.include_router(ai_interpret.router)
+            # Legacy /api/v1/captains-log/* prefix kept as a deprecated alias so
+            # existing integrations keep working after the rebrand. Hidden from
+            # the public OpenAPI schema.
+            app.include_router(ai_interpret.legacy_router)
+            # Metered-resource counterparts to the AI credit endpoints.
+            app.include_router(file_packs.router)
+            # Stripe webhook endpoint handles metered-resource fulfillment
+            # (checkout.session.completed) and plan-monthly grants (invoice.paid).
+            app.include_router(stripe_webhooks.router)
 
-        # Batch submission
+        # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
 
         # Custom endpoints, color config & user AI access routers
-        app.include_router(endpoints.router)
-        app.include_router(color_config.router, prefix="/api/v1")
-        app.include_router(user_ai_access.router, prefix="/api/v1")
+        if saas_mode:
+            app.include_router(endpoints.router)
+            app.include_router(color_config.router, prefix="/api/v1")
+            app.include_router(user_ai_access.router, prefix="/api/v1")
 
         # Desktop app downloads (R2-backed)
-        app.include_router(downloads.router)
+        if saas_mode:
+            app.include_router(downloads.router)
 
     # Dev auth (impersonation) — only when explicitly enabled
     from lintpdf.api.config import get_settings
