@@ -30,6 +30,7 @@ from lintpdf.api.models import (
     ViewerAnnotationComment,
 )
 from lintpdf.services.email import EmailService, get_email_service
+from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 
 logger = logging.getLogger(__name__)
 
@@ -174,12 +175,19 @@ def _validate_kind(kind: str) -> None:
         )
 
 
-def _require_annotations_entitlement(tenant: Tenant) -> None:
-    """Raise a plan_upgrade_required 403 if the tenant's plan forbids annotations."""
-    from lintpdf.api.gates import plan_upgrade_required
-    from lintpdf.tenants.entitlements import resolve_entitlements
+def _require_annotations_entitlement(
+    tenant: Tenant,
+    entitlements_service: EntitlementsService,
+) -> None:
+    """Raise a plan_upgrade_required 403 if the tenant's plan forbids annotations.
 
-    entitlements = resolve_entitlements(tenant)
+    Phase 5 W3: entitlements service is injected from the route handler
+    so the OSS engine no longer imports lintpdf.tenants.entitlements
+    directly.
+    """
+    from lintpdf.api.gates import plan_upgrade_required
+
+    entitlements = entitlements_service.resolve(tenant)
     if not entitlements.annotations_enabled:
         raise plan_upgrade_required(
             gate="annotations",
@@ -302,6 +310,7 @@ async def create_annotation_auth(
     request: Request,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> AnnotationResponse:
     """Create an annotation on a job page (authenticated dashboard writer).
 
@@ -312,7 +321,7 @@ async def create_annotation_auth(
       2. ``tenant.contact_email`` — fallback for direct API-key callers.
       3. ``"dashboard@lintpdf"`` sentinel so the column is never NULL.
     """
-    _require_annotations_entitlement(tenant)
+    _require_annotations_entitlement(tenant, entitlements_service)
     _validate_kind(body.kind)
     try:
         jid = uuid_mod.UUID(job_id)
@@ -357,8 +366,9 @@ async def update_annotation_auth(
     body: AnnotationUpdateRequest,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> AnnotationResponse:
-    _require_annotations_entitlement(tenant)
+    _require_annotations_entitlement(tenant, entitlements_service)
     try:
         aid = uuid_mod.UUID(annotation_id)
     except ValueError:
@@ -396,8 +406,9 @@ async def delete_annotation_auth(
     annotation_id: str,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> None:
-    _require_annotations_entitlement(tenant)
+    _require_annotations_entitlement(tenant, entitlements_service)
     try:
         aid = uuid_mod.UUID(annotation_id)
     except ValueError:

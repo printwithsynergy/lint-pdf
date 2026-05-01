@@ -866,6 +866,7 @@ async def submit_job(  # skipcq: PY-R1000
             tenant_id=tenant.id,
             db=db,
             max_wait_s=effective_wait,
+            entitlements_service=entitlements_service,
         )
         if job_response is not None:
             return JSONResponse(
@@ -878,7 +879,11 @@ async def submit_job(  # skipcq: PY-R1000
     return JSONResponse(content=response_data, status_code=202, headers=headers)
 
 
-def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
+def _hydrate_job_response(
+    db: Session,
+    job: Job,
+    entitlements_service: EntitlementsService,
+) -> JobResponse:
     """Build a full ``JobResponse`` for a loaded ``Job`` row.
 
     Shared between ``GET /api/v1/jobs/{id}`` and the sync ``?wait``
@@ -1007,7 +1012,6 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         from lintpdf.api.config import get_settings as _get_settings
         from lintpdf.api.models import BrandProfile, ReportToken, Tenant
         from lintpdf.reports.service import resolve_report_base_url
-        from lintpdf.tenants.entitlements import resolve_entitlements
 
         report_tokens = (
             db.query(ReportToken)
@@ -1019,7 +1023,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
             tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
             base_url = settings.report_base_url
             if tenant is not None:
-                entitlements = resolve_entitlements(tenant)
+                entitlements = entitlements_service.resolve(tenant)
                 active_profile: BrandProfile | None = None
                 if entitlements.whitelabel_enabled and tenant.default_brand_profile_id:
                     active_profile = (
@@ -1044,6 +1048,7 @@ async def poll_job_until_terminal(
     tenant_id: uuid_mod.UUID,
     db: Session,
     max_wait_s: float,
+    entitlements_service: EntitlementsService,
     poll_interval_s: float = 0.5,
 ) -> JobResponse | None:
     """Poll the ``jobs`` row every ``poll_interval_s`` until terminal.
@@ -1075,7 +1080,7 @@ async def poll_job_until_terminal(
             # Row was deleted mid-wait (tenant purge, admin cancel).
             return None
         if job.status in (JobStatus.COMPLETE, JobStatus.FAILED):
-            return _hydrate_job_response(db, job)
+            return _hydrate_job_response(db, job, entitlements_service)
         if asyncio.get_event_loop().time() >= deadline:
             return None
         await asyncio.sleep(poll_interval_s)
@@ -1086,6 +1091,7 @@ async def get_job(
     job_id: str,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> JobResponse:
     """Get job status and results."""
     try:
@@ -1113,7 +1119,7 @@ async def get_job(
             detail=f"Job '{job_id}' not found.",
         )
 
-    return _hydrate_job_response(db, job)
+    return _hydrate_job_response(db, job, entitlements_service)
 
 
 # ---------------------------------------------------------------------------
@@ -1155,6 +1161,7 @@ async def get_job_state(
     include: str | None = None,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> JobStateResponse:
     """Return the universal state of a preflight job in one call.
 
@@ -1189,7 +1196,12 @@ async def get_job_state(
     wanted = _parse_include(include)
 
     # 1. Core job (reuse the existing /jobs/{id} surface wholesale).
-    job_response = await get_job(job_id=job_id, db=db, tenant=tenant)
+    job_response = await get_job(
+        job_id=job_id,
+        db=db,
+        tenant=tenant,
+        entitlements_service=entitlements_service,
+    )
     # At this point we know the job exists + belongs to the tenant, since
     # get_job() has already 404'd otherwise. Pull the UUID back so we
     # don't pay the parse twice.

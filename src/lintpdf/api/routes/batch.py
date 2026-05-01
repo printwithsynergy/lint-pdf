@@ -30,6 +30,7 @@ from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit, get
 from lintpdf.api.models import Job, JobStatus, Tenant
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
+from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +201,7 @@ async def submit_batch(
     request: Request,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> BatchSubmitResponse:
     """Submit a batch of PDFs for preflight processing.
 
@@ -239,9 +241,8 @@ async def submit_batch(
     settings = get_settings()
 
     from lintpdf.queue.tasks import run_preflight
-    from lintpdf.tenants.entitlements import resolve_entitlements
 
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
 
     # Queue routing (step 3 — queue isolation). Batch dispatch doesn't
     # take a per-file ai_enabled override, so we resolve it once from

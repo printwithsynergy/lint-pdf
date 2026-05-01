@@ -25,6 +25,7 @@ from lintpdf.api.models import BrandProfile, Job, JobStatus, Tenant
 from lintpdf.api.storage import get_storage
 from lintpdf.reports.service import _LINTPDF_DEFAULT_LOGO
 from lintpdf.services.email import EmailService, get_email_service
+from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 
 logger = logging.getLogger(__name__)
 
@@ -945,6 +946,7 @@ def _build_viewer_config(
     tenant: Tenant,
     db: Session,
     brand_param: str | None,
+    entitlements_service: EntitlementsService,
     overrides_dict: dict[str, Any] | None = None,
 ) -> ViewerConfigResponse:
     """Shared builder for authenticated + public viewer config endpoints.
@@ -991,9 +993,7 @@ def _build_viewer_config(
     # POST /api/v1/viewer/jobs/{id}/capabilities/text_regions.
     caps["text_regions"] = job.detected_text_regions is not None
 
-    from lintpdf.tenants.entitlements import resolve_entitlements
-
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
 
     config = ViewerConfigResponse(
         preflight_source=(
@@ -1114,6 +1114,7 @@ async def get_viewer_config(
     ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> ViewerConfigResponse:
     """Return resolved viewer configuration for this job's tenant + brand profile."""
     try:
@@ -1130,6 +1131,7 @@ async def get_viewer_config(
         tenant=tenant,
         db=db,
         brand_param=brand,
+        entitlements_service=entitlements_service,
         overrides_dict=job.overrides,
     )
 
@@ -1336,6 +1338,7 @@ async def fill_job_capability(
     capability: str,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> CapabilityFillResponse:
     """Queue a one-off analyzer run to populate a missing viewer capability.
 
@@ -1358,9 +1361,8 @@ async def fill_job_capability(
         )
 
     from lintpdf.api.gates import plan_upgrade_required
-    from lintpdf.tenants.entitlements import resolve_entitlements
 
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
     if not entitlements.capability_fillin_enabled:
         raise plan_upgrade_required(
             gate="capability_fillin",
@@ -2314,7 +2316,11 @@ async def public_tile_warming_status(
 
 
 @router.get("/public/{token}/config")
-async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
+async def public_config(
+    token: str,
+    db: Session = Depends(get_db),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
+) -> dict:
     """Public: get viewer configuration for a share-link viewer.
 
     Branding is read from the :class:`ReportToken` snapshot captured at
@@ -2355,6 +2361,7 @@ async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
         tenant=tenant,
         db=db,
         brand_param=brand_param,
+        entitlements_service=entitlements_service,
         overrides_dict=overrides_for_config,
     )
     # Surface the token's annotation permission on the public config so the

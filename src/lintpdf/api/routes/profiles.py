@@ -42,6 +42,10 @@ from lintpdf.profiles.resolver import (  # noqa: E402
     list_visible_system_profiles,
 )
 from lintpdf.profiles.schema import PreflightProfile  # noqa: E402
+from lintpdf.services.entitlements import (  # noqa: E402
+    EntitlementsService,
+    get_entitlements_service,
+)
 
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 
@@ -163,6 +167,7 @@ async def create_profile(
     request: ProfileCreateRequest,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> ProfileCreateResponse:
     """Create or update a custom preflight profile.
 
@@ -182,9 +187,7 @@ async def create_profile(
         ) from e
 
     # Enforce tier-based restrictions on custom profiles
-    from lintpdf.tenants.entitlements import resolve_entitlements
-
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
 
     if not entitlements.custom_profiles:
         raise HTTPException(
