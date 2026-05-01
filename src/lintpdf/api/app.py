@@ -256,6 +256,26 @@ def create_app() -> FastAPI:
     cors_origins = [
         origin.strip() for origin in get_settings().cors_allow_origins.split(",") if origin.strip()
     ]
+    # Hard-fail in production if the operator set "*". A wildcard CORS
+    # allowlist defeats the bearer-token-only contract: any browser
+    # origin can hit the API. Tests + dev bypass via PYTEST_CURRENT_TEST
+    # / pytest-imported / LINTPDF_ENVIRONMENT=development. The default
+    # (lintpdf.com / app.lintpdf.com) is safe.
+    import sys as _sys
+
+    in_test = bool(os.environ.get("PYTEST_CURRENT_TEST")) or "pytest" in _sys.modules
+    if (
+        "*" in cors_origins
+        and not in_test
+        and os.environ.get("LINTPDF_ENVIRONMENT", "production").lower() == "production"
+    ):
+        raise RuntimeError(
+            "LINTPDF_CORS_ALLOW_ORIGINS contains '*' (wildcard). Refusing "
+            "to start in production with an open CORS policy. Set "
+            "LINTPDF_CORS_ALLOW_ORIGINS to an explicit comma-separated "
+            "allowlist of origins, or set LINTPDF_ENVIRONMENT=development "
+            "to bypass for local work."
+        )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,

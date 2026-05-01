@@ -171,11 +171,34 @@ def get_settings() -> Settings:
     requiring them to know about the cache.
     """
     import os
+    import sys
     import warnings
 
+    # `PYTEST_CURRENT_TEST` is set per-test by pytest; check that AND
+    # whether the `pytest` module was imported, so the gate stays
+    # bypassed for tests that legitimately clear the env var (e.g.
+    # patch.dict('os.environ', {}, clear=True) or
+    # monkeypatch.delenv('PYTEST_CURRENT_TEST')).
+    in_test = bool(os.environ.get("PYTEST_CURRENT_TEST")) or "pytest" in sys.modules
     settings = Settings() if os.environ.get("PYTEST_CURRENT_TEST") else _cached_settings()
 
     if settings.secret_key == "change-me-in-production":
+        # Hard-fail in production. The default value is a known string;
+        # leaving it in place lets attackers forge any HMAC-signed
+        # token (viewer JWTs, share-link tokens, etc.). Tests bypass
+        # via PYTEST_CURRENT_TEST; local dev bypasses via
+        # ``LINTPDF_ENVIRONMENT=development`` (or ``"staging"``).
+        # Production deploys must set ``LINTPDF_SECRET_KEY`` to a
+        # random value (≥32 bytes recommended).
+        environment = os.environ.get("LINTPDF_ENVIRONMENT", "production").lower()
+        if not in_test and environment == "production":
+            raise RuntimeError(
+                "LINTPDF_SECRET_KEY is unset (default 'change-me-in-production' "
+                "would let attackers forge signed tokens). Set "
+                "LINTPDF_SECRET_KEY to a random value before booting in "
+                "production. To bypass for local dev, set "
+                "LINTPDF_ENVIRONMENT=development (or 'staging')."
+            )
         warnings.warn(
             "Using default LINTPDF_SECRET_KEY — set a strong random value in production",
             stacklevel=2,
