@@ -29,6 +29,7 @@ from lintpdf.api.models import (
     ViewerAnnotation,
     ViewerAnnotationComment,
 )
+from lintpdf.services.email import EmailService, get_email_service
 
 logger = logging.getLogger(__name__)
 
@@ -757,19 +758,18 @@ def _fan_out_comment_email(
     annotation: ViewerAnnotation,
     new_comment: ViewerAnnotationComment,
     job: Job | None,
+    email: EmailService,
 ) -> None:
     """Email the annotation author + earlier commenters about a new reply.
 
     The current commenter is excluded so nobody gets their own echo.
     Fan-out is synchronous: the reviewer is already waiting on the POST
     and the email provider latency is comparable to the DB commit.
-    """
-    try:
-        from lintpdf.email.service import send_annotation_comment
-    except Exception:  # pragma: no cover — only on a misconfigured import
-        logger.exception("Failed to import email service for annotation fan-out")
-        return
 
+    Email service is injected (Phase 5 W2): SaaS hosts wire a real
+    Resend impl via ``app.dependency_overrides[get_email_service]``,
+    OSS hosts get a NoOp that skips the send.
+    """
     participants: set[str] = set()
     if annotation.author_email:
         participants.add(annotation.author_email.lower())
@@ -781,9 +781,9 @@ def _fan_out_comment_email(
         )
         .all()
     )
-    for (email,) in earlier:
-        if email:
-            participants.add(email.lower())
+    for (addr,) in earlier:
+        if addr:
+            participants.add(addr.lower())
 
     # Don't notify the sender.
     participants.discard(new_comment.author_email.lower())
@@ -798,7 +798,7 @@ def _fan_out_comment_email(
 
     for recipient in sorted(participants):
         try:
-            send_annotation_comment(
+            email.send_annotation_comment(
                 to=recipient,
                 commenter_email=new_comment.author_email,
                 file_name=file_name,
@@ -858,6 +858,7 @@ async def create_comment_auth(
     request: Request,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
+    email: EmailService = Depends(get_email_service),
 ) -> CommentResponse:
     annotation = _get_annotation_for_tenant(annotation_id=annotation_id, tenant=tenant, db=db)
     row = ViewerAnnotationComment(
@@ -876,7 +877,7 @@ async def create_comment_auth(
     db.refresh(row)
 
     job = db.query(Job).filter(Job.id == annotation.job_id).first()
-    _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job)
+    _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job, email=email)
 
     from lintpdf.webhooks.events import fire_comment_created, fire_job_state_changed
 
@@ -997,6 +998,7 @@ async def create_comment_public(
     body: CommentCreateRequest,
     request: Request,
     db: Session = Depends(get_db),
+    email: EmailService = Depends(get_email_service),
 ) -> CommentResponse:
     rec = _resolve_token(token, db)
     if not rec.allow_annotations:
@@ -1004,8 +1006,8 @@ async def create_comment_public(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This share link is read-only.",
         )
-    email = _require_visitor_email(request)
-    _capture_visitor(token, email, request, db)
+    visitor_email = _require_visitor_email(request)
+    _capture_visitor(token, visitor_email, request, db)
 
     annotation = _get_annotation_for_token(annotation_id=annotation_id, token=token, rec=rec, db=db)
     row = ViewerAnnotationComment(
@@ -1013,7 +1015,7 @@ async def create_comment_public(
         annotation_id=annotation.id,
         tenant_id=rec.tenant_id,
         share_token=token,
-        author_email=email,
+        author_email=visitor_email,
         body=body.body.strip(),
     )
     db.add(row)
@@ -1021,7 +1023,7 @@ async def create_comment_public(
     db.refresh(row)
 
     job = db.query(Job).filter(Job.id == annotation.job_id).first()
-    _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job)
+    _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job, email=email)
 
     from lintpdf.webhooks.events import fire_comment_created, fire_job_state_changed
 
