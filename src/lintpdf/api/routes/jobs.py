@@ -54,6 +54,7 @@ from lintpdf.api.schemas import (
 )
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
+from lintpdf.services.billing import BillingService, get_billing_service
 from lintpdf.services.email import EmailService, get_email_service
 from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 from lintpdf.tenants.models import RATE_LIMIT_WARN_THRESHOLD
@@ -295,6 +296,7 @@ async def submit_job(  # skipcq: PY-R1000
     tenant: Tenant = Depends(get_current_tenant),
     email: EmailService = Depends(get_email_service),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
+    billing_service: BillingService = Depends(get_billing_service),
     x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> JSONResponse:
     """Submit a PDF for preflight checking.
@@ -360,9 +362,7 @@ async def submit_job(  # skipcq: PY-R1000
     check_burst_rate_limit(tenant)
     usage = check_rate_limit(tenant)
 
-    from lintpdf.billing.file_quota import check_and_consume_file_quota
-
-    check_and_consume_file_quota(tenant, files_requested=1, db=db)
+    billing_service.check_and_consume_file_quota(tenant, files_requested=1, db=db)
 
     # Validate ``profile_id`` exists at submit time so clients get a clean
     # 404 instead of a queued job that silently fails in the worker. This
