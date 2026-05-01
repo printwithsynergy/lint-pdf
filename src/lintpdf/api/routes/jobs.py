@@ -55,6 +55,7 @@ from lintpdf.api.schemas import (
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.services.email import EmailService, get_email_service
+from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
 from lintpdf.tenants.models import RATE_LIMIT_WARN_THRESHOLD
 
 logger = logging.getLogger(__name__)
@@ -293,6 +294,7 @@ async def submit_job(  # skipcq: PY-R1000
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
     email: EmailService = Depends(get_email_service),
+    entitlements_service: EntitlementsService = Depends(get_entitlements_service),
     x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> JSONResponse:
     """Submit a PDF for preflight checking.
@@ -406,9 +408,8 @@ async def submit_job(  # skipcq: PY-R1000
 
     # Tier gate: some plans (e.g. Viewer) forbid engine-mode submissions.
     from lintpdf.api.gates import plan_upgrade_required
-    from lintpdf.tenants.entitlements import resolve_entitlements
 
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
     if source_enum.value not in entitlements.allowed_preflight_sources:
         raise plan_upgrade_required(
             gate="preflight_source",
@@ -769,9 +770,8 @@ async def submit_job(  # skipcq: PY-R1000
 
     # Queue the job for async processing
     from lintpdf.queue.tasks import run_preflight
-    from lintpdf.tenants.entitlements import resolve_entitlements
 
-    entitlements = resolve_entitlements(tenant)
+    entitlements = entitlements_service.resolve(tenant)
 
     # Redis PDF hot-cache (``pdf_cache:{file_key}``) was previously
     # populated here as a latency optimisation for the worker. At
