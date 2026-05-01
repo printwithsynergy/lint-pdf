@@ -55,16 +55,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class EmailResult:
-    """Outcome of a transactional send. Mirrors ``lintpdf.email.service.EmailResult``.
+    """Outcome of a transactional send. Mirrors ``lintpdf.email.service.EmailResult`` 1:1.
 
-    ``status`` is one of ``"ok"``, ``"skipped"`` (no client / no
-    recipient), or ``"failed"``. ``message_id`` is populated on
-    successful delivery; ``error`` carries the provider error string
-    on failure.
+    ``success`` is ``True`` only on confirmed delivery to the upstream
+    mailer. ``email_id`` is populated on success; ``error`` carries the
+    provider error string on failure or the reason a stub skipped.
     """
 
-    status: str
-    message_id: str | None = None
+    success: bool
+    email_id: str | None = None
     error: str | None = None
 
 
@@ -126,13 +125,15 @@ class EmailService(Protocol):
 
 class NoOpEmailService:
     """Default implementation. Logs the send intent at ``debug`` level
-    and returns ``status="skipped"``. Used when the OSS engine boots
-    standalone or when running tests that don't need a real mailer.
+    and returns ``success=False`` with an explanatory ``error`` so
+    callsites that bail on failure see a sensible reason. Used when
+    the OSS engine boots standalone or when running tests that don't
+    need a real mailer.
     """
 
     def _skip(self, method: str, **kwargs: Any) -> EmailResult:
         logger.debug("email.%s skipped (no service wired): %s", method, kwargs)
-        return EmailResult(status="skipped")
+        return EmailResult(success=False, error="email service not configured")
 
     def send_overage_started(self, **kwargs: Any) -> EmailResult:
         return self._skip("send_overage_started", **kwargs)

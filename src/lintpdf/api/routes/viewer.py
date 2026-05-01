@@ -24,6 +24,7 @@ from lintpdf.api.database import get_db
 from lintpdf.api.models import BrandProfile, Job, JobStatus, Tenant
 from lintpdf.api.storage import get_storage
 from lintpdf.reports.service import _LINTPDF_DEFAULT_LOGO
+from lintpdf.services.email import EmailService, get_email_service
 
 logger = logging.getLogger(__name__)
 
@@ -2705,6 +2706,7 @@ async def public_share(
     token: str,
     body: ShareRequest,
     db: Session = Depends(get_db),
+    email: EmailService = Depends(get_email_service),
 ) -> dict:
     """Public: email the interactive viewer link to one or more recipients.
 
@@ -2715,7 +2717,6 @@ async def public_share(
 
     from lintpdf.api.config import get_settings
     from lintpdf.api.models import BrandProfile, Tenant
-    from lintpdf.email.service import send_report
 
     # Validate emails
     email_re = _re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -2761,10 +2762,10 @@ async def public_share(
 
     sent = 0
     errors = []
-    for email in emails:
+    for addr in emails:
         try:
-            res = send_report(
-                to=email,
+            res = email.send_report(
+                to=addr,
                 tenant_name=tenant.name if tenant else brand_name,
                 job_id=str(job.id),
                 report_url=viewer_url,
@@ -2776,8 +2777,8 @@ async def public_share(
             if res.success:
                 sent += 1
             else:
-                errors.append(f"{email}: {res.error or 'failed'}")
+                errors.append(f"{addr}: {res.error or 'failed'}")
         except Exception as e:
-            errors.append(f"{email}: {e}")
+            errors.append(f"{addr}: {e}")
 
     return {"sent": sent, "total": len(emails), "errors": errors}

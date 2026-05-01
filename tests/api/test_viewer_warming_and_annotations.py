@@ -399,19 +399,33 @@ class TestAnnotationsAndComments:
 
         sent: list[dict[str, str]] = []
 
-        def _capture(**kwargs: Any) -> Any:
-            sent.append(kwargs)
+        # Phase 5 W2: route handler now accepts an EmailService via
+        # FastAPI dependency injection. Override get_email_service with
+        # a spy that captures every send_annotation_comment call.
+        from lintpdf.services.email import EmailResult, get_email_service
 
-            class _R:
-                success = True
-                email_id = "mock-id"
-                error = None
+        class _SpyEmailService:
+            def send_annotation_comment(self, **kwargs: Any) -> EmailResult:
+                sent.append(kwargs)
+                return EmailResult(success=True, email_id="mock-id")
 
-            return _R()
+            # The Protocol declares 4 methods; tests only exercise this one.
+            def send_overage_started(self, **_: Any) -> EmailResult:
+                return EmailResult(success=True, email_id="mock-id")
 
-        import lintpdf.email.service as email_svc
+            def send_rate_limit_warning(self, **_: Any) -> EmailResult:
+                return EmailResult(success=True, email_id="mock-id")
 
-        monkeypatch.setattr(email_svc, "send_annotation_comment", _capture)
+            def send_report(self, **_: Any) -> EmailResult:
+                return EmailResult(success=True, email_id="mock-id")
+
+        client.app.dependency_overrides[get_email_service] = lambda: _SpyEmailService()
+        # Restore on test exit so other tests aren't affected.
+        monkeypatch.setattr(
+            client.app,
+            "dependency_overrides",
+            client.app.dependency_overrides,
+        )
 
         resp = client.post(
             f"/api/v1/viewer/jobs/{job.id}/annotations/{note['id']}/comments",
