@@ -35,7 +35,9 @@ import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import func, select
+from sqlalchemy import select
+
+from lintpdf.services.ai_monthly_usage import get_ai_monthly_usage_service
 
 if TYPE_CHECKING:
     import uuid as uuid_mod
@@ -161,34 +163,14 @@ def monthly_usage_cents(
     *,
     now: datetime | None = None,
 ) -> int:
-    """Sum the tenant's ``ai_usage_logs.cost_cents`` for the current month.
+    """Sum the tenant's AI spend for the current month.
 
-    Failures fall back to ``0`` (fail-open: the cap doesn't block
-    work when the metering query trips a DB hiccup, or when the
-    ``AIUsageLog`` model has been extracted to ``lintpdf_saas`` and
-    the engine is running standalone without it installed).
+    Dispatches to the registered :class:`AIMonthlyUsageService`. The
+    OSS engine ships a no-op default that returns ``0`` (no AI billing
+    concept); ``lintpdf_saas`` installs an implementation backed by
+    ``AIUsageLog`` at boot via ``set_ai_monthly_usage_service``.
     """
-    try:
-        from lintpdf.api.models import AIUsageLog  # type: ignore[attr-defined]
-    except ImportError:
-        return 0
-
-    start, end = _month_window(now=now)
-    try:
-        total = db.execute(
-            select(func.coalesce(func.sum(AIUsageLog.cost_cents), 0)).where(
-                AIUsageLog.tenant_id == tenant_id,
-                AIUsageLog.created_at >= start,
-                AIUsageLog.created_at < end,
-            )
-        ).scalar_one()
-    except Exception:  # pragma: no cover — fail open
-        logger.exception(
-            "ai_cost_cap: failed to query monthly usage for tenant %s",
-            tenant_id,
-        )
-        return 0
-    return int(total or 0)
+    return get_ai_monthly_usage_service().monthly_usage_cents(tenant_id, db, now=now)
 
 
 def check_cap_or_raise(
