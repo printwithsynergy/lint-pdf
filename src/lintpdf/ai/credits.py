@@ -7,12 +7,11 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from fastapi import HTTPException, status
-
 from lintpdf.services.ai_credit_balance import (
     CreditBalance,
     get_ai_credit_balance_service,
 )
+from lintpdf.services.ai_credit_check import get_ai_credit_check_service
 
 if TYPE_CHECKING:
     import uuid
@@ -42,47 +41,13 @@ def check_ai_credits(
 ) -> None:
     """Verify tenant has sufficient credits. Raises 402 if not.
 
-    For credit_package billing: checks package balance.
-    For pay_per_use billing: checks spending limit.
+    Dispatches to the registered :class:`AICreditCheckService`. The
+    OSS engine ships a no-op default (no AI billing concept on
+    OSS-only deploys); ``lintpdf_saas`` installs an implementation
+    backed by ``TenantAIConfig`` + the credit balance for full
+    pay-per-use vs credit-package gate logic.
     """
-    from lintpdf.api.models import AIBillingMode, TenantAIConfig
-
-    config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
-
-    if config is None:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="AI features not configured. No credits available.",
-        )
-
-    if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
-        balance = get_credit_balance(tenant_id, db)
-        if balance.package_credits_remaining < credits_needed:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=(
-                    f"Insufficient AI credits. Need {credits_needed}, "
-                    f"have {balance.package_credits_remaining}. "
-                    "Purchase a credit top-up package to continue."
-                ),
-            )
-    else:
-        # Pay-per-use: check monthly spending limit
-        if config.monthly_spending_limit is not None:
-            balance = get_credit_balance(tenant_id, db)
-            estimated_cost = Decimal(str(credits_needed)) * Decimal(str(config.overage_rate))
-            if (
-                balance.monthly_spending_limit is not None
-                and balance.monthly_spent + estimated_cost > balance.monthly_spending_limit
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                    detail=(
-                        "Monthly AI spending limit would be exceeded. "
-                        f"Limit: {config.monthly_spending_limit}, "
-                        f"Current spend: {balance.monthly_spent}."
-                    ),
-                )
+    get_ai_credit_check_service().check_credits(tenant_id, credits_needed, db)
 
 
 def deduct_credits(

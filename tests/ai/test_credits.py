@@ -15,6 +15,7 @@ from lintpdf.services.ai_credit_balance import (
     CreditBalance,
     set_ai_credit_balance_service,
 )
+from lintpdf.services.ai_credit_check import set_ai_credit_check_service
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -82,11 +83,63 @@ class _SaaSStyleCreditBalanceService:
         )
 
 
+class _SaaSStyleCreditCheckService:
+    """Test-side credit check service mirroring the SaaS read pattern.
+
+    Walks ``TenantAIConfig`` + delegates to ``get_credit_balance`` for
+    the package / spending-limit gate so the mocked DB session sees
+    the same query chain the previous in-tree ``check_ai_credits``
+    exercised.
+    """
+
+    def check_credits(self, tenant_id, credits_needed, db) -> None:  # type: ignore[no-untyped-def]
+        from fastapi import HTTPException, status
+
+        from lintpdf.ai.credits import get_credit_balance
+        from lintpdf.api.models import AIBillingMode, TenantAIConfig
+
+        config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
+        if config is None:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="AI features not configured. No credits available.",
+            )
+
+        if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
+            balance = get_credit_balance(tenant_id, db)
+            if balance.package_credits_remaining < credits_needed:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail=(
+                        f"Insufficient AI credits. Need {credits_needed}, "
+                        f"have {balance.package_credits_remaining}. "
+                        "Purchase a credit top-up package to continue."
+                    ),
+                )
+        elif config.monthly_spending_limit is not None:
+            balance = get_credit_balance(tenant_id, db)
+            estimated_cost = Decimal(str(credits_needed)) * Decimal(str(config.overage_rate))
+            if (
+                balance.monthly_spending_limit is not None
+                and balance.monthly_spent + estimated_cost > balance.monthly_spending_limit
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail=(
+                        "Monthly AI spending limit would be exceeded. "
+                        f"Limit: {config.monthly_spending_limit}, "
+                        f"Current spend: {balance.monthly_spent}."
+                    ),
+                )
+
+
 @pytest.fixture(autouse=True)
 def _install_credit_balance_service() -> Generator[None, None, None]:
     set_ai_credit_balance_service(_SaaSStyleCreditBalanceService())
+    set_ai_credit_check_service(_SaaSStyleCreditCheckService())
     yield
     set_ai_credit_balance_service(None)
+    set_ai_credit_check_service(None)
 
 
 class TestGetCreditBalance:
