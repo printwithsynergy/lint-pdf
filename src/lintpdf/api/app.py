@@ -45,10 +45,8 @@ try:
         approvals,
         branding,
         import_mappings,
-        toggles,
         trial,
         webhooks,
-        workflows,
     )
 
     _SAAS_ROUTES_AVAILABLE = True
@@ -59,8 +57,7 @@ except ImportError as _saas_import_exc:
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
     admin = ai_presets = approvals = branding = None  # type: ignore[assignment]
-    import_mappings = toggles = trial = None  # type: ignore[assignment]
-    webhooks = workflows = None  # type: ignore[assignment]
+    import_mappings = trial = webhooks = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -403,8 +400,9 @@ def create_app() -> FastAPI:
         # follow-up will move those helpers to a shared engine
         # location, then branding can be extracted cleanly.
         app.include_router(branding.router)
-        app.include_router(toggles.router)  # V-07 toggle resolver + tenant overrides
-        app.include_router(workflows.router)  # Phase 0.7 PR-A workflow CRUD + workflow overrides
+        # toggles + workflows: extracted to lintpdf_saas in W5i
+        # (PR thinkneverland/lint-pdf-saas#18). The SaaS wrapper at
+        # lintpdf_saas.api.app:create_app owns those registrations now.
     if not control_plane_only:
         if saas_mode:
             app.include_router(approvals.router)
