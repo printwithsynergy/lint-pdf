@@ -42,9 +42,7 @@ try:
     from lintpdf.api.routes import (  # type: ignore[no-redef]
         admin,
         ai_presets,
-        approvals,
         branding,
-        import_mappings,
         trial,
         webhooks,
     )
@@ -56,8 +54,8 @@ except ImportError as _saas_import_exc:
     _SAAS_IMPORT_ERROR = str(_saas_import_exc)
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
-    admin = ai_presets = approvals = branding = None  # type: ignore[assignment]
-    import_mappings = trial = webhooks = None  # type: ignore[assignment]
+    admin = ai_presets = branding = None  # type: ignore[assignment]
+    trial = webhooks = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -404,11 +402,9 @@ def create_app() -> FastAPI:
         # (PR thinkneverland/lint-pdf-saas#18). The SaaS wrapper at
         # lintpdf_saas.api.app:create_app owns those registrations now.
     if not control_plane_only:
-        if saas_mode:
-            app.include_router(approvals.router)
+        # approvals + import_mappings: extracted to lintpdf_saas in W5j
+        # (PR thinkneverland/lint-pdf-saas#19).
         app.include_router(annotations.router, prefix="/api/v1/viewer")
-        if saas_mode:
-            app.include_router(import_mappings.router)
 
     # ai_config, ai_credits, ai_usage, ai_generate, ai_interpret
     # (+ legacy /api/v1/captains-log alias), file_packs, and
