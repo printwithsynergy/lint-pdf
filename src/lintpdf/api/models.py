@@ -882,26 +882,9 @@ class TenantColorConfig(Base):
     tenant: Mapped[Tenant] = relationship(back_populates="color_config")
 
 
-class UserAIAccess(Base):
-    """Per-user AI feature access control."""
-
-    __tablename__ = "user_ai_access"
-    __table_args__ = (Index("ix_user_ai_access_user_tenant", "user_id", "tenant_id", unique=True),)
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, index=True)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    ai_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    personal_spending_limit: Mapped[Any | None] = mapped_column(Numeric(10, 2), nullable=True)
-    trial_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    trial_expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+# UserAIAccess was extracted to lintpdf_saas.api.models in W6b
+# (PRs thinkneverland/lint-pdf-saas#23 + thinkneverland/lint-pdf#PR-B).
+# The user_ai_access table remains in the shared Postgres database.
 
 
 # Trial Submission models (TrialSubmissionStatus, TrialSubmission,
