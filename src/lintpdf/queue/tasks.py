@@ -599,23 +599,24 @@ def run_preflight(
                 except Exception:
                     logger.debug("Could not load AI config for tenant %s", job.tenant_id)
 
-            # Load tenant Pantone overrides (Redis cache → DB fallback)
+            # Load tenant Pantone overrides (Redis cache → service fallback).
+            # The TenantColorService Protocol (W6c-3) gives the engine a
+            # SaaS-aware seam; the OSS default returns None, hosted SaaS
+            # installs SaaSTenantColorService that reads the moved
+            # TenantColorConfig model from lintpdf_saas.api.models.
             custom_pantone: dict | None = None
             try:
                 from lintpdf.api.middleware import get_redis_client
-                from lintpdf.api.models import TenantColorConfig
                 from lintpdf.profiles.icc.pantone_cache import get_overrides, set_overrides
+                from lintpdf.services.tenant_color import get_tenant_color_service
 
                 redis = get_redis_client()
                 tenant_id_str = str(job.tenant_id)
                 custom_pantone = get_overrides(redis, tenant_id_str)
                 if custom_pantone is None:
-                    color_config = (
-                        db.query(TenantColorConfig)
-                        .filter(TenantColorConfig.tenant_id == job.tenant_id)
-                        .first()
+                    custom_pantone = get_tenant_color_service().get_custom_pantone(
+                        job.tenant_id, db
                     )
-                    custom_pantone = color_config.custom_pantone_overrides if color_config else None
                     if custom_pantone:
                         set_overrides(redis, tenant_id_str, custom_pantone)
             except Exception:

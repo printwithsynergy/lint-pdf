@@ -204,9 +204,9 @@ class Tenant(Base):
     ai_usage_logs: Mapped[list[AIUsageLog]] = relationship(
         back_populates="tenant", cascade="all, delete-orphan"
     )
-    color_config: Mapped[TenantColorConfig | None] = relationship(
-        back_populates="tenant", uselist=False, cascade="all, delete-orphan"
-    )
+    # color_config relationship removed in W6c-3: TenantColorConfig
+    # lives in lintpdf_saas.api.models on a separate MetaData. No
+    # OSS code accessed tenant.color_config directly anyway.
     brand_profiles: Mapped[list[BrandProfile]] = relationship(
         back_populates="tenant", cascade="all, delete-orphan"
     )
@@ -827,42 +827,10 @@ class AIUsageLog(Base):
     tenant: Mapped[Tenant] = relationship(back_populates="ai_usage_logs")
 
 
-# --- Color Management Models ---
-
-
-class TenantColorConfig(Base):
-    """Color management configuration for a tenant."""
-
-    __tablename__ = "tenant_color_configs"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
-    )
-    default_output_condition: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    custom_icc_profiles: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
-    brand_palette: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
-    custom_dictionary_words: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    default_tac_threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=320)
-    default_safe_zone_margin_mm: Mapped[Any] = mapped_column(
-        Numeric(6, 2), nullable=False, default=3.0
-    )
-    package_capacity_default: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    package_surface_area_default: Mapped[Any | None] = mapped_column(Numeric(10, 2), nullable=True)
-    target_market: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    epm_mode_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    custom_pantone_overrides: Mapped[dict[str, dict[str, Any]] | None] = mapped_column(
-        JSON, nullable=True, comment="Customer Pantone color overrides keyed by normalized name"
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-
-    # Relationships
-    tenant: Mapped[Tenant] = relationship(back_populates="color_config")
+# TenantColorConfig was extracted to lintpdf_saas.api.models in W6c-3
+# (PRs thinkneverland/lint-pdf-saas#26/#XX + thinkneverland/lint-pdf#418/#XX).
+# Engine code reaches it through the TenantColorService Protocol seam
+# at lintpdf.services.tenant_color (no direct import).
 
 
 # UserAIAccess was extracted to lintpdf_saas.api.models in W6b
