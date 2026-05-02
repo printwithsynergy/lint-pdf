@@ -120,9 +120,17 @@ def _plan_tier_overrides(plan: TenantPlan) -> dict[str, Any]:
         return {}
 
     # Deferred import so this module doesn't pull the whole API stack
-    # when only the dataclass is needed (tests, Celery boot).
+    # when only the dataclass is needed (tests, Celery boot). Wrapped in
+    # try/except so the resolver tolerates ``PlanLimitOverride`` being
+    # absent from the OSS package — the model moves to lintpdf_saas in
+    # W6, after which OSS-only deploys without lintpdf_saas installed
+    # fall through to the hardcoded plan defaults instead of crashing.
     from lintpdf.api.database import get_db_session
-    from lintpdf.api.models import PlanLimitOverride
+
+    try:
+        from lintpdf.api.models import PlanLimitOverride  # type: ignore[attr-defined]
+    except ImportError:
+        return {}
 
     try:
         session = get_db_session()
