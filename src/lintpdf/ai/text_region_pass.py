@@ -40,7 +40,6 @@ from lintpdf.semantic.events import ImagePlacedEvent, PathPaintingEvent, TextRen
 from lintpdf.semantic.model import DetectedTextRegion, PdfBox
 
 if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument, SemanticPage
 
@@ -141,7 +140,7 @@ def run(
     document: SemanticDocument,
     events: list[ContentStreamEvent],
     pdf_bytes: bytes,
-    ai_config: TenantAIConfig | None = None,
+    ai_config: object | None = None,
     dpi: int = _DEFAULT_DPI,
 ) -> None:
     """Mutate ``document`` in place: populate ``page.detected_text_regions``.
