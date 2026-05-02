@@ -14,45 +14,73 @@ from fastapi import FastAPI
 # with ``Base.metadata`` before ``create_all`` runs in test fixtures and
 # any code path queries the table.
 from lintpdf import decisions as _decisions  # noqa: F401  (registration import)
+
+# OSS-always imports — engine surface routes that ship in every deploy.
 from lintpdf.api.routes import (
-    admin,
-    admin_health,
-    admin_warming,
-    ai_config,
-    ai_credits,
     ai_explain,
-    ai_generate,
     ai_health,
-    ai_interpret,
-    ai_presets,
-    ai_usage,
     annotations,
-    approvals,
     batch,
-    brand_specs,
-    branding,
-    color_config,
     decisions,
-    downloads,
-    edge,
-    endpoints,
     epm_summary,
-    file_packs,
     health,
     icc_profiles,
-    import_mappings,
     jobs,
     profiles,
     reports,
-    stripe_webhooks,
-    toggles,
-    trial,
-    usage,
-    user_ai_access,
     viewer,
-    webhooks,
-    workflows,
 )
+
+# SaaS-optional imports — modules that the W5 physical extraction will
+# move out of the OSS package into the lint-pdf-saas shell. Wrapped in
+# try/except so the OSS engine boots cleanly after extraction; today
+# (pre-extraction) all imports succeed and the runtime behaviour is
+# unchanged. The ``LINTPDF_SAAS_MODE`` env var still controls whether
+# these routes are MOUNTED — the import-tolerance just allows the
+# modules to be physically absent.
+try:
+    from lintpdf.api.routes import (  # type: ignore[no-redef]
+        admin,
+        admin_health,
+        admin_warming,
+        ai_config,
+        ai_credits,
+        ai_generate,
+        ai_interpret,
+        ai_presets,
+        ai_usage,
+        approvals,
+        brand_specs,
+        branding,
+        color_config,
+        downloads,
+        edge,
+        endpoints,
+        file_packs,
+        import_mappings,
+        stripe_webhooks,
+        toggles,
+        trial,
+        usage,
+        user_ai_access,
+        webhooks,
+        workflows,
+    )
+
+    _SAAS_ROUTES_AVAILABLE = True
+    _SAAS_IMPORT_ERROR: str | None = None
+except ImportError as _saas_import_exc:
+    _SAAS_ROUTES_AVAILABLE = False
+    _SAAS_IMPORT_ERROR = str(_saas_import_exc)
+    # Bind names to None so the conditional include_router calls below
+    # short-circuit cleanly via the gate-on-availability pattern.
+    admin = admin_health = admin_warming = None  # type: ignore[assignment]
+    ai_config = ai_credits = ai_generate = ai_interpret = None  # type: ignore[assignment]
+    ai_presets = ai_usage = None  # type: ignore[assignment]
+    approvals = brand_specs = branding = color_config = None  # type: ignore[assignment]
+    downloads = edge = endpoints = file_packs = None  # type: ignore[assignment]
+    import_mappings = stripe_webhooks = toggles = trial = None  # type: ignore[assignment]
+    usage = user_ai_access = webhooks = workflows = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -339,12 +367,27 @@ def create_app() -> FastAPI:
     # surface gate. Both states keep importing the same module set —
     # the toggle only controls router registration, not module load.
     saas_mode_raw = _os.environ.get("LINTPDF_SAAS_MODE", "true").lower()
-    saas_mode = saas_mode_raw in ("1", "true", "yes")
-    if not saas_mode:
+    saas_mode_requested = saas_mode_raw in ("1", "true", "yes")
+    # Effective saas_mode requires both the env opt-in AND the modules
+    # being importable. After W5 physical extraction the SaaS-only
+    # modules live in lint-pdf-saas; an OSS-only deploy will have
+    # ``saas_mode_requested=True`` (the env default) but
+    # ``_SAAS_ROUTES_AVAILABLE=False``, in which case the runtime
+    # quietly falls back to the engine surface.
+    saas_mode = saas_mode_requested and _SAAS_ROUTES_AVAILABLE
+    if not saas_mode_requested:
         logger.warning(
             "LINTPDF_SAAS_MODE=false — SaaS-only routes will NOT be mounted "
             "(admin/billing/branding/trial/webhooks/approvals/etc.). OSS "
             "preflight engine surface only."
+        )
+    elif not _SAAS_ROUTES_AVAILABLE:
+        logger.warning(
+            "LINTPDF_SAAS_MODE=true but SaaS-only route modules are "
+            "unavailable (%s). Falling back to OSS engine surface only — "
+            "if you need SaaS routes, install lint-pdf-saas alongside "
+            "lintpdf and re-import the engine app.",
+            _SAAS_IMPORT_ERROR,
         )
 
     # Mount routers
