@@ -17,7 +17,7 @@ the in-place refactor advance without behavioural drift.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 # Always-available runtime re-exports. These are the actual SaaS
 # functions/classes the analyzers call; they're imported here so
@@ -49,26 +49,19 @@ def get_db_session() -> Any:
     return _get()
 
 
-if TYPE_CHECKING:
-    from lintpdf.api.models import TenantAIConfig
+# AIConfig is duck-typed — the orchestrator passes whatever the
+# AIConfigService returns (a TenantAIConfig ORM instance on SaaS,
+# a SimpleNamespace shim in tests, or ``None`` on OSS-only deploys).
+# Analyzers read attributes via ``getattr(...)`` which works on all
+# three, so the type alias stays ``Any`` to avoid importing
+# SaaS-only models into the OSS engine.
+AIConfig = Any
 
-    AIConfig = TenantAIConfig | None
-
-    # Re-export type names for analyzer signatures / except clauses.
-    # The analyzer's annotation-only imports go through these aliases
-    # so the file never names ``lintpdf.ai.gpu_client``.
-    GPUClient = GPUInferenceClient
-    GPUUnavailable = GPUServiceUnavailableError
-else:
-    # Runtime placeholder for AIConfig — the orchestrator passes a
-    # real TenantAIConfig (or SimpleNamespace shim, or None);
-    # analyzers reading attributes off it use ``getattr(...)``
-    # semantics, which work on all three.
-    AIConfig = Any
-    # Runtime aliases for the GPU type names so legacy code that
-    # uses them at runtime (``isinstance``, ``except``) keeps working.
-    GPUClient = GPUInferenceClient
-    GPUUnavailable = GPUServiceUnavailableError
+# Re-export type names for analyzer signatures / except clauses.
+# The analyzer's annotation-only imports go through these aliases
+# so the file never names ``lintpdf.ai.gpu_client``.
+GPUClient = GPUInferenceClient
+GPUUnavailable = GPUServiceUnavailableError
 
 
 __all__ = [
