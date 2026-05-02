@@ -31,8 +31,28 @@ class CreditBalance:
 
 
 def get_credit_balance(tenant_id: uuid.UUID, db: Session) -> CreditBalance:
-    """Get current AI credit balance and usage summary."""
-    from lintpdf.api.models import AIBillingMode, AIUsageLog, TenantAIConfig, TenantAICreditPackage
+    """Get current AI credit balance and usage summary.
+
+    Returns a zeroed pay-per-use balance when the SaaS-only AI billing
+    models aren't importable (post-W6 OSS-only deploy without
+    lintpdf_saas installed).
+    """
+    try:
+        from lintpdf.api.models import (  # type: ignore[attr-defined]
+            AIBillingMode,
+            AIUsageLog,
+            TenantAIConfig,
+            TenantAICreditPackage,
+        )
+    except ImportError:
+        return CreditBalance(
+            credit_balance=Decimal("0"),
+            billing_mode="pay_per_use",  # value matches AIBillingMode.PAY_PER_USE
+            packages_active=0,
+            package_credits_remaining=0,
+            monthly_spent=Decimal("0"),
+            monthly_spending_limit=None,
+        )
 
     config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
 
