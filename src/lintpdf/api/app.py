@@ -43,7 +43,6 @@ try:
         admin,
         ai_presets,
         approvals,
-        brand_specs,
         branding,
         import_mappings,
         toggles,
@@ -59,8 +58,7 @@ except ImportError as _saas_import_exc:
     _SAAS_IMPORT_ERROR = str(_saas_import_exc)
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
-    admin = ai_presets = None  # type: ignore[assignment]
-    approvals = brand_specs = branding = None  # type: ignore[assignment]
+    admin = ai_presets = approvals = branding = None  # type: ignore[assignment]
     import_mappings = toggles = trial = None  # type: ignore[assignment]
     webhooks = workflows = None  # type: ignore[assignment]
 
@@ -398,8 +396,13 @@ def create_app() -> FastAPI:
     if not control_plane_only:
         app.include_router(viewer.router)
     if saas_mode:
+        # brand_specs: extracted to lintpdf_saas in W5h
+        # (PR thinkneverland/lint-pdf-saas#17). branding stays in
+        # OSS for now — admin.py and test_custom_domain_validation.py
+        # import EDGE_HOSTNAME + validate_custom_domain from it; a
+        # follow-up will move those helpers to a shared engine
+        # location, then branding can be extracted cleanly.
         app.include_router(branding.router)
-        app.include_router(brand_specs.router)
         app.include_router(toggles.router)  # V-07 toggle resolver + tenant overrides
         app.include_router(workflows.router)  # Phase 0.7 PR-A workflow CRUD + workflow overrides
     if not control_plane_only:
