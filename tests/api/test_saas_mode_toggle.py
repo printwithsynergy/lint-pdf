@@ -33,10 +33,14 @@ _OSS_ALWAYS_ROUTES = (
 )
 
 # SaaS-only routes that must NOT mount when SAAS_MODE=false (or when
-# the SaaS-only modules aren't importable).
+# the SaaS-only modules aren't importable). Use prefixes from routers
+# that are still physically in OSS (admin, trial) — pre-W5-physical
+# extractions like admin_health were moved to lint-pdf-saas, so
+# checking those prefixes from inside a unit test on the OSS package
+# would always fail.
 _SAAS_ONLY_ROUTES = (
-    "/api/v1/admin/health",
-    "/api/v1/branding/defaults",
+    "/api/v1/admin",
+    "/api/v1/trial",
 )
 
 
