@@ -15,7 +15,12 @@ from fastapi import FastAPI
 # any code path queries the table.
 from lintpdf import decisions as _decisions  # noqa: F401  (registration import)
 
-# OSS-always imports — engine surface routes that ship in every deploy.
+# OSS engine routes — every route below ships in lintpdf. SaaS-only
+# routes (admin, branding, billing, AI knobs, toggles, workflows,
+# trial, approvals, webhooks, file_packs, ai_presets, etc.) were
+# physically extracted to ``lintpdf_saas.api.routes`` over W5c-W5m;
+# the SaaS shell at ``lintpdf_saas.api.app:create_app`` re-mounts
+# them on top of the OSS app this module produces.
 from lintpdf.api.routes import (
     ai_explain,
     ai_health,
@@ -30,27 +35,6 @@ from lintpdf.api.routes import (
     reports,
     viewer,
 )
-
-# SaaS-optional imports — modules that the W5 physical extraction will
-# move out of the OSS package into the lint-pdf-saas shell. Wrapped in
-# try/except so the OSS engine boots cleanly after extraction; today
-# (pre-extraction) all imports succeed and the runtime behaviour is
-# unchanged. The ``LINTPDF_SAAS_MODE`` env var still controls whether
-# these routes are MOUNTED — the import-tolerance just allows the
-# modules to be physically absent.
-try:
-    from lintpdf.api.routes import (  # type: ignore[no-redef]
-        ai_presets,
-    )
-
-    _SAAS_ROUTES_AVAILABLE = True
-    _SAAS_IMPORT_ERROR: str | None = None
-except ImportError as _saas_import_exc:
-    _SAAS_ROUTES_AVAILABLE = False
-    _SAAS_IMPORT_ERROR = str(_saas_import_exc)
-    # Bind names to None so the conditional include_router calls below
-    # short-circuit cleanly via the gate-on-availability pattern.
-    ai_presets = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -310,55 +294,16 @@ def create_app() -> FastAPI:
         "yes",
     )
 
-    # Phase 5 W5: ``LINTPDF_SAAS_MODE`` toggle.
+    # The OSS lintpdf package no longer ships any SaaS-only routes —
+    # admin / billing / branding / trial / webhooks / approvals /
+    # toggles / workflows / AI knobs / brand specs / etc. all live in
+    # lintpdf_saas now (W5c-W5m physical extraction). The SaaS shell
+    # at ``lintpdf_saas.api.app:create_app`` builds this OSS app and
+    # then re-mounts the SaaS-only routers on top.
     #
-    # When ``LINTPDF_SAAS_MODE`` is unset OR ``"true"``/``"1"``/``"yes"``
-    # (the default — preserves the hosted SaaS deploy), every router is
-    # mounted as before: tenant CRUD admin endpoints, Stripe webhooks,
-    # billing portal, branding management, custom domains, the trial
-    # intake, etc. all live alongside the engine routes.
-    #
-    # When ``LINTPDF_SAAS_MODE=false`` the FastAPI app skips the
-    # SaaS-only routers entirely. The OSS preflight engine surface
-    # remains: jobs, reports, viewer, AI explain, EPM, decisions,
-    # annotations, ICC profiles, profiles, batch, endpoints,
-    # downloads, health/ready. SaaS-coupled features (admin tenant
-    # management, billing/Stripe, branding, custom-domain probes,
-    # trial intake, webhooks, approvals workflows, file-pack
-    # purchases, AI credit grants, ai_config, ai_usage, ai_presets,
-    # toggles, workflows, brand_specs, edge, dev_auth, user_ai_access,
-    # color_config, import_mappings) are NOT mounted — those routes
-    # 404 cleanly because they were never registered.
-    #
-    # The W5 long-term plan is to physically extract the SaaS-only
-    # route handlers + their backing modules
-    # (lintpdf.tenants, lintpdf.billing, lintpdf.email, etc.) to
-    # lint-pdf-saas; until that lands, this toggle is the deployment-
-    # surface gate. Both states keep importing the same module set —
-    # the toggle only controls router registration, not module load.
-    saas_mode_raw = _os.environ.get("LINTPDF_SAAS_MODE", "true").lower()
-    saas_mode_requested = saas_mode_raw in ("1", "true", "yes")
-    # Effective saas_mode requires both the env opt-in AND the modules
-    # being importable. After W5 physical extraction the SaaS-only
-    # modules live in lint-pdf-saas; an OSS-only deploy will have
-    # ``saas_mode_requested=True`` (the env default) but
-    # ``_SAAS_ROUTES_AVAILABLE=False``, in which case the runtime
-    # quietly falls back to the engine surface.
-    saas_mode = saas_mode_requested and _SAAS_ROUTES_AVAILABLE
-    if not saas_mode_requested:
-        logger.warning(
-            "LINTPDF_SAAS_MODE=false — SaaS-only routes will NOT be mounted "
-            "(admin/billing/branding/trial/webhooks/approvals/etc.). OSS "
-            "preflight engine surface only."
-        )
-    elif not _SAAS_ROUTES_AVAILABLE:
-        logger.warning(
-            "LINTPDF_SAAS_MODE=true but SaaS-only route modules are "
-            "unavailable (%s). Falling back to OSS engine surface only — "
-            "if you need SaaS routes, install lint-pdf-saas alongside "
-            "lintpdf and re-import the engine app.",
-            _SAAS_IMPORT_ERROR,
-        )
+    # ``LINTPDF_SAAS_MODE`` survives only as a no-op env var that
+    # downstream tooling may still set. The OSS engine surface is the
+    # only thing this app factory produces regardless of its value.
 
     # Mount routers
     app.include_router(health.router)  # /ready, /health — always mounted
@@ -382,18 +327,11 @@ def create_app() -> FastAPI:
         # to lintpdf_saas in W5i (#18) and W5j (#19).
         app.include_router(annotations.router, prefix="/api/v1/viewer")
 
-    # ai_config, ai_credits, ai_usage, ai_generate, ai_interpret
-    # (+ legacy /api/v1/captains-log alias), file_packs, and
-    # stripe_webhooks were extracted to lintpdf_saas in W5d-W5f
-    # (PRs thinkneverland/lint-pdf-saas#13 and #15). The SaaS wrapper
-    # at lintpdf_saas.api.app:create_app owns those registrations now.
-    # ai_presets stays in OSS for now — jobs.py imports its
-    # _AI_PRESETS dict directly during preset-slug expansion. A
-    # follow-up refactor will move that data to a shared engine
-    # location, then ai_presets can be extracted too.
-    if not control_plane_only:
-        if saas_mode:
-            app.include_router(ai_presets.router)
+        # All SaaS-only routes — admin / billing / branding / trial /
+        # webhooks / approvals / toggles / workflows / AI knobs /
+        # brand_specs / endpoints / usage / file_packs / ai_presets — live
+        # in lintpdf_saas now (W5c-W5m). The SaaS wrapper at
+        # lintpdf_saas.api.app:create_app owns their registrations.
 
         # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
