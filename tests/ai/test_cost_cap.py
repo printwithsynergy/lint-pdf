@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, func, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -29,6 +29,7 @@ from lintpdf.api.models import (
     Tenant,
     TenantPlan,
 )
+from lintpdf.services.ai_monthly_usage import set_ai_monthly_usage_service
 from lintpdf.tenants.toggle_models import (
     MergeStrategy,
     Toggle,
@@ -42,6 +43,38 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from sqlalchemy.orm import Session
+
+
+class _AIUsageLogMonthlyUsageService:
+    """Test-side implementation that sums ``AIUsageLog.cost_cents``.
+
+    Mirrors the SaaS implementation. Lives in tests/ rather than
+    src/ so the OSS engine stays free of AIUsageLog references.
+    """
+
+    def monthly_usage_cents(
+        self,
+        tenant_id: uuid.UUID,
+        db: Session,
+        *,
+        now: datetime | None = None,
+    ) -> int:
+        start, end = _month_window(now=now)
+        total = db.execute(
+            select(func.coalesce(func.sum(AIUsageLog.cost_cents), 0)).where(
+                AIUsageLog.tenant_id == tenant_id,
+                AIUsageLog.created_at >= start,
+                AIUsageLog.created_at < end,
+            )
+        ).scalar_one()
+        return int(total or 0)
+
+
+@pytest.fixture(autouse=True)
+def _install_usage_service() -> Generator[None, None, None]:
+    set_ai_monthly_usage_service(_AIUsageLogMonthlyUsageService())
+    yield
+    set_ai_monthly_usage_service(None)
 
 
 _TENANT_A = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
