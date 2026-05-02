@@ -5,10 +5,88 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
+
+from lintpdf.services.ai_credit_balance import (
+    CreditBalance,
+    set_ai_credit_balance_service,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+
+class _SaaSStyleCreditBalanceService:
+    """Test-side service mirroring the SaaS read pattern.
+
+    Walks ``TenantAIConfig`` / ``TenantAICreditPackage`` / ``AIUsageLog``
+    via the same MagicMock-friendly query chain the previous in-tree
+    ``get_credit_balance`` exercised.
+    """
+
+    def get_credit_balance(self, tenant_id, db) -> CreditBalance:  # type: ignore[no-untyped-def]
+        from lintpdf.api.models import (
+            AIBillingMode,
+            AIUsageLog,
+            TenantAIConfig,
+            TenantAICreditPackage,
+        )
+
+        config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
+        if config is None:
+            return CreditBalance(
+                credit_balance=Decimal("0"),
+                billing_mode=AIBillingMode.PAY_PER_USE,
+                packages_active=0,
+                package_credits_remaining=0,
+                monthly_spent=Decimal("0"),
+                monthly_spending_limit=None,
+            )
+
+        now = datetime.now(timezone.utc)
+        packages = (
+            db.query(TenantAICreditPackage)
+            .filter(
+                TenantAICreditPackage.tenant_id == tenant_id,
+                TenantAICreditPackage.kind == "credits",
+                TenantAICreditPackage.credits_remaining > 0,
+            )
+            .all()
+        )
+        active_packages = [p for p in packages if p.expires_at is None or p.expires_at > now]
+        package_credits = sum(p.credits_remaining for p in active_packages)
+
+        from sqlalchemy import func
+
+        monthly_cost = (
+            db.query(func.coalesce(func.sum(AIUsageLog.cost), 0))
+            .filter(AIUsageLog.tenant_id == tenant_id)
+            .scalar()
+        )
+
+        return CreditBalance(
+            credit_balance=Decimal(str(config.credit_balance)),
+            billing_mode=str(config.billing_mode),
+            packages_active=len(active_packages),
+            package_credits_remaining=package_credits,
+            monthly_spent=Decimal(str(monthly_cost)),
+            monthly_spending_limit=(
+                Decimal(str(config.monthly_spending_limit))
+                if config.monthly_spending_limit is not None
+                else None
+            ),
+        )
+
+
+@pytest.fixture(autouse=True)
+def _install_credit_balance_service() -> Generator[None, None, None]:
+    set_ai_credit_balance_service(_SaaSStyleCreditBalanceService())
+    yield
+    set_ai_credit_balance_service(None)
 
 
 class TestGetCreditBalance:

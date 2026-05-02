@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException, status
+
+from lintpdf.services.ai_credit_balance import (
+    CreditBalance,
+    get_ai_credit_balance_service,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -18,95 +22,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class CreditBalance:
-    """Current AI credit balance for a tenant."""
-
-    credit_balance: Decimal
-    billing_mode: str
-    packages_active: int
-    package_credits_remaining: int
-    monthly_spent: Decimal
-    monthly_spending_limit: Decimal | None
-
-
 def get_credit_balance(tenant_id: uuid.UUID, db: Session) -> CreditBalance:
     """Get current AI credit balance and usage summary.
 
-    Returns a zeroed pay-per-use balance when the SaaS-only AI billing
-    models aren't importable (post-W6 OSS-only deploy without
-    lintpdf_saas installed).
+    Dispatches to the registered :class:`AICreditBalanceService`. The
+    OSS engine ships a no-op default that returns a zeroed
+    ``pay_per_use`` balance (no AI billing concept on OSS-only
+    deploys); ``lintpdf_saas`` installs an implementation backed by
+    ``TenantAIConfig`` / ``TenantAICreditPackage`` / ``AIUsageLog`` at
+    boot via ``set_ai_credit_balance_service``.
     """
-    try:
-        from lintpdf.api.models import (  # type: ignore[attr-defined]
-            AIBillingMode,
-            AIUsageLog,
-            TenantAIConfig,
-            TenantAICreditPackage,
-        )
-    except ImportError:
-        return CreditBalance(
-            credit_balance=Decimal("0"),
-            billing_mode="pay_per_use",  # value matches AIBillingMode.PAY_PER_USE
-            packages_active=0,
-            package_credits_remaining=0,
-            monthly_spent=Decimal("0"),
-            monthly_spending_limit=None,
-        )
-
-    config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
-
-    if config is None:
-        return CreditBalance(
-            credit_balance=Decimal("0"),
-            billing_mode=AIBillingMode.PAY_PER_USE,
-            packages_active=0,
-            package_credits_remaining=0,
-            monthly_spent=Decimal("0"),
-            monthly_spending_limit=None,
-        )
-
-    # Count active (non-expired) credit packages. Filter by kind so the
-    # shared metered-resource table never bleeds file packs into the
-    # AI-credit balance calculation.
-    now = datetime.now(timezone.utc)
-    packages = (
-        db.query(TenantAICreditPackage)
-        .filter(
-            TenantAICreditPackage.tenant_id == tenant_id,
-            TenantAICreditPackage.kind == "credits",
-            TenantAICreditPackage.credits_remaining > 0,
-        )
-        .all()
-    )
-    active_packages = [p for p in packages if p.expires_at is None or p.expires_at > now]
-    package_credits = sum(p.credits_remaining for p in active_packages)
-
-    # Monthly spend calculation
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    from sqlalchemy import func
-
-    monthly_cost = (
-        db.query(func.coalesce(func.sum(AIUsageLog.cost), 0))
-        .filter(
-            AIUsageLog.tenant_id == tenant_id,
-            AIUsageLog.created_at >= month_start,
-        )
-        .scalar()
-    )
-
-    return CreditBalance(
-        credit_balance=Decimal(str(config.credit_balance)),
-        billing_mode=str(config.billing_mode),
-        packages_active=len(active_packages),
-        package_credits_remaining=package_credits,
-        monthly_spent=Decimal(str(monthly_cost)),
-        monthly_spending_limit=(
-            Decimal(str(config.monthly_spending_limit))
-            if config.monthly_spending_limit is not None
-            else None
-        ),
-    )
+    return get_ai_credit_balance_service().get_credit_balance(tenant_id, db)
 
 
 def check_ai_credits(
