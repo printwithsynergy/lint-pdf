@@ -43,7 +43,6 @@ try:
         admin,
         ai_presets,
         branding,
-        trial,
         webhooks,
     )
 
@@ -54,8 +53,7 @@ except ImportError as _saas_import_exc:
     _SAAS_IMPORT_ERROR = str(_saas_import_exc)
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
-    admin = ai_presets = branding = None  # type: ignore[assignment]
-    trial = webhooks = None  # type: ignore[assignment]
+    admin = ai_presets = branding = webhooks = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -386,8 +384,8 @@ def create_app() -> FastAPI:
         # admin_health, admin_warming, edge: extracted to lintpdf_saas in W5e
         # (PR thinkneverland/lint-pdf-saas#14). The SaaS wrapper at
         # lintpdf_saas.api.app:create_app owns those registrations now.
-    if not control_plane_only and saas_mode:
-        app.include_router(trial.router)
+    # trial: extracted to lintpdf_saas in W5k
+    # (PR thinkneverland/lint-pdf-saas#20).
     if not control_plane_only:
         app.include_router(viewer.router)
     if saas_mode:
