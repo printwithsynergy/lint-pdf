@@ -164,9 +164,14 @@ def monthly_usage_cents(
     """Sum the tenant's ``ai_usage_logs.cost_cents`` for the current month.
 
     Failures fall back to ``0`` (fail-open: the cap doesn't block
-    work when the metering query trips a DB hiccup).
+    work when the metering query trips a DB hiccup, or when the
+    ``AIUsageLog`` model has been extracted to ``lintpdf_saas`` and
+    the engine is running standalone without it installed).
     """
-    from lintpdf.api.models import AIUsageLog
+    try:
+        from lintpdf.api.models import AIUsageLog  # type: ignore[attr-defined]
+    except ImportError:
+        return 0
 
     start, end = _month_window(now=now)
     try:
