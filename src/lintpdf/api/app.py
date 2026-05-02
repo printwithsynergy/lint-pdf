@@ -41,17 +41,11 @@ from lintpdf.api.routes import (
 try:
     from lintpdf.api.routes import (  # type: ignore[no-redef]
         admin,
-        ai_config,
-        ai_credits,
-        ai_generate,
-        ai_interpret,
         ai_presets,
-        ai_usage,
         approvals,
         brand_specs,
         branding,
         endpoints,
-        file_packs,
         import_mappings,
         toggles,
         trial,
@@ -67,11 +61,9 @@ except ImportError as _saas_import_exc:
     _SAAS_IMPORT_ERROR = str(_saas_import_exc)
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
-    admin = None  # type: ignore[assignment]
-    ai_config = ai_credits = ai_generate = ai_interpret = None  # type: ignore[assignment]
-    ai_presets = ai_usage = None  # type: ignore[assignment]
+    admin = ai_presets = None  # type: ignore[assignment]
     approvals = brand_specs = branding = None  # type: ignore[assignment]
-    endpoints = file_packs = None  # type: ignore[assignment]
+    endpoints = None  # type: ignore[assignment]
     import_mappings = toggles = trial = None  # type: ignore[assignment]
     usage = webhooks = workflows = None  # type: ignore[assignment]
 
@@ -419,24 +411,18 @@ def create_app() -> FastAPI:
         if saas_mode:
             app.include_router(import_mappings.router)
 
-    # AI feature routers — admin-visible, skipped in control-plane-only.
+    # ai_config, ai_credits, ai_usage, ai_generate, ai_interpret
+    # (+ legacy /api/v1/captains-log alias), file_packs, and
+    # stripe_webhooks were extracted to lintpdf_saas in W5d-W5f
+    # (PRs thinkneverland/lint-pdf-saas#13 and #15). The SaaS wrapper
+    # at lintpdf_saas.api.app:create_app owns those registrations now.
+    # ai_presets stays in OSS for now — jobs.py imports its
+    # _AI_PRESETS dict directly during preset-slug expansion. A
+    # follow-up refactor will move that data to a shared engine
+    # location, then ai_presets can be extracted too.
     if not control_plane_only:
         if saas_mode:
-            app.include_router(ai_config.router)
-            app.include_router(ai_credits.router)
-            app.include_router(ai_usage.router)
             app.include_router(ai_presets.router)
-            app.include_router(ai_generate.router)
-            app.include_router(ai_interpret.router)
-            # Legacy /api/v1/captains-log/* prefix kept as a deprecated alias so
-            # existing integrations keep working after the rebrand. Hidden from
-            # the public OpenAPI schema.
-            app.include_router(ai_interpret.legacy_router)
-            # Metered-resource counterparts to the AI credit endpoints.
-            app.include_router(file_packs.router)
-            # stripe_webhooks was extracted to lintpdf_saas in W5d
-            # (PR thinkneverland/lint-pdf-saas#13). The SaaS wrapper at
-            # lintpdf_saas.api.app:create_app owns the registration now.
 
         # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
