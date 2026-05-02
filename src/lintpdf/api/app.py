@@ -459,14 +459,10 @@ def create_app() -> FastAPI:
         if saas_mode:
             app.include_router(downloads.router)
 
-    # Dev auth (impersonation) — only when explicitly enabled
-    from lintpdf.api.config import get_settings
-
-    if get_settings().dev_auth_enabled:
-        from lintpdf.api.routes import dev_auth
-
-        app.include_router(dev_auth.router)
-        logger.warning("DEV AUTH ENABLED — /api/v1/dev/* routes are active.")
+    # Dev auth was extracted to ``lintpdf_saas.api.routes.dev_auth`` in
+    # W5c (PR thinkneverland/lint-pdf-saas#12). The SaaS wrapper at
+    # ``lintpdf_saas.api.app:create_app`` is responsible for mounting
+    # it now, gated on the same ``LINTPDF_DEV_AUTH_ENABLED`` setting.
 
     # Tenant-scoped OpenAPI slice. The full ``/openapi.json`` includes
     # /admin/* and /api/v1/trial/* -- routes customers can't call and
