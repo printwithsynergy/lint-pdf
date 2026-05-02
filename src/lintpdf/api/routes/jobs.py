@@ -789,14 +789,20 @@ async def submit_job(  # skipcq: PY-R1000
     preset_features: list[str] | None = None
     preset_categories: list[str] | None = None
     if ai_preset:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        # Read from the engine-stay ``lintpdf.ai.presets`` package so
+        # the job submission path doesn't depend on the SaaS-only
+        # ``ai_presets`` route module (which moves to lintpdf_saas in
+        # W5m). Both modules share the same JSON-backed registry under
+        # ``lintpdf/ai/presets/builtin/``.
+        from lintpdf.ai.presets import get_preset
 
-        if ai_preset not in _AI_PRESETS:
+        preset_data = get_preset(ai_preset)
+        if preset_data is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"AI preset '{ai_preset}' not found",
             )
-        raw_features = _AI_PRESETS[ai_preset].get("features", [])
+        raw_features = preset_data.get("features", [])
         # ``full-ai-scan`` uses the sentinel ``["all"]`` which the
         # registry reads as categories=["all"] → run everything.
         if raw_features == ["all"]:
