@@ -58,7 +58,6 @@ try:
         endpoints,
         file_packs,
         import_mappings,
-        stripe_webhooks,
         toggles,
         trial,
         usage,
@@ -79,7 +78,7 @@ except ImportError as _saas_import_exc:
     ai_presets = ai_usage = None  # type: ignore[assignment]
     approvals = brand_specs = branding = color_config = None  # type: ignore[assignment]
     downloads = edge = endpoints = file_packs = None  # type: ignore[assignment]
-    import_mappings = stripe_webhooks = toggles = trial = None  # type: ignore[assignment]
+    import_mappings = toggles = trial = None  # type: ignore[assignment]
     usage = user_ai_access = webhooks = workflows = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
@@ -442,9 +441,9 @@ def create_app() -> FastAPI:
             app.include_router(ai_interpret.legacy_router)
             # Metered-resource counterparts to the AI credit endpoints.
             app.include_router(file_packs.router)
-            # Stripe webhook endpoint handles metered-resource fulfillment
-            # (checkout.session.completed) and plan-monthly grants (invoice.paid).
-            app.include_router(stripe_webhooks.router)
+            # stripe_webhooks was extracted to lintpdf_saas in W5d
+            # (PR thinkneverland/lint-pdf-saas#13). The SaaS wrapper at
+            # lintpdf_saas.api.app:create_app owns the registration now.
 
         # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
