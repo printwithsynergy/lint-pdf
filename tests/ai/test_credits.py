@@ -16,6 +16,7 @@ from lintpdf.services.ai_credit_balance import (
     set_ai_credit_balance_service,
 )
 from lintpdf.services.ai_credit_check import set_ai_credit_check_service
+from lintpdf.services.ai_credit_deduction import set_ai_credit_deduction_service
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -133,13 +134,91 @@ class _SaaSStyleCreditCheckService:
                 )
 
 
+class _SaaSStyleCreditDeductionService:
+    """Test-side deduction service mirroring the SaaS write pattern.
+
+    Drains ``TenantAICreditPackage`` rows in oldest-first order,
+    computes overage at the configured rate, writes the
+    ``AIUsageLog`` row, and fires the threshold webhook. Same query
+    chain the previous in-tree ``deduct_credits`` exercised.
+    """
+
+    def deduct_credits(
+        self,
+        tenant_id,  # type: ignore[no-untyped-def]
+        job_id,
+        category,
+        feature,
+        credit_amount,
+        processing_time_ms,
+        result_summary,
+        db,
+    ) -> None:
+        from lintpdf.api.models import (
+            AIBillingMode,
+            AIUsageLog,
+            TenantAIConfig,
+            TenantAICreditPackage,
+        )
+
+        config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
+        if config is None:
+            return
+
+        cost = Decimal("0")
+
+        if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
+            now = datetime.now(timezone.utc)
+            packages = (
+                db.query(TenantAICreditPackage)
+                .filter(
+                    TenantAICreditPackage.tenant_id == tenant_id,
+                    TenantAICreditPackage.kind == "credits",
+                    TenantAICreditPackage.credits_remaining > 0,
+                )
+                .order_by(TenantAICreditPackage.purchased_at.asc())
+                .all()
+            )
+
+            remaining = credit_amount
+            for pkg in packages:
+                if pkg.expires_at and pkg.expires_at <= now:
+                    continue
+                if remaining <= 0:
+                    break
+                deduct = min(remaining, pkg.credits_remaining)
+                pkg.credits_remaining -= deduct
+                remaining -= deduct
+
+            if remaining > 0:
+                cost = Decimal(str(remaining)) * Decimal(str(config.overage_rate))
+        else:
+            cost = Decimal(str(credit_amount)) * Decimal(str(config.overage_rate))
+
+        db.add(
+            AIUsageLog(
+                tenant_id=tenant_id,
+                job_id=job_id,
+                category=category,
+                feature=feature,
+                credits_consumed=credit_amount,
+                cost=cost,
+                processing_time_ms=processing_time_ms,
+                result_summary=result_summary,
+            )
+        )
+        db.flush()
+
+
 @pytest.fixture(autouse=True)
 def _install_credit_balance_service() -> Generator[None, None, None]:
     set_ai_credit_balance_service(_SaaSStyleCreditBalanceService())
     set_ai_credit_check_service(_SaaSStyleCreditCheckService())
+    set_ai_credit_deduction_service(_SaaSStyleCreditDeductionService())
     yield
     set_ai_credit_balance_service(None)
     set_ai_credit_check_service(None)
+    set_ai_credit_deduction_service(None)
 
 
 class TestGetCreditBalance:
