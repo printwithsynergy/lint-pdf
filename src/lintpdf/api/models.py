@@ -570,28 +570,11 @@ class SystemProfile(Base):
     )
 
 
-class PlanLimitOverride(Base):
-    """Operator-editable defaults applied to every tenant on a plan.
-
-    Sits between hardcoded ``PLAN_LIMITS`` (the baseline) and
-    ``Tenant.entitlement_overrides`` (the per-tenant delta). Ops flip
-    an entry here to shift ceilings globally — e.g. "every Scale
-    tenant now gets ``ai_features=['audit']``" — without a code-ship
-    cycle. Per-tenant overrides still win; see
-    :func:`lintpdf.tenants.entitlements.resolve_entitlements` for the
-    three-layer merge order.
-    """
-
-    __tablename__ = "plan_limit_overrides"
-
-    plan: Mapped[str] = mapped_column(String(32), primary_key=True)
-    overrides: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
+# PlanLimitOverride was extracted to lintpdf_saas.api.models in W6c-1
+# (PRs thinkneverland/lint-pdf-saas#25 + thinkneverland/lint-pdf#PR-B).
+# The plan_limit_overrides table remains in the shared Postgres database;
+# only the Python class definition moves. Engine code reaches it through
+# the PlanOverridesService Protocol seam (no direct import).
 
 
 class ApiKey(Base):
