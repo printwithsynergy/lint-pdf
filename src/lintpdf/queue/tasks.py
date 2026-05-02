@@ -589,13 +589,16 @@ def run_preflight(
                     ai_data["features"] = ai_features
                 profile = profile.model_copy(update={"ai": AIFeatureConfig(**ai_data)})
 
-            # Load AI config if AI is enabled in the profile
+            # Load AI config if AI is enabled in the profile. Dispatches
+            # through the AIConfigService Protocol (W6c-2f) — OSS default
+            # returns None; SaaS installs an implementation backed by
+            # TenantAIConfig at boot.
             ai_config = None
             if profile.ai and profile.ai.enabled:
                 try:
-                    from lintpdf.ai.access import get_ai_config
+                    from lintpdf.services.ai_config import get_ai_config_service
 
-                    ai_config = get_ai_config(job.tenant_id, db)
+                    ai_config = get_ai_config_service().get_config(job.tenant_id, db)
                 except Exception:
                     logger.debug("Could not load AI config for tenant %s", job.tenant_id)
 
