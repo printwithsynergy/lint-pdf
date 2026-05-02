@@ -41,8 +41,6 @@ from lintpdf.api.routes import (
 try:
     from lintpdf.api.routes import (  # type: ignore[no-redef]
         admin,
-        admin_health,
-        admin_warming,
         ai_config,
         ai_credits,
         ai_generate,
@@ -52,16 +50,12 @@ try:
         approvals,
         brand_specs,
         branding,
-        color_config,
-        downloads,
-        edge,
         endpoints,
         file_packs,
         import_mappings,
         toggles,
         trial,
         usage,
-        user_ai_access,
         webhooks,
         workflows,
     )
@@ -73,13 +67,13 @@ except ImportError as _saas_import_exc:
     _SAAS_IMPORT_ERROR = str(_saas_import_exc)
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
-    admin = admin_health = admin_warming = None  # type: ignore[assignment]
+    admin = None  # type: ignore[assignment]
     ai_config = ai_credits = ai_generate = ai_interpret = None  # type: ignore[assignment]
     ai_presets = ai_usage = None  # type: ignore[assignment]
-    approvals = brand_specs = branding = color_config = None  # type: ignore[assignment]
-    downloads = edge = endpoints = file_packs = None  # type: ignore[assignment]
+    approvals = brand_specs = branding = None  # type: ignore[assignment]
+    endpoints = file_packs = None  # type: ignore[assignment]
     import_mappings = toggles = trial = None  # type: ignore[assignment]
-    usage = user_ai_access = webhooks = workflows = None  # type: ignore[assignment]
+    usage = webhooks = workflows = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -406,12 +400,11 @@ def create_app() -> FastAPI:
         app.include_router(reports.router)
     if saas_mode:
         app.include_router(admin.router)
-        app.include_router(admin_health.router)
-        app.include_router(admin_warming.router)
+        # admin_health, admin_warming, edge: extracted to lintpdf_saas in W5e
+        # (PR thinkneverland/lint-pdf-saas#14). The SaaS wrapper at
+        # lintpdf_saas.api.app:create_app owns those registrations now.
     if not control_plane_only and saas_mode:
         app.include_router(trial.router)
-    if saas_mode:
-        app.include_router(edge.router)
     if not control_plane_only:
         app.include_router(viewer.router)
     if saas_mode:
@@ -448,15 +441,14 @@ def create_app() -> FastAPI:
         # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
 
-        # Custom endpoints, color config & user AI access routers
+        # Custom endpoints router. (color_config and user_ai_access
+        # were extracted to lintpdf_saas in W5e — PR
+        # thinkneverland/lint-pdf-saas#14 — and are mounted by the
+        # SaaS wrapper now.)
         if saas_mode:
             app.include_router(endpoints.router)
-            app.include_router(color_config.router, prefix="/api/v1")
-            app.include_router(user_ai_access.router, prefix="/api/v1")
 
-        # Desktop app downloads (R2-backed)
-        if saas_mode:
-            app.include_router(downloads.router)
+        # Desktop app downloads: extracted to lintpdf_saas in W5e.
 
     # Dev auth was extracted to ``lintpdf_saas.api.routes.dev_auth`` in
     # W5c (PR thinkneverland/lint-pdf-saas#12). The SaaS wrapper at
