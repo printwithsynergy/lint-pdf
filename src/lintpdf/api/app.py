@@ -40,10 +40,7 @@ from lintpdf.api.routes import (
 # modules to be physically absent.
 try:
     from lintpdf.api.routes import (  # type: ignore[no-redef]
-        admin,
         ai_presets,
-        branding,
-        webhooks,
     )
 
     _SAAS_ROUTES_AVAILABLE = True
@@ -53,7 +50,7 @@ except ImportError as _saas_import_exc:
     _SAAS_IMPORT_ERROR = str(_saas_import_exc)
     # Bind names to None so the conditional include_router calls below
     # short-circuit cleanly via the gate-on-availability pattern.
-    admin = ai_presets = branding = webhooks = None  # type: ignore[assignment]
+    ai_presets = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -373,35 +370,16 @@ def create_app() -> FastAPI:
         app.include_router(decisions.router)  # V-05 decisions audit
         app.include_router(icc_profiles.router)  # substrate ICC profile (EPM-A1)
     app.include_router(profiles.router)
-    if saas_mode:
-        app.include_router(webhooks.router)
-        # usage: extracted to lintpdf_saas in W5g
-        # (PR thinkneverland/lint-pdf-saas#16).
+    # webhooks, admin, branding (with their cross-deps) extracted to
+    # lintpdf_saas in W5l (PR thinkneverland/lint-pdf-saas#21). usage,
+    # admin_health, admin_warming, edge, brand_specs, trial all
+    # extracted in earlier W5 PRs.
     if not control_plane_only:
         app.include_router(reports.router)
-    if saas_mode:
-        app.include_router(admin.router)
-        # admin_health, admin_warming, edge: extracted to lintpdf_saas in W5e
-        # (PR thinkneverland/lint-pdf-saas#14). The SaaS wrapper at
-        # lintpdf_saas.api.app:create_app owns those registrations now.
-    # trial: extracted to lintpdf_saas in W5k
-    # (PR thinkneverland/lint-pdf-saas#20).
-    if not control_plane_only:
         app.include_router(viewer.router)
-    if saas_mode:
-        # brand_specs: extracted to lintpdf_saas in W5h
-        # (PR thinkneverland/lint-pdf-saas#17). branding stays in
-        # OSS for now — admin.py and test_custom_domain_validation.py
-        # import EDGE_HOSTNAME + validate_custom_domain from it; a
-        # follow-up will move those helpers to a shared engine
-        # location, then branding can be extracted cleanly.
-        app.include_router(branding.router)
-        # toggles + workflows: extracted to lintpdf_saas in W5i
-        # (PR thinkneverland/lint-pdf-saas#18). The SaaS wrapper at
-        # lintpdf_saas.api.app:create_app owns those registrations now.
     if not control_plane_only:
-        # approvals + import_mappings: extracted to lintpdf_saas in W5j
-        # (PR thinkneverland/lint-pdf-saas#19).
+        # toggles + workflows + approvals + import_mappings: extracted
+        # to lintpdf_saas in W5i (#18) and W5j (#19).
         app.include_router(annotations.router, prefix="/api/v1/viewer")
 
     # ai_config, ai_credits, ai_usage, ai_generate, ai_interpret

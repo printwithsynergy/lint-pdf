@@ -33,15 +33,13 @@ _OSS_ALWAYS_ROUTES = (
 )
 
 # SaaS-only routes that must NOT mount when SAAS_MODE=false (or when
-# the SaaS-only modules aren't importable). Use prefixes from routers
-# that are still physically in OSS (admin, trial) — pre-W5-physical
-# extractions like admin_health were moved to lint-pdf-saas, so
-# checking those prefixes from inside a unit test on the OSS package
-# would always fail.
-_SAAS_ONLY_ROUTES = (
-    "/api/v1/admin",
-    "/api/v1/trial",
-)
+# the SaaS-only modules aren't importable). After the W5d-W5l
+# extractions, ai_presets is the only SaaS-tagged route still
+# physically in OSS — kept here because jobs.py imports its
+# _AI_PRESETS dict directly. Use it as the canary until that data
+# moves to a shared engine-stay location and ai_presets joins the
+# rest in lintpdf_saas.
+_SAAS_ONLY_ROUTES = ("/api/v1/ai/presets",)
 
 
 @pytest.fixture
