@@ -9,17 +9,45 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import func, select
 
-from lintpdf.ai.cost_cap import CAP_TOGGLE_ID, CostCapExceededError
+from lintpdf.ai.cost_cap import CAP_TOGGLE_ID, CostCapExceededError, _month_window
 from lintpdf.ai.explain import explain_finding
+from lintpdf.services.ai_monthly_usage import set_ai_monthly_usage_service
 from lintpdf.tenants.toggle_models import (
     ToggleOverride,
     ToggleScope,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
+
+
+class _AIUsageLogMonthlyUsageService:
+    """Test-side AIUsageLog-backed implementation. Mirrors the SaaS service."""
+
+    def monthly_usage_cents(self, tenant_id, db, *, now=None):  # type: ignore[no-untyped-def]
+        from lintpdf.api.models import AIUsageLog
+
+        start, end = _month_window(now=now)
+        total = db.execute(
+            select(func.coalesce(func.sum(AIUsageLog.cost_cents), 0)).where(
+                AIUsageLog.tenant_id == tenant_id,
+                AIUsageLog.created_at >= start,
+                AIUsageLog.created_at < end,
+            )
+        ).scalar_one()
+        return int(total or 0)
+
+
+@pytest.fixture(autouse=True)
+def _install_usage_service() -> Generator[None, None, None]:
+    set_ai_monthly_usage_service(_AIUsageLogMonthlyUsageService())
+    yield
+    set_ai_monthly_usage_service(None)
 
 
 def _make_finding(db, *, tenant_id, job_id=None):
