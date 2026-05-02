@@ -119,38 +119,14 @@ def _plan_tier_overrides(plan: TenantPlan) -> dict[str, Any]:
     if not os.environ.get("DATABASE_URL") and not os.environ.get("LINTPDF_DATABASE_URL"):
         return {}
 
-    # Deferred import so this module doesn't pull the whole API stack
-    # when only the dataclass is needed (tests, Celery boot). Wrapped in
-    # try/except so the resolver tolerates ``PlanLimitOverride`` being
-    # absent from the OSS package — the model moves to lintpdf_saas in
-    # W6, after which OSS-only deploys without lintpdf_saas installed
-    # fall through to the hardcoded plan defaults instead of crashing.
-    from lintpdf.api.database import get_db_session
+    # W6c: dispatch through the PlanOverridesService factory so the
+    # SaaS shell can inject its own implementation that reads from
+    # lintpdf_saas.api.models.PlanLimitOverride. The default service
+    # reads the model from lintpdf.api.models if importable, else
+    # returns {} (sensible fallback to hardcoded plan defaults).
+    from lintpdf.services.plan_overrides import get_plan_overrides_service
 
-    try:
-        from lintpdf.api.models import PlanLimitOverride  # type: ignore[attr-defined]
-    except ImportError:
-        return {}
-
-    try:
-        session = get_db_session()
-    except Exception:
-        return {}
-    import contextlib
-
-    try:
-        row = session.query(PlanLimitOverride).filter(PlanLimitOverride.plan == plan.value).first()
-        if row is None or not row.overrides:
-            return {}
-        return dict(row.overrides)
-    except Exception:
-        # A missing table (pre-035) or transient DB flap just means
-        # "no plan-tier overrides yet" — fall back to hardcoded
-        # PLAN_LIMITS without failing the request.
-        return {}
-    finally:
-        with contextlib.suppress(Exception):
-            session.close()
+    return get_plan_overrides_service().resolve_for_plan(plan.value)
 
 
 def resolve_entitlements(tenant: Any) -> TenantEntitlements:
