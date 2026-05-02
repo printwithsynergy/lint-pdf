@@ -41,10 +41,10 @@ class DefaultAIMonthlyUsageService:
 
     def monthly_usage_cents(
         self,
-        tenant_id: uuid.UUID,  # noqa: ARG002
-        db: Session,  # noqa: ARG002
+        tenant_id: uuid.UUID,
+        db: Session,
         *,
-        now: datetime | None = None,  # noqa: ARG002
+        now: datetime | None = None,
     ) -> int:
         return 0
 
