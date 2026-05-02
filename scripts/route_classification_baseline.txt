@@ -5,4 +5,4 @@
 # Regenerate with `python scripts/check_route_classification.py
 # --update-baseline` after intentionally tagging a new route or
 # re-classifying.
-5
+4

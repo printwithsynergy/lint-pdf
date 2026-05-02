@@ -184,7 +184,7 @@ class TestSubmitJobRateLimitHeaders:
     def test_rate_headers_with_redis(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """When Redis is available, rate limit headers should be present."""
         from lintpdf.api.middleware import set_rate_limiter
-        from tests.api.test_usage import FakeRedis
+        from tests.api._fake_redis import FakeRedis
 
         fake = FakeRedis()
         set_rate_limiter(fake)

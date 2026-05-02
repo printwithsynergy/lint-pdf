@@ -45,11 +45,9 @@ try:
         approvals,
         brand_specs,
         branding,
-        endpoints,
         import_mappings,
         toggles,
         trial,
-        usage,
         webhooks,
         workflows,
     )
@@ -63,9 +61,8 @@ except ImportError as _saas_import_exc:
     # short-circuit cleanly via the gate-on-availability pattern.
     admin = ai_presets = None  # type: ignore[assignment]
     approvals = brand_specs = branding = None  # type: ignore[assignment]
-    endpoints = None  # type: ignore[assignment]
     import_mappings = toggles = trial = None  # type: ignore[assignment]
-    usage = webhooks = workflows = None  # type: ignore[assignment]
+    webhooks = workflows = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -387,7 +384,8 @@ def create_app() -> FastAPI:
     app.include_router(profiles.router)
     if saas_mode:
         app.include_router(webhooks.router)
-        app.include_router(usage.router)
+        # usage: extracted to lintpdf_saas in W5g
+        # (PR thinkneverland/lint-pdf-saas#16).
     if not control_plane_only:
         app.include_router(reports.router)
     if saas_mode:
@@ -427,14 +425,9 @@ def create_app() -> FastAPI:
         # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
 
-        # Custom endpoints router. (color_config and user_ai_access
-        # were extracted to lintpdf_saas in W5e — PR
-        # thinkneverland/lint-pdf-saas#14 — and are mounted by the
-        # SaaS wrapper now.)
-        if saas_mode:
-            app.include_router(endpoints.router)
-
-        # Desktop app downloads: extracted to lintpdf_saas in W5e.
+        # endpoints: extracted to lintpdf_saas in W5g
+        # (PR thinkneverland/lint-pdf-saas#16). color_config,
+        # user_ai_access, downloads were extracted in W5e.
 
     # Dev auth was extracted to ``lintpdf_saas.api.routes.dev_auth`` in
     # W5c (PR thinkneverland/lint-pdf-saas#12). The SaaS wrapper at
