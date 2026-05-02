@@ -39,6 +39,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.cost_cap import CostCapExceededError, check_cap_or_raise
+from lintpdf.services.ai_usage_recorder import get_ai_usage_recorder_service
 
 if TYPE_CHECKING:
     import uuid as uuid_mod
@@ -204,43 +205,23 @@ def _record_usage_inline(
     model: str,
     usage: object,
 ) -> None:
-    """Best-effort cost-cents bookkeeping written into the caller's session.
+    """Best-effort cost-cents bookkeeping via :class:`AIUsageRecorderService`.
 
-    Mirrors :func:`lintpdf.audit.metering.record_usage` but reuses the
-    request-scoped session instead of opening a fresh ``SessionLocal``,
-    which lets the explain hot path stay snappy in unit tests that
-    haven't called ``init_db``.
+    OSS engine ships a no-op default (no AI billing ledger);
+    ``lintpdf_saas`` installs an ``AIUsageLog``-backed implementation
+    at boot. Never raises — service errors are swallowed so the
+    explain hot path can't be derailed by a metering hiccup.
     """
     try:
-        from lintpdf.api.models import AIUsageLog
-        from lintpdf.audit.metering import compute_cost_cents
-
-        cost = compute_cost_cents(
+        get_ai_usage_recorder_service().record_usage(
+            db,
+            tenant_id=tenant_id,
+            job_id=job_id,
             model=model,
-            input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
-            output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
-            cache_read_tokens=int(getattr(usage, "cache_read_input_tokens", 0) or 0),
-            cache_write_tokens=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
+            usage=usage,
+            category="explain",
+            feature="explain",
         )
-        db.add(
-            AIUsageLog(
-                tenant_id=tenant_id,
-                job_id=job_id,
-                category="explain",
-                feature="explain",
-                credits_consumed=cost,
-                cost=cost / 100.0,
-                processing_time_ms=0,
-                result_summary=None,
-                model=model,
-                input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
-                output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
-                cache_read_tokens=int(getattr(usage, "cache_read_input_tokens", 0) or 0),
-                cache_write_tokens=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
-                cost_cents=cost,
-            )
-        )
-        db.flush()
     except Exception:
         logger.warning(
             "explain_finding: metering write failed (cap math will be slightly off)",
