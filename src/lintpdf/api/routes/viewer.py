@@ -2558,11 +2558,10 @@ async def public_state(
     ``annotations`` (default = all three).
     """
     from lintpdf.api.models import (
-        ApprovalChain,
-        ApprovalStep,
         ViewerAnnotation,
         ViewerAnnotationComment,
     )
+    from lintpdf.services.approvals import get_approvals_service
 
     allowed = {"approval_chain", "verdict", "annotations"}
     if include is None or not include.strip():
@@ -2621,35 +2620,13 @@ async def public_state(
         }
 
     if "approval_chain" in wanted:
-        chain = db.query(ApprovalChain).filter(ApprovalChain.job_id == job.id).first()
-        if chain is None:
-            out["approval_chain"] = None
-        else:
-            steps = (
-                db.query(ApprovalStep)
-                .filter(ApprovalStep.chain_id == chain.id)
-                .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
-                .all()
-            )
-            out["approval_chain"] = {
-                "id": str(chain.id),
-                "template_id": str(chain.template_id) if chain.template_id else None,
-                "status": chain.status,
-                "current_step": chain.current_step,
-                "step_history": [
-                    {
-                        "step_index": s.step_index,
-                        "step_name": s.step_name,
-                        "approver_email": s.approver_email,
-                        "decision": s.decision,
-                        "notes": s.notes,
-                        "decided_at": s.decided_at.isoformat() if s.decided_at else None,
-                    }
-                    for s in steps
-                ],
-                "created_at": chain.created_at.isoformat() if chain.created_at else None,
-                "completed_at": chain.completed_at.isoformat() if chain.completed_at else None,
-            }
+        # Dispatch through ApprovalsService — OSS default returns None;
+        # SaaS impl reads ApprovalChain + ApprovalStep. The Protocol
+        # returns a JobStateApprovalChain Pydantic model; we serialize
+        # to a JSON-compatible dict here so the viewer payload matches
+        # the historical wire shape.
+        chain_state = get_approvals_service().get_approval_chain_state(job.id, job.tenant_id, db)
+        out["approval_chain"] = chain_state.model_dump(mode="json") if chain_state else None
 
     if "annotations" in wanted:
         ann_rows = (
