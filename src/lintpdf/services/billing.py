@@ -32,8 +32,7 @@ class BillingService(Protocol):
     a unit or raise a 402-equivalent HTTPException. The return type
     is intentionally ``Any`` at the Protocol level so the Protocol
     stays decoupled from the ``FileQuotaBalance`` dataclass that
-    lives inside ``lintpdf.billing.file_quota`` (a SaaS-side module
-    that moves to ``lintpdf_saas`` in a later PR). Concrete
+    lives inside ``lintpdf_saas.billing.file_quota``. Concrete
     implementations return the SaaS-flavoured balance object.
     """
 
