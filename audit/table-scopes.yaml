@@ -1,0 +1,74 @@
+# Table-scope classification for the engine ↔ SaaS split (W7).
+#
+# Single source of truth for which Postgres tables are owned by the
+# OSS engine vs the SaaS shell. Used by:
+#
+# - ``scripts/check_migration_scope.py`` — CI tripwire that fails if a
+#   new alembic migration touches tables across scopes.
+# - The future alembic split: engine alembic stream owns ``engine``
+#   tables; SaaS alembic stream owns ``saas`` tables.
+#
+# Conventions:
+#
+# - ``engine`` — table has an ORM model on a ``lintpdf.*`` Base.
+#   Schema changes belong in OSS alembic (``thinkneverland/lint-pdf``).
+# - ``saas`` — table has an ORM model on the ``lintpdf_saas.api.models.Base``.
+#   Schema changes belong in SaaS alembic (``thinkneverland/lint-pdf-saas``).
+# - ``orphan`` — table created by alembic history but no current ORM
+#   model on either side. Either deprecated, raw-SQL-only, or missed
+#   during the W6 extraction. Audit follow-up tracked separately.
+#
+# Tables NOT listed here will fail the tripwire — every new table must
+# be classified.
+
+engine:
+  # OSS lintpdf.api.models.Base — core preflight engine
+  - brand_profiles
+  - job_findings
+  - job_imported_reports
+  - jobs
+  - report_tokens
+  - system_profiles
+  - tenants
+  - viewer_annotation_comments
+  - viewer_annotations
+  - webhook_deliveries
+  - webhook_endpoints
+
+  # OSS lintpdf.tenants.toggle_models.Base — Phase 0.7 unified config
+  - workflows
+  - toggles
+  - toggle_overrides
+  - resolved_config_snapshots
+  - toggle_audit_log
+
+  # OSS lintpdf.decisions.models.Base — pre-flight decision audit
+  - lintpdf_decisions
+
+saas:
+  # lintpdf_saas.api.models.Base — SaaS-only billing / tenancy
+  - ai_usage_logs
+  - api_keys
+  - approval_chains
+  - approval_steps
+  - plan_limit_overrides
+  - share_link_visitors
+  - tenant_ai_configs
+  - tenant_ai_credit_packages
+  - tenant_color_configs
+  - trial_files
+  - trial_submissions
+  - user_ai_access
+
+orphan:
+  # Tables created by historical alembic migrations but no longer
+  # backed by an ORM model on either side. Treat as ``saas`` for new
+  # migrations (most predate the extraction and were SaaS-shaped) but
+  # keep a separate bucket so the audit follow-up is explicit.
+  - ai_audit_rerun_queue        # AI rerun queue — likely SaaS billing
+  - approval_chain_templates    # SaaS approval flows
+  - brand_specs                 # Branding spec catalog (SaaS-only feature)
+  - custom_endpoints            # Legacy 410-Gone shim — likely deprecated
+  - custom_profiles             # Legacy custom-profile system
+  - tenant_import_mappings      # SaaS feature
+  - waitlist_entries            # Marketing waitlist (SaaS only)
