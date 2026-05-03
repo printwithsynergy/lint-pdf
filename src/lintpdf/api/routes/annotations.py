@@ -8,7 +8,6 @@ record and an ``X-Visitor-Email`` header identifying the writer.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import os
 import uuid as uuid_mod
@@ -24,7 +23,6 @@ from lintpdf.api.database import get_db
 from lintpdf.api.models import (
     Job,
     ReportToken,
-    ShareLinkVisitor,
     Tenant,
     ViewerAnnotation,
     ViewerAnnotationComment,
@@ -461,41 +459,15 @@ def _resolve_token(token: str, db: Session) -> ReportToken:
 
 
 def _capture_visitor(token: str, email: str, request: Request, db: Session) -> None:
-    """Upsert a share-link visitor row so we have an audit trail.
+    """Dispatch through :class:`ShareLinkVisitorService`.
 
-    Hashes the client IP (do not store raw). A missing client address
-    (e.g. behind a proxy with no X-Forwarded-For handled upstream) is
-    fine — we still record the email.
+    OSS default no-ops + returns ``False`` (no audit-trail concept on
+    OSS-only deploys); SaaS impl upserts a ``share_link_visitors`` row
+    and returns ``True`` on first capture so the webhook fires once.
     """
-    ip = (request.client.host if request.client else "") or ""
-    ip_hash = hashlib.sha256(ip.encode()).hexdigest() if ip else None
-    ua = request.headers.get("user-agent", "")[:512] or None
+    from lintpdf.services.share_link_visitor import get_share_link_visitor_service
 
-    existing = (
-        db.query(ShareLinkVisitor)
-        .filter(
-            ShareLinkVisitor.share_token == token,
-            ShareLinkVisitor.visitor_email == email.lower(),
-        )
-        .first()
-    )
-    first_visit = existing is None
-    if existing is None:
-        db.add(
-            ShareLinkVisitor(
-                id=uuid_mod.uuid4(),
-                share_token=token,
-                visitor_email=email.lower(),
-                ip_hash=ip_hash,
-                user_agent=ua,
-            )
-        )
-    else:
-        existing.last_seen_at = datetime.now(timezone.utc)
-        if ip_hash:
-            existing.ip_hash = ip_hash
-        if ua:
-            existing.user_agent = ua
+    first_visit = get_share_link_visitor_service().capture(token, email, request, db)
 
     # Fire share_link.visited only on first touch per (token, email) pair.
     # Subsequent visits update last_seen_at but don't spam webhooks.
