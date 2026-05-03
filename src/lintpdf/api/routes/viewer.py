@@ -2337,7 +2337,9 @@ async def public_config(
     if job is None:
         raise HTTPException(status_code=404, detail="Token not found")
 
-    tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+    from lintpdf.services.tenant_context import get_tenant_context_service
+
+    tenant = get_tenant_context_service().load(record.tenant_id, db)
     if tenant is None:
         raise HTTPException(status_code=404, detail="Token not found")
 
@@ -2700,7 +2702,8 @@ async def public_share(
     import re as _re
 
     from lintpdf.api.config import get_settings
-    from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.api.models import BrandProfile
+    from lintpdf.services.tenant_context import get_tenant_context_service
 
     # Validate emails
     email_re = _re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -2714,7 +2717,7 @@ async def public_share(
     job, _ = _get_job_pdf_by_token(token, db)
 
     # Resolve branding
-    tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+    tenant = get_tenant_context_service().load(job.tenant_id, db)
     profile = None
     if tenant and tenant.default_brand_profile_id:
         profile = (
