@@ -32,11 +32,12 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     post-preflight hook wraps in a best-effort try/except so a
     bad audit never fails a preflight job that already succeeded.
     """
-    from lintpdf.api.models import JobFinding, Tenant
+    from lintpdf.api.models import JobFinding
     from lintpdf.api.storage import get_storage
+    from lintpdf.services.tenant_context import get_tenant_context_service
     from lintpdf.tenants.entitlements import resolve_entitlements
 
-    tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+    tenant = get_tenant_context_service().load(job.tenant_id, db)
     if tenant is None:
         return 0
     entitlements = resolve_entitlements(tenant)
@@ -220,13 +221,14 @@ def _auto_generate_reports(
     from datetime import datetime, timedelta, timezone
 
     from lintpdf.api.config import get_settings
-    from lintpdf.api.models import BrandProfile, JobFinding, ReportToken, Tenant
+    from lintpdf.api.models import BrandProfile, JobFinding, ReportToken
     from lintpdf.reports.service import (
         BrandingContext,
         ReportDetailLevel,
         ReportService,
         resolve_branding,
     )
+    from lintpdf.services.tenant_context import get_tenant_context_service
 
     settings = get_settings()
     service = ReportService(storage, db)
@@ -260,7 +262,7 @@ def _auto_generate_reports(
     # Resolve the effective branding from tenant defaults + per-job
     # overrides. Brokers rely on the anonymous path stripping both tenant
     # and LintPDF identity + sanitising PDF metadata.
-    tenant_obj = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+    tenant_obj = get_tenant_context_service().load(job.tenant_id, db)
 
     def _lookup_profile(profile_id: str) -> Any | None:
         try:
