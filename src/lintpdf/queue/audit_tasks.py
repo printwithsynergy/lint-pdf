@@ -65,9 +65,9 @@ def ocr_job_async(
             logger.info("ocr-async: job %s not found; dropping", job_id)
             return 0
 
-        from lintpdf.api.models import Tenant
+        from lintpdf.services.tenant_context import get_tenant_context_service
 
-        tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+        tenant = get_tenant_context_service().load(job.tenant_id, db)
         if tenant is None:
             return 0
         entitlements = resolve_entitlements(tenant)
