@@ -77,28 +77,23 @@ class BaseAIAnalyzer:
 
 
 def _reconstitute_ai_config(d: dict[str, Any] | None) -> Any:
-    """Turn a plain ai_config dict back into a TenantAIConfig (or AttrDict).
+    """Wrap a plain ai_config dict in an attribute-access shim.
 
-    Phase 1 keeps every legacy AI analyzer working by preserving the
-    object-with-attribute-access shape they expect. Phase 2 will strip
-    this layer once analyzers read ``ctx.config["ai_config"]`` directly.
+    Analyzers expect an object with attribute access
+    (``config.brand_palette``, ``config.enabled_categories``, etc.);
+    Celery serializes the AIConfigService output to a dict over the
+    wire so we re-wrap on the worker side. Phase 2 strips this layer
+    once analyzers read ``ctx.config["ai_config"]`` directly.
     """
 
     if d is None:
         return None
-    try:
-        from lintpdf.api.models import TenantAIConfig
 
-        return TenantAIConfig(**d)
-    except Exception:
-        # Pydantic validation failure or import failure (OSS host) — fall
-        # back to a thin attribute-access wrapper so legacy analyzers
-        # don't crash on a plain dict.
-        class _AttrDict:
-            def __init__(self, data: dict[str, Any]) -> None:
-                self._data = data
+    class _AttrDict:
+        def __init__(self, data: dict[str, Any]) -> None:
+            self._data = data
 
-            def __getattr__(self, item: str) -> Any:
-                return self._data.get(item)
+        def __getattr__(self, item: str) -> Any:
+            return self._data.get(item)
 
-        return _AttrDict(d)
+    return _AttrDict(d)

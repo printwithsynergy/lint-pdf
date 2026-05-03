@@ -468,29 +468,22 @@ class LegacyAIAdapter:
 
 
 def _reconstitute_tenant_ai_config(d: dict[str, Any] | None) -> Any:
-    """Best-effort: turn a plain dict into a TenantAIConfig if available.
+    """Wrap a plain ai_config dict in an attribute-access shim.
 
-    Phase 2 strips legacy analyzers' use of TenantAIConfig entirely and
-    has them read straight from the dict. Until then, the legacy code
-    path expects an object with attribute access.
+    Legacy analyzers expect ``config.foo`` / ``getattr(config, ...)``
+    access; the dict comes from the AIConfigService Protocol output
+    serialized over the Celery wire. Phase 2 strips this layer once
+    analyzers read straight from the dict.
     """
 
     if d is None:
         return None
-    try:
-        from lintpdf.api.models import TenantAIConfig
 
-        return TenantAIConfig(**d)
-    except Exception as exc:
-        logger.debug("TenantAIConfig reconstitution failed: %s", exc)
+    class _AttrDict:
+        def __init__(self, data: dict[str, Any]) -> None:
+            self._data = data
 
-        # Fallback: a thin attribute-access wrapper so legacy analyzers
-        # that do `ai_config.foo` don't crash on a plain dict.
-        class _AttrDict:
-            def __init__(self, data: dict[str, Any]) -> None:
-                self._data = data
+        def __getattr__(self, item: str) -> Any:
+            return self._data.get(item)
 
-            def __getattr__(self, item: str) -> Any:
-                return self._data.get(item)
-
-        return _AttrDict(d)
+    return _AttrDict(d)
