@@ -22,27 +22,52 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
 
+# Stub model identities for the MagicMock query chain. The tenant_id
+# fixture's mock_db_session returns the same chain regardless of the
+# class passed to ``db.query(...)``, so these don't need to be real
+# ORM classes — they're just opaque tokens. Replacing the SaaS-only
+# imports keeps the OSS test surface free of ``TenantAIConfig`` etc.
+class _StubTenantAIConfig:
+    pass
+
+
+class _StubTenantAICreditPackage:
+    pass
+
+
+class _StubAIUsageLog:
+    """Attribute-bag stub. Tests inspect attrs after ``db.add(...)``."""
+
+    cost = None  # class-level for the MagicMock query chain
+
+    def __init__(self, **kw):  # type: ignore[no-untyped-def]
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+
+# Mirror of the SaaS-only ``AIBillingMode`` enum — values match the
+# string literals stored in ``TenantAIConfig.billing_mode``.
+_BM_PAY_PER_USE = "pay_per_use"
+_BM_CREDIT_PACKAGE = "credit_package"
+
+
 class _SaaSStyleCreditBalanceService:
     """Test-side service mirroring the SaaS read pattern.
 
-    Walks ``TenantAIConfig`` / ``TenantAICreditPackage`` / ``AIUsageLog``
-    via the same MagicMock-friendly query chain the previous in-tree
-    ``get_credit_balance`` exercised.
+    Uses MagicMock-friendly query chain via stub model identities so
+    the OSS test file doesn't import the SaaS-only billing models.
     """
 
     def get_credit_balance(self, tenant_id, db) -> CreditBalance:  # type: ignore[no-untyped-def]
-        from lintpdf.api.models import (
-            AIBillingMode,
-            AIUsageLog,
-            TenantAIConfig,
-            TenantAICreditPackage,
+        config = (
+            db.query(_StubTenantAIConfig)
+            .filter(getattr(_StubTenantAIConfig, "tenant_id", None) == tenant_id)
+            .first()
         )
-
-        config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
         if config is None:
             return CreditBalance(
                 credit_balance=Decimal("0"),
-                billing_mode=AIBillingMode.PAY_PER_USE,
+                billing_mode=_BM_PAY_PER_USE,
                 packages_active=0,
                 package_credits_remaining=0,
                 monthly_spent=Decimal("0"),
@@ -51,24 +76,18 @@ class _SaaSStyleCreditBalanceService:
 
         now = datetime.now(timezone.utc)
         packages = (
-            db.query(TenantAICreditPackage)
+            db.query(_StubTenantAICreditPackage)
             .filter(
-                TenantAICreditPackage.tenant_id == tenant_id,
-                TenantAICreditPackage.kind == "credits",
-                TenantAICreditPackage.credits_remaining > 0,
+                getattr(_StubTenantAICreditPackage, "tenant_id", None) == tenant_id,
+                getattr(_StubTenantAICreditPackage, "kind", None) == "credits",
+                getattr(_StubTenantAICreditPackage, "credits_remaining", 0) > 0,
             )
             .all()
         )
         active_packages = [p for p in packages if p.expires_at is None or p.expires_at > now]
         package_credits = sum(p.credits_remaining for p in active_packages)
 
-        from sqlalchemy import func
-
-        monthly_cost = (
-            db.query(func.coalesce(func.sum(AIUsageLog.cost), 0))
-            .filter(AIUsageLog.tenant_id == tenant_id)
-            .scalar()
-        )
+        monthly_cost = db.query(_StubAIUsageLog).filter(_StubAIUsageLog.cost is not None).scalar()
 
         return CreditBalance(
             credit_balance=Decimal(str(config.credit_balance)),
@@ -97,16 +116,19 @@ class _SaaSStyleCreditCheckService:
         from fastapi import HTTPException, status
 
         from lintpdf.ai.credits import get_credit_balance
-        from lintpdf.api.models import AIBillingMode, TenantAIConfig
 
-        config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
+        config = (
+            db.query(_StubTenantAIConfig)
+            .filter(getattr(_StubTenantAIConfig, "tenant_id", None) == tenant_id)
+            .first()
+        )
         if config is None:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail="AI features not configured. No credits available.",
             )
 
-        if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
+        if config.billing_mode == _BM_CREDIT_PACKAGE:
             balance = get_credit_balance(tenant_id, db)
             if balance.package_credits_remaining < credits_needed:
                 raise HTTPException(
@@ -154,29 +176,26 @@ class _SaaSStyleCreditDeductionService:
         result_summary,
         db,
     ) -> None:
-        from lintpdf.api.models import (
-            AIBillingMode,
-            AIUsageLog,
-            TenantAIConfig,
-            TenantAICreditPackage,
+        config = (
+            db.query(_StubTenantAIConfig)
+            .filter(getattr(_StubTenantAIConfig, "tenant_id", None) == tenant_id)
+            .first()
         )
-
-        config = db.query(TenantAIConfig).filter(TenantAIConfig.tenant_id == tenant_id).first()
         if config is None:
             return
 
         cost = Decimal("0")
 
-        if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
+        if config.billing_mode == _BM_CREDIT_PACKAGE:
             now = datetime.now(timezone.utc)
             packages = (
-                db.query(TenantAICreditPackage)
+                db.query(_StubTenantAICreditPackage)
                 .filter(
-                    TenantAICreditPackage.tenant_id == tenant_id,
-                    TenantAICreditPackage.kind == "credits",
-                    TenantAICreditPackage.credits_remaining > 0,
+                    getattr(_StubTenantAICreditPackage, "tenant_id", None) == tenant_id,
+                    getattr(_StubTenantAICreditPackage, "kind", None) == "credits",
+                    getattr(_StubTenantAICreditPackage, "credits_remaining", 0) > 0,
                 )
-                .order_by(TenantAICreditPackage.purchased_at.asc())
+                .order_by(getattr(_StubTenantAICreditPackage, "purchased_at", None))
                 .all()
             )
 
@@ -196,7 +215,7 @@ class _SaaSStyleCreditDeductionService:
             cost = Decimal(str(credit_amount)) * Decimal(str(config.overage_rate))
 
         db.add(
-            AIUsageLog(
+            _StubAIUsageLog(
                 tenant_id=tenant_id,
                 job_id=job_id,
                 category=category,

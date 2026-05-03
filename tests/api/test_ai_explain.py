@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import func, select
 
 from lintpdf.ai.cost_cap import CAP_TOGGLE_ID, CostCapExceededError, _month_window
 from lintpdf.ai.explain import explain_finding
@@ -26,27 +25,28 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 
-class _AIUsageLogMonthlyUsageService:
-    """Test-side AIUsageLog-backed implementation. Mirrors the SaaS service."""
+# In-memory ledger keyed by tenant — the OSS engine has no AI billing
+# concept, so the test fixtures use a plain list rather than the
+# SaaS-only ``AIUsageLog`` ORM model.
+_USAGE_LEDGER: list[tuple[uuid.UUID, int, datetime]] = []
+
+
+class _FakeMonthlyUsageService:
+    """Test-side service that sums ``_USAGE_LEDGER`` by tenant + window."""
 
     def monthly_usage_cents(self, tenant_id, db, *, now=None):  # type: ignore[no-untyped-def]
-        from lintpdf.api.models import AIUsageLog
-
         start, end = _month_window(now=now)
-        total = db.execute(
-            select(func.coalesce(func.sum(AIUsageLog.cost_cents), 0)).where(
-                AIUsageLog.tenant_id == tenant_id,
-                AIUsageLog.created_at >= start,
-                AIUsageLog.created_at < end,
-            )
-        ).scalar_one()
-        return int(total or 0)
+        return sum(
+            cost for tid, cost, when in _USAGE_LEDGER if tid == tenant_id and start <= when < end
+        )
 
 
 @pytest.fixture(autouse=True)
 def _install_usage_service() -> Generator[None, None, None]:
-    set_ai_monthly_usage_service(_AIUsageLogMonthlyUsageService())
+    _USAGE_LEDGER.clear()
+    set_ai_monthly_usage_service(_FakeMonthlyUsageService())
     yield
+    _USAGE_LEDGER.clear()
     set_ai_monthly_usage_service(None)
 
 
@@ -102,22 +102,8 @@ def _enable_cap(db, tenant_id, *, monthly_cap_cents):
 
 
 def _add_usage(db, tenant_id, cost_cents):
-    from lintpdf.api.models import AIUsageLog
-
-    db.add(
-        AIUsageLog(
-            id=uuid.uuid4(),
-            tenant_id=tenant_id,
-            job_id=None,
-            category="explain",
-            feature="explain",
-            credits_consumed=cost_cents,
-            cost=cost_cents / 100.0,
-            processing_time_ms=0,
-            cost_cents=cost_cents,
-        )
-    )
-    db.commit()
+    """Append a record to the in-memory ledger the fake service sums."""
+    _USAGE_LEDGER.append((tenant_id, cost_cents, datetime.now(tz=timezone.utc)))
 
 
 # ---- service-level: cache hit doesn't call Claude ------------------------
