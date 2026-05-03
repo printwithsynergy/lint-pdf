@@ -45,8 +45,6 @@ from lintpdf.api.schemas import (
     JobStateAnnotationComment,
     JobStateAnnotationItem,
     JobStateAnnotations,
-    JobStateApprovalChain,
-    JobStateApprovalStep,
     JobStateReportInfo,
     JobStateResponse,
     JobStateVerdict,
@@ -1192,12 +1190,11 @@ async def get_job_state(
     """
     from lintpdf.api.config import get_settings as _get_settings
     from lintpdf.api.models import (
-        ApprovalChain,
-        ApprovalStep,
         ReportToken,
         ViewerAnnotation,
         ViewerAnnotationComment,
     )
+    from lintpdf.services.approvals import get_approvals_service
 
     wanted = _parse_include(include)
 
@@ -1245,40 +1242,11 @@ async def get_job_state(
             for t in tokens
         ]
 
-    # 3. Approval chain — reuse the existing serialiser so the shape
-    # matches the standalone /approval-chain endpoint exactly.
+    # 3. Approval chain — dispatch through ApprovalsService. OSS default
+    # returns ``None``; SaaS impl reads ApprovalChain + ApprovalStep and
+    # builds the JobStateApprovalChain response shape.
     if "approval_chain" in wanted:
-        chain = (
-            db.query(ApprovalChain)
-            .filter(ApprovalChain.job_id == uid, ApprovalChain.tenant_id == tenant.id)
-            .first()
-        )
-        if chain is not None:
-            steps = (
-                db.query(ApprovalStep)
-                .filter(ApprovalStep.chain_id == chain.id)
-                .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
-                .all()
-            )
-            state.approval_chain = JobStateApprovalChain(
-                id=str(chain.id),
-                template_id=str(chain.template_id) if chain.template_id else None,
-                status=chain.status,
-                current_step=chain.current_step,
-                step_history=[
-                    JobStateApprovalStep(
-                        step_index=s.step_index,
-                        step_name=s.step_name,
-                        approver_email=s.approver_email,
-                        decision=s.decision,
-                        notes=s.notes,
-                        decided_at=s.decided_at,
-                    )
-                    for s in steps
-                ],
-                created_at=chain.created_at,
-                completed_at=chain.completed_at,
-            )
+        state.approval_chain = get_approvals_service().get_approval_chain_state(uid, tenant.id, db)
 
     # 4. Verdict — same read as /viewer/jobs/{id}/verdict.
     if "verdict" in wanted:

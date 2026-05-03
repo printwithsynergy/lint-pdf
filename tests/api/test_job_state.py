@@ -33,7 +33,61 @@ from lintpdf.api.models import (
     ViewerAnnotation,
     ViewerAnnotationComment,
 )
+from lintpdf.api.schemas import JobStateApprovalChain, JobStateApprovalStep
+from lintpdf.services.approvals import set_approvals_service
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
+
+
+class _SaaSStyleApprovalsService:
+    """Test-side service mirroring the SaaS read pattern.
+
+    Reads ``ApprovalChain`` + ``ApprovalStep`` and assembles the
+    JobStateApprovalChain response — same query the previous in-tree
+    block in ``jobs.get_job_state`` ran.
+    """
+
+    def get_approval_chain_state(self, job_id, tenant_id, db):  # type: ignore[no-untyped-def]
+        chain = (
+            db.query(ApprovalChain)
+            .filter(ApprovalChain.job_id == job_id, ApprovalChain.tenant_id == tenant_id)
+            .first()
+        )
+        if chain is None:
+            return None
+
+        steps = (
+            db.query(ApprovalStep)
+            .filter(ApprovalStep.chain_id == chain.id)
+            .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
+            .all()
+        )
+        return JobStateApprovalChain(
+            id=str(chain.id),
+            template_id=str(chain.template_id) if chain.template_id else None,
+            status=chain.status,
+            current_step=chain.current_step,
+            step_history=[
+                JobStateApprovalStep(
+                    step_index=s.step_index,
+                    step_name=s.step_name,
+                    approver_email=s.approver_email,
+                    decision=s.decision,
+                    notes=s.notes,
+                    decided_at=s.decided_at,
+                )
+                for s in steps
+            ],
+            created_at=chain.created_at,
+            completed_at=chain.completed_at,
+        )
+
+
+@pytest.fixture(autouse=True)
+def _install_approvals_service():  # type: ignore[no-untyped-def]
+    set_approvals_service(_SaaSStyleApprovalsService())
+    yield
+    set_approvals_service(None)
+
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
