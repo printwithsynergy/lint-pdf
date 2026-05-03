@@ -158,6 +158,11 @@ def _mock_celery_delay(monkeypatch):
 @pytest.fixture
 def app(db_session: Session) -> FastAPI:
     """Create a fresh FastAPI app with test DB session."""
+    from lintpdf.services.tenant_context import (
+        TenantContext,
+        set_tenant_context_service,
+    )
+
     application = create_app()
 
     def _override_get_db() -> Generator[Session, None, None]:
@@ -168,13 +173,54 @@ def app(db_session: Session) -> FastAPI:
 
     application.dependency_overrides[get_db] = _override_get_db
 
-    # Retrieve the seeded tenant for auth override
-    test_tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
+    # Materialise a fresh ``TenantContext`` from the seeded ORM row on
+    # every call so test fixtures that mutate ``Tenant.plan`` etc.
+    # (e.g. test_plan_gates.viewer_tenant) propagate through the
+    # auth dep + service lookups within the same test.
+    def _build_context_from_row(row) -> TenantContext:  # type: ignore[no-untyped-def]
+        return TenantContext(
+            id=row.id,
+            name=row.name or "",
+            is_active=bool(row.is_active),
+            plan=str(row.plan),
+            rate_limit_daily=int(row.rate_limit_daily or 0),
+            max_file_size_mb=int(row.max_file_size_mb or 0),
+            ai_features=list(row.ai_features or []),
+            entitlement_overrides=row.entitlement_overrides,
+            contact_email=row.contact_email,
+            brand_name=row.brand_name,
+            brand_custom_domain=row.brand_custom_domain,
+            brand_custom_domain_verified=bool(row.brand_custom_domain_verified),
+            app_custom_domain=row.app_custom_domain,
+            app_custom_domain_verified=bool(row.app_custom_domain_verified),
+            default_brand_profile_id=row.default_brand_profile_id,
+            default_profile_id=row.default_profile_id,
+            unbranded_by_default=bool(row.unbranded_by_default),
+            share_email_required=bool(row.share_email_required),
+            webhook_signing_secret=row.webhook_signing_secret,
+        )
 
-    def _override_get_current_tenant() -> Tenant:
-        return test_tenant  # type: ignore[return-value]
+    def _load_seeded_tenant() -> TenantContext | None:
+        row = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
+        return _build_context_from_row(row) if row is not None else None
+
+    def _override_get_current_tenant() -> TenantContext | None:
+        return _load_seeded_tenant()
 
     application.dependency_overrides[get_current_tenant] = _override_get_current_tenant
+
+    # Install a TenantContextService that re-reads the ORM each call so
+    # mid-test mutations (plan downgrades etc.) propagate through every
+    # downstream code path that goes through the service.
+    class _ConftestTenantContextService:
+        def load(self, tenant_id, db):  # type: ignore[no-untyped-def]
+            row = db_session.query(Tenant).filter(Tenant.id == tenant_id).first()
+            return _build_context_from_row(row) if row is not None else None
+
+        def load_by_api_key_hash(self, api_key_hash, db):  # type: ignore[no-untyped-def]
+            return _load_seeded_tenant()
+
+    set_tenant_context_service(_ConftestTenantContextService())
     return application
 
 
