@@ -6,7 +6,6 @@ import logging
 import os
 from collections.abc import AsyncGenerator  # noqa: TC003
 from contextlib import asynccontextmanager
-from typing import Any
 
 from fastapi import FastAPI
 
@@ -223,10 +222,10 @@ def create_app() -> FastAPI:
 
     app.add_middleware(WakeOnNeedMiddleware)
 
-    # CORS — allow browser clients on the marketing site (for
-    # /swagger → /openapi.tenant.json) and the dashboard SPA to call
-    # the tenant API. Added after RequestIdMiddleware so CORS sits
-    # outermost in the ASGI stack and can respond to preflight
+    # CORS — allow browser clients on the marketing site and the
+    # dashboard SPA to call the engine API. Added after
+    # RequestIdMiddleware so CORS sits outermost in the ASGI stack
+    # and can respond to preflight
     # OPTIONS requests without running auth. Origins come from
     # LINTPDF_CORS_ALLOW_ORIGINS (comma-separated); "*" means any
     # origin. The API uses bearer-token auth only, no cookies, so
@@ -344,39 +343,5 @@ def create_app() -> FastAPI:
     # W5c (PR thinkneverland/lint-pdf-saas#12). The SaaS wrapper at
     # ``lintpdf_saas.api.app:create_app`` is responsible for mounting
     # it now, gated on the same ``LINTPDF_DEV_AUTH_ENABLED`` setting.
-
-    # Tenant-scoped OpenAPI slice. The full ``/openapi.json`` includes
-    # /admin/* and /api/v1/trial/* -- routes customers can't call and
-    # shouldn't see in their Swagger UI or Postman collection. This
-    # endpoint returns the spec with those paths stripped so the
-    # marketing-site Swagger + the tenant Postman collection stay
-    # clean.
-    def _is_tenant_route(path: str) -> bool:
-        # Exclude admin surface, trial-submit plumbing, and the
-        # intentionally-hidden Stripe webhook receiver (customers don't
-        # invoke that -- Stripe does).
-        blocked_prefixes = (
-            "/api/v1/admin/",
-            "/api/v1/trial/",
-            "/api/v1/stripe/webhook",
-            "/api/v1/dev/",
-        )
-        return not any(path.startswith(p) for p in blocked_prefixes)
-
-    @app.get("/openapi.tenant.json", include_in_schema=False)
-    def _tenant_openapi() -> dict[str, Any]:  # type: ignore[name-defined]
-        from copy import deepcopy
-
-        full = app.openapi()
-        slim = deepcopy(full)
-        slim["paths"] = {p: body for p, body in full["paths"].items() if _is_tenant_route(p)}
-        slim.setdefault("info", {})
-        slim["info"]["title"] = f"{slim['info'].get('title', 'LintPDF')} (Tenant API)"
-        slim["info"]["description"] = (
-            "Tenant-facing routes only. Admin + trial-submit endpoints are "
-            "excluded. See api.lintpdf.com/openapi.json for the complete "
-            "spec (admin key required)."
-        )
-        return slim
 
     return app
