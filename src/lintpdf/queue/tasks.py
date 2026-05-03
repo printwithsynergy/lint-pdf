@@ -1768,7 +1768,7 @@ def dispatch_webhook(
     import httpx
     from celery.exceptions import MaxRetriesExceededError
 
-    from lintpdf.api.database import SessionLocal
+    from lintpdf.api.database import get_db_session
     from lintpdf.api.models import WebhookDelivery, WebhookEndpoint
 
     # Sign the payload
@@ -1812,7 +1812,7 @@ def dispatch_webhook(
     # Update audit row before deciding whether to retry so even
     # intermediate attempts are visible in /webhooks/deliveries.
     if delivery_id:
-        session = SessionLocal()
+        session = get_db_session()
         try:
             row = (
                 session.query(WebhookDelivery)
@@ -1839,13 +1839,16 @@ def dispatch_webhook(
 
     if not success and retryable:
         # Load the per-endpoint retry config on every attempt so a
-        # live ``PATCH /webhooks/{id}`` takes effect mid-backoff.
-        session = SessionLocal()
+        # live ``PATCH /webhooks/{id}`` takes effect mid-backoff. Skip
+        # the DB round-trip entirely when there's no delivery row to
+        # look up — keeps test paths that call the task without a
+        # ``delivery_id`` from blocking on DB initialisation.
+        max_retries = _DEFAULT_MAX_RETRIES
+        base_delay = _DEFAULT_RETRY_BASE_DELAY_S
+        max_delay = _DEFAULT_RETRY_MAX_DELAY_S
+        session = get_db_session() if delivery_id else None
         try:
-            max_retries = _DEFAULT_MAX_RETRIES
-            base_delay = _DEFAULT_RETRY_BASE_DELAY_S
-            max_delay = _DEFAULT_RETRY_MAX_DELAY_S
-            if delivery_id:
+            if delivery_id and session is not None:
                 delivery = (
                     session.query(WebhookDelivery)
                     .filter(WebhookDelivery.id == uuid_mod.UUID(delivery_id))
@@ -1865,7 +1868,8 @@ def dispatch_webhook(
                         if endpoint.retry_max_delay_seconds is not None:
                             max_delay = endpoint.retry_max_delay_seconds
         finally:
-            session.close()
+            if session is not None:
+                session.close()
 
         if attempt <= max_retries:
             # Exponential backoff, capped. attempt is 1-indexed; first
@@ -1893,7 +1897,7 @@ def dispatch_webhook(
     # audit row as dead so the admin /webhooks/deliveries?dead=true view
     # can surface it and an operator can trigger a replay later.
     if delivery_id:
-        session = SessionLocal()
+        session = get_db_session()
         try:
             row = (
                 session.query(WebhookDelivery)

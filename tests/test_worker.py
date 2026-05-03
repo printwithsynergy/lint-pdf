@@ -53,7 +53,11 @@ class TestCeleryAppCreation:
 
     @staticmethod
     def test_max_tasks_per_child(celery_app) -> None:
-        assert celery_app.conf.worker_max_tasks_per_child == 25
+        # Recycle workers after each task to bound memory growth — the
+        # OCR / image pipelines hold on to large pikepdf + Pillow buffers
+        # that don't fully release between calls. ``1`` matches the value
+        # used by the Railway production worker rollout.
+        assert celery_app.conf.worker_max_tasks_per_child == 1
 
     @staticmethod
     def test_beat_schedule_has_cleanup(celery_app) -> None:
@@ -174,8 +178,12 @@ class TestRunPreflightTask:
     def test_task_time_limits() -> None:
         from lintpdf.queue.tasks import run_preflight
 
-        assert run_preflight.time_limit == 300
-        assert run_preflight.soft_time_limit == 270
+        # Hard limit 600s / soft limit 540s — gives the analyzer chain
+        # enough headroom for large packaging artwork PDFs while still
+        # catching genuinely-stuck jobs. Soft fires first so the task
+        # marks the job FAILED gracefully before Celery sends SIGKILL.
+        assert run_preflight.time_limit == 600
+        assert run_preflight.soft_time_limit == 540
 
     def _run_preflight_fn(self, retries=0, **kwargs):
         """Call run_preflight's underlying function with a mock self context."""
@@ -206,11 +214,16 @@ class TestRunPreflightTask:
 
     def test_successful_preflight_run(self) -> None:
         """Successful preflight should return complete status."""
+        import contextlib
+
         from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
 
         mock_db = MagicMock()
         mock_job = MagicMock()
         mock_job.tenant_id = "tenant-123"
+        # Avoid OverridesEnvelope.model_validate(MagicMock) blowing up on
+        # the override-application path — set to None so the branch skips.
+        mock_job.overrides = None
         mock_db.query.return_value.filter.return_value.first.return_value = mock_job
 
         mock_storage = MagicMock()
@@ -233,11 +246,17 @@ class TestRunPreflightTask:
             duration_ms=42,
         )
 
+        @contextlib.contextmanager
+        def _fake_icc_resolver(*_a, **_kw):
+            # No ICC profile path — orchestrator handles None gracefully.
+            yield None
+
         with (
             patch("lintpdf.api.database.get_db_session", return_value=mock_db),
             patch("lintpdf.api.storage.get_storage", return_value=mock_storage),
             patch("lintpdf.profiles.registry.ProfileRegistry") as MockRegistry,  # noqa: N806
             patch("lintpdf.profiles.orchestrator.PreflightOrchestrator") as MockOrch,  # noqa: N806
+            patch("lintpdf.epm.icc_resolver.resolve_active_icc_profile", _fake_icc_resolver),
             patch("lintpdf.queue.tasks._dispatch_tenant_webhooks"),
         ):
             MockRegistry.return_value.get.return_value = MagicMock()
@@ -257,11 +276,14 @@ class TestRunPreflightTask:
 
     def test_r2_failure_falls_back_to_redis(self) -> None:
         """When R2 download fails, task should try Redis cache."""
+        import contextlib
+
         from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
 
         mock_db = MagicMock()
         mock_job = MagicMock()
         mock_job.tenant_id = "tenant-123"
+        mock_job.overrides = None
         mock_db.query.return_value.filter.return_value.first.return_value = mock_job
 
         mock_storage = MagicMock()
@@ -287,12 +309,17 @@ class TestRunPreflightTask:
             duration_ms=10,
         )
 
+        @contextlib.contextmanager
+        def _fake_icc_resolver(*_a, **_kw):
+            yield None
+
         with (
             patch("lintpdf.api.database.get_db_session", return_value=mock_db),
             patch("lintpdf.api.storage.get_storage", return_value=mock_storage),
             patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis),
             patch("lintpdf.profiles.registry.ProfileRegistry") as MockReg,  # noqa: N806
             patch("lintpdf.profiles.orchestrator.PreflightOrchestrator") as MockOrch,  # noqa: N806
+            patch("lintpdf.epm.icc_resolver.resolve_active_icc_profile", _fake_icc_resolver),
             patch("lintpdf.queue.tasks._dispatch_tenant_webhooks"),
         ):
             MockReg.return_value.get.return_value = MagicMock()
@@ -373,9 +400,13 @@ class TestDispatchWebhook:
 
     @staticmethod
     def test_task_retry_config() -> None:
-        from lintpdf.queue.tasks import dispatch_webhook
+        from lintpdf.queue.tasks import _RETRY_CEILING, dispatch_webhook
 
-        assert dispatch_webhook.max_retries == 3
+        # ``max_retries`` matches the hard ceiling (10) — per-endpoint
+        # ``WebhookEndpoint.max_retries`` overrides are clamped against
+        # this in ``min(endpoint.max_retries, _RETRY_CEILING)``. Default
+        # retry delay is 5s; the in-task exponential backoff overrides.
+        assert dispatch_webhook.max_retries == _RETRY_CEILING
         assert dispatch_webhook.default_retry_delay == 5
 
     @staticmethod
@@ -429,9 +460,19 @@ class TestDispatchWebhook:
 
     @staticmethod
     def test_dispatch_failure_returns_error() -> None:
-        with patch("httpx.post", side_effect=Exception("Connection refused")):
-            from lintpdf.queue.tasks import dispatch_webhook
+        # Stub ``self.retry`` to immediately raise ``MaxRetriesExceededError``
+        # so the dispatcher falls through to its terminal failed-return
+        # path. Without the stub, ``self.retry()`` raises a ``Retry``
+        # exception that Celery's worker would catch — but we're calling
+        # the task synchronously outside the worker.
+        from celery.exceptions import MaxRetriesExceededError
 
+        from lintpdf.queue.tasks import dispatch_webhook
+
+        with (
+            patch("httpx.post", side_effect=Exception("Connection refused")),
+            patch.object(dispatch_webhook, "retry", side_effect=MaxRetriesExceededError("test")),
+        ):
             result = dispatch_webhook(
                 webhook_url="https://example.com/webhook",
                 webhook_secret=TEST_SECRET,
