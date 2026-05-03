@@ -572,23 +572,13 @@ class SystemProfile(Base):
 # the PlanOverridesService Protocol seam (no direct import).
 
 
-class ApiKey(Base):
-    """API key for tenant programmatic access. Supports multiple keys per tenant."""
-
-    __tablename__ = "api_keys"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    key_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
-    label: Mapped[str] = mapped_column(String(255), nullable=False, default="Default")
-    key_prefix: Mapped[str] = mapped_column(String(12), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+# ApiKey was extracted to lintpdf_saas.api.models in W6c-7n
+# (thinkneverland/lint-pdf-saas#44). The api_keys table remains in
+# the shared Postgres database; only the Python class definition
+# moves. Engine code never reads ApiKey directly -- auth dispatches
+# through the TenantContextService.load_by_api_key_hash Protocol
+# seam (default no-op in OSS, SaaSTenantContextService walks
+# lintpdf_saas.api.models.ApiKey in production).
 
 
 class ReportToken(Base):
