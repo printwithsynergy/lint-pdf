@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import logging
 import secrets
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from fastapi import Depends, Header, HTTPException, Security, status
@@ -13,7 +12,10 @@ from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.database import get_db
-from lintpdf.api.models import ApiKey, Tenant
+from lintpdf.services.tenant_context import (
+    TenantContext,
+    get_tenant_context_service,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,45 +48,26 @@ def _extract_api_key(authorization: str | None) -> str | None:
     return api_key or None
 
 
-def _resolve_tenant_by_key(db: Session, key_hash: str) -> Tenant | None:
-    """Look up a tenant by API key hash.
-
-    Checks the ApiKey table first (supports multiple keys per tenant with
-    rotation), then falls back to the legacy Tenant.api_key_hash column
-    for backward compatibility.
-    """
-    # Try ApiKey table first (multi-key support)
-    api_key_row: ApiKey | None = (
-        db.query(ApiKey).filter(ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)).first()
-    )
-    if api_key_row is not None:
-        api_key_row.last_used_at = datetime.now(timezone.utc)
-        tenant = db.query(Tenant).filter(Tenant.id == api_key_row.tenant_id).first()
-        if tenant is not None:
-            db.commit()
-            return tenant
-
-    # Fall back to legacy Tenant.api_key_hash
-    return db.query(Tenant).filter(Tenant.api_key_hash == key_hash).first()
-
-
 async def get_current_tenant(
     authorization: str | None = Security(_api_key_header),
     db: Session = Depends(get_db),  # noqa: B008
-) -> Tenant:
+) -> TenantContext:
     """Extract and validate the API key from the Authorization header.
 
     Expects: Authorization: Bearer <api_key>
 
-    Checks both the ApiKey table (multi-key rotation) and the legacy
-    Tenant.api_key_hash column for backward compatibility.
+    Dispatches through :class:`TenantContextService` so the OSS engine
+    never imports the SaaS-only ``Tenant`` ORM. The service's SaaS impl
+    walks the ``ApiKey`` + ``Tenant`` tables (with ``last_used_at`` write
+    side-effect); OSS default returns ``None`` so OSS-only deploys
+    must install their own auth service.
 
     Args:
         authorization: Raw Authorization header value.
         db: Database session (injected by FastAPI).
 
     Returns:
-        The authenticated Tenant.
+        The authenticated tenant's context snapshot.
 
     Raises:
         HTTPException: 401 if key is missing/invalid, 403 if tenant inactive.
@@ -97,7 +80,7 @@ async def get_current_tenant(
         )
 
     key_hash = hash_api_key(api_key)
-    tenant = _resolve_tenant_by_key(db, key_hash)
+    tenant = get_tenant_context_service().load_by_api_key_hash(key_hash, db)
 
     if tenant is None:
         raise HTTPException(
@@ -117,7 +100,7 @@ async def get_current_tenant(
 async def get_optional_tenant(
     authorization: str | None = Security(_api_key_header),
     db: Session = Depends(get_db),  # noqa: B008
-) -> Tenant | None:
+) -> TenantContext | None:
     """Optionally authenticate a tenant from the Authorization header.
 
     Returns None instead of raising 401 when no key is provided or the key
@@ -129,7 +112,7 @@ async def get_optional_tenant(
         return None
 
     key_hash = hash_api_key(api_key)
-    tenant = _resolve_tenant_by_key(db, key_hash)
+    tenant = get_tenant_context_service().load_by_api_key_hash(key_hash, db)
 
     if tenant is None or not tenant.is_active:
         return None
