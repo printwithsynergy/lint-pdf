@@ -54,9 +54,8 @@ class EntitlementsService(Protocol):
         The return type is intentionally ``Any`` at the Protocol
         level so the Protocol stays decoupled from the
         ``TenantEntitlements`` dataclass that lives inside
-        ``lintpdf.tenants.entitlements`` (a SaaS-side module that
-        moves to ``lintpdf_saas`` in a later PR). Concrete
-        implementations return a ``TenantEntitlements`` instance.
+        ``lintpdf.tenants.entitlements``. Concrete implementations
+        return a ``TenantEntitlements`` instance.
         """
         ...
 
