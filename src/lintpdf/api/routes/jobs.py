@@ -1014,8 +1014,9 @@ def _hydrate_job_response(
         # ``https://reports.lintpdf.com/r/<token>`` even though their
         # minted reports are served from their custom domain.
         from lintpdf.api.config import get_settings as _get_settings
-        from lintpdf.api.models import BrandProfile, ReportToken, Tenant
+        from lintpdf.api.models import BrandProfile, ReportToken
         from lintpdf.reports.service import resolve_report_base_url
+        from lintpdf.services.tenant_context import get_tenant_context_service
 
         report_tokens = (
             db.query(ReportToken)
@@ -1024,7 +1025,7 @@ def _hydrate_job_response(
         )
         if report_tokens:
             settings = _get_settings()
-            tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+            tenant = get_tenant_context_service().load(job.tenant_id, db)
             base_url = settings.report_base_url
             if tenant is not None:
                 entitlements = entitlements_service.resolve(tenant)

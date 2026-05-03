@@ -1098,7 +1098,9 @@ async def validate_report_token(
     if per_token is not None:
         email_required = bool(per_token)
     else:
-        tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+        from lintpdf.services.tenant_context import get_tenant_context_service
+
+        tenant = get_tenant_context_service().load(record.tenant_id, db)
         email_required = bool(getattr(tenant, "share_email_required", True)) if tenant else True
 
     return {
