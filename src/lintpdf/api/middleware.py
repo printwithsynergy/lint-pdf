@@ -18,7 +18,8 @@ from typing import Any
 from fastapi import HTTPException, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-from lintpdf.tenants.models import PLAN_LIMITS, RATE_LIMIT_WARN_THRESHOLD
+from lintpdf.services.entitlement_defaults import get_entitlement_defaults_service
+from lintpdf.tenants.models import RATE_LIMIT_WARN_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,8 @@ def build_usage_info(tenant: Any, current: int) -> UsageInfo:
 
     rate_cents = 0
     if plan is not None:
-        rate_cents = PLAN_LIMITS.get(plan, {}).get("overage_rate_cents", 0)
+        plan_value = plan.value if hasattr(plan, "value") else str(plan)
+        rate_cents = get_entitlement_defaults_service().overage_rate_cents_for(plan_value)
     # Allow per-tenant override
     override = getattr(tenant, "overage_rate_override_cents", None)
     if override is not None:

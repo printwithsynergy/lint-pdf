@@ -102,6 +102,11 @@ def _disable_lifespan_services(monkeypatch):
     monkeypatch.setenv("LINTPDF_CLAMAV_URL", "mockclamav:3310")
 
 
+# Audit-fix #3c -- the OSS engine no longer carries SaaS plan-tier
+# baselines; the autouse fixture lives in ``tests/conftest.py`` so
+# every test dir gets the canonical per-tier defaults via stub.
+
+
 @pytest.fixture(autouse=True)
 def _reset_settings_cache():
     """Clear the ``get_settings`` lru_cache between tests.

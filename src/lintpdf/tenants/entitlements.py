@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from lintpdf.tenants.models import ALL_PREFLIGHT_SOURCES, PLAN_LIMITS, TenantPlan
+from lintpdf.services.entitlement_defaults import get_entitlement_defaults_service
+from lintpdf.tenants.models import ALL_PREFLIGHT_SOURCES, TenantPlan
 
 # Canonical set of AI feature flag names. Unknown flags are rejected
 # by the admin PATCH schema so typos never land silently in the DB.
@@ -146,7 +147,7 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
     unrelated per-tenant override.
     """
     plan = TenantPlan(tenant.plan)
-    plan_defaults = dict(PLAN_LIMITS[plan])
+    plan_defaults = get_entitlement_defaults_service().defaults_for(plan.value)
     overrides = getattr(tenant, "entitlement_overrides", None) or {}
 
     merged: dict[str, Any] = {**plan_defaults}
