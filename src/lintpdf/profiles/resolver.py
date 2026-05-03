@@ -14,11 +14,13 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import and_, or_
 
-from lintpdf.api.models import SystemProfile, Tenant
+from lintpdf.api.models import SystemProfile
 from lintpdf.tenants.models import TenantPlan
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+    from lintpdf.services.tenant_context import TenantContext
 
 # Cheapest possible implementation of "is tenant.plan >= min_plan". Explicit
 # order keeps the list a one-liner to audit, and decouples the visibility
@@ -47,7 +49,7 @@ def _plans_at_or_above(min_plan: str) -> list[str]:
     return [p.value for p in _PLAN_ORDER[idx:]]
 
 
-def _tenant_qualifies(sp: SystemProfile, tenant: Tenant) -> bool:
+def _tenant_qualifies(sp: SystemProfile, tenant: TenantContext) -> bool:
     """Reapplies the visibility filter against an already-fetched row.
 
     Used by point lookups (``get_visible_system_profile``) to avoid a
@@ -75,7 +77,7 @@ def _tenant_qualifies(sp: SystemProfile, tenant: Tenant) -> bool:
     return False
 
 
-def list_visible_system_profiles(db: Session, tenant: Tenant) -> list[SystemProfile]:
+def list_visible_system_profiles(db: Session, tenant: TenantContext) -> list[SystemProfile]:
     """Return every :class:`SystemProfile` this tenant can see.
 
     The visible-tenant-list filter is applied in Python so the query
@@ -130,7 +132,7 @@ def list_visible_system_profiles(db: Session, tenant: Tenant) -> list[SystemProf
 
 
 def get_visible_system_profile(
-    db: Session, tenant: Tenant, profile_id: str
+    db: Session, tenant: TenantContext, profile_id: str
 ) -> SystemProfile | None:
     """Fetch a single :class:`SystemProfile` iff ``tenant`` can see it.
 
@@ -146,7 +148,7 @@ def get_visible_system_profile(
     return row if _tenant_qualifies(row, tenant) else None
 
 
-def get_custom_profile(db: Session, tenant: Tenant, profile_id: str):
+def get_custom_profile(db: Session, tenant: TenantContext, profile_id: str):
     """Return the tenant's custom profile entry for ``profile_id`` or None.
 
     Phase 0.7 PR-B3e — reads from
@@ -171,7 +173,7 @@ def get_custom_profile(db: Session, tenant: Tenant, profile_id: str):
     )
 
 
-def profile_exists_for_tenant(db: Session, tenant: Tenant, profile_id: str) -> bool:
+def profile_exists_for_tenant(db: Session, tenant: TenantContext, profile_id: str) -> bool:
     """Checks whether ``tenant`` can submit a job against ``profile_id``.
 
     Precedence mirrors the tenant-facing list endpoint: a tenant's
@@ -186,7 +188,9 @@ def profile_exists_for_tenant(db: Session, tenant: Tenant, profile_id: str) -> b
     return get_visible_system_profile(db, tenant, profile_id) is not None
 
 
-def resolve_profile_json(db: Session, tenant: Tenant, profile_id: str) -> dict[str, Any] | None:
+def resolve_profile_json(
+    db: Session, tenant: TenantContext, profile_id: str
+) -> dict[str, Any] | None:
     """Return the raw :class:`PreflightProfile` JSON for ``profile_id``
     as visible to ``tenant``. Custom wins over system on collision."""
     custom = get_custom_profile(db, tenant, profile_id)
@@ -198,7 +202,7 @@ def resolve_profile_json(db: Session, tenant: Tenant, profile_id: str) -> dict[s
     return None
 
 
-def resolve_effective_profile_id(db: Session, tenant: Tenant, requested: str | None) -> str:
+def resolve_effective_profile_id(db: Session, tenant: TenantContext, requested: str | None) -> str:
     """Pick the profile_id to use for a job submission.
 
     Precedence:
