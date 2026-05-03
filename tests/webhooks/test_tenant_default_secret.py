@@ -18,6 +18,10 @@ from lintpdf.api.models import (
     WebhookDelivery,
     WebhookEndpoint,
 )
+from lintpdf.services.tenant_context import (
+    TenantContext,
+    set_tenant_context_service,
+)
 from lintpdf.webhooks.events import emit_event
 
 if TYPE_CHECKING:
@@ -27,6 +31,38 @@ if TYPE_CHECKING:
 
 
 _TENANT_A = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+
+
+class _ORMBackedTenantContextService:
+    """Test-side service that materialises ``Tenant`` ORM rows into ``TenantContext``.
+
+    The OSS engine ships a no-op default returning a minimal stub —
+    these tests need ``webhook_signing_secret`` populated from the
+    seeded ``Tenant`` row, so we install a service that wraps the
+    same query the SaaS-side impl will run in production.
+    """
+
+    def load(self, tenant_id, db):  # type: ignore[no-untyped-def]
+        row = db.get(Tenant, tenant_id)
+        if row is None:
+            return None
+        return TenantContext(
+            id=row.id,
+            name=row.name or "",
+            is_active=bool(row.is_active),
+            plan=str(row.plan),
+            webhook_signing_secret=row.webhook_signing_secret,
+        )
+
+    def load_by_api_key_hash(self, api_key_hash, db):  # type: ignore[no-untyped-def]
+        return None
+
+
+@pytest.fixture(autouse=True)
+def _install_tenant_context_service():  # type: ignore[no-untyped-def]
+    set_tenant_context_service(_ORMBackedTenantContextService())
+    yield
+    set_tenant_context_service(None)
 
 
 @pytest.fixture
