@@ -13,7 +13,49 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
+
 from lintpdf.reports.service import resolve_report_base_url
+from lintpdf.services.whitelabel import set_whitelabel_service
+
+
+class _SaaSStyleWhitelabelService:
+    """Test-side service mirroring the SaaS impl.
+
+    Same priority chain the previous in-tree ``resolve_report_base_url``
+    used — gated on ``entitlements.whitelabel_enabled``.
+    """
+
+    def resolve_report_base_url(self, tenant, brand_profile, entitlements, settings):  # type: ignore[no-untyped-def]
+        if entitlements.whitelabel_enabled:
+            if (
+                brand_profile is not None
+                and brand_profile.custom_domain
+                and brand_profile.custom_domain_verified
+            ):
+                return f"https://{brand_profile.custom_domain}"
+            if tenant.brand_custom_domain and tenant.brand_custom_domain_verified:
+                return f"https://{tenant.brand_custom_domain}"
+        return settings.report_base_url
+
+    def resolve_viewer_base_url(self, tenant, brand_profile, entitlements, settings):  # type: ignore[no-untyped-def]
+        if entitlements.whitelabel_enabled:
+            if (
+                brand_profile is not None
+                and getattr(brand_profile, "app_custom_domain", None)
+                and brand_profile.app_custom_domain_verified
+            ):
+                return f"https://{brand_profile.app_custom_domain}"
+            if getattr(tenant, "app_custom_domain", None) and tenant.app_custom_domain_verified:
+                return f"https://{tenant.app_custom_domain}"
+        return settings.app_base_url
+
+
+@pytest.fixture(autouse=True)
+def _install_whitelabel_service():  # type: ignore[no-untyped-def]
+    set_whitelabel_service(_SaaSStyleWhitelabelService())
+    yield
+    set_whitelabel_service(None)
 
 
 @dataclass
