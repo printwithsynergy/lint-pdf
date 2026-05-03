@@ -247,12 +247,11 @@ def build_job_state_payload(db: Session, job: Any, tenant_id: uuid_mod.UUID) -> 
     """
     from lintpdf.api.config import get_settings
     from lintpdf.api.models import (
-        ApprovalChain,
-        ApprovalStep,
         ReportToken,
         ViewerAnnotation,
         ViewerAnnotationComment,
     )
+    from lintpdf.services.approvals import get_approvals_service
 
     settings = get_settings()
     base_url = settings.report_base_url.rstrip("/")
@@ -283,38 +282,14 @@ def build_job_state_payload(db: Session, job: Any, tenant_id: uuid_mod.UUID) -> 
             }
         )
 
-    chain_payload: dict[str, Any] | None = None
-    chain = (
-        db.query(ApprovalChain)
-        .filter(ApprovalChain.job_id == job.id, ApprovalChain.tenant_id == tenant_id)
-        .first()
+    # Dispatch through ApprovalsService — OSS default returns None;
+    # SaaS impl reads ApprovalChain + ApprovalStep. Serialize via
+    # ``model_dump(mode="json")`` so the webhook payload keeps its
+    # historical wire shape (ISO-string timestamps).
+    chain_state = get_approvals_service().get_approval_chain_state(job.id, tenant_id, db)
+    chain_payload: dict[str, Any] | None = (
+        chain_state.model_dump(mode="json") if chain_state else None
     )
-    if chain is not None:
-        steps = (
-            db.query(ApprovalStep)
-            .filter(ApprovalStep.chain_id == chain.id)
-            .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
-            .all()
-        )
-        chain_payload = {
-            "id": str(chain.id),
-            "template_id": str(chain.template_id) if chain.template_id else None,
-            "status": chain.status,
-            "current_step": chain.current_step,
-            "step_history": [
-                {
-                    "step_index": s.step_index,
-                    "step_name": s.step_name,
-                    "approver_email": s.approver_email,
-                    "decision": s.decision,
-                    "notes": s.notes,
-                    "decided_at": s.decided_at.isoformat() if s.decided_at else None,
-                }
-                for s in steps
-            ],
-            "created_at": chain.created_at.isoformat() if chain.created_at else None,
-            "completed_at": chain.completed_at.isoformat() if chain.completed_at else None,
-        }
 
     auto_passed: bool | None = None
     if job.result_json:
