@@ -881,30 +881,8 @@ class ViewerAnnotationComment(Base):
     )
 
 
-class ShareLinkVisitor(Base):
-    """Email + IP capture for anonymous annotators on /view/{token} share links.
-
-    Anonymous viewers with the "allow_annotations" flag set on their
-    ReportToken must identify themselves with an email (via the
-    X-Visitor-Email header) before they can create annotations. Each
-    first-time identification inserts a row here so we have an audit
-    trail of who wrote what.
-    """
-
-    __tablename__ = "share_link_visitors"
-    __table_args__ = (Index("ix_share_visitors_token_email", "share_token", "visitor_email"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    share_token: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    visitor_email: Mapped[str] = mapped_column(String(255), nullable=False)
-    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    first_seen_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    last_seen_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
+# ShareLinkVisitor was extracted to lintpdf_saas.api.models in W6c-4
+# (PRs thinkneverland/lint-pdf-saas#37/#38 + thinkneverland/lint-pdf#437/#XX).
+# Engine code reaches the share_link_visitors table through the
+# ShareLinkVisitorService Protocol seam at
+# lintpdf.services.share_link_visitor (no direct ORM import in OSS).
