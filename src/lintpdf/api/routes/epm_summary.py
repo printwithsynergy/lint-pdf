@@ -32,11 +32,13 @@ from sqlalchemy import select
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Job, JobFinding, Tenant
+from lintpdf.api.models import Job, JobFinding
 from lintpdf.epm.scoring import EpmTier, score_epm_candidacy
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+    from lintpdf.services.tenant_context import TenantContext
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +97,7 @@ def _load_owned_job(db: Session, *, tenant_id: uuid_mod.UUID, job_id: uuid_mod.U
 async def get_epm_verdict(
     job_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> EpmVerdictResponse:
     """Return the EPM candidacy verdict for the job's fired findings."""
     job_uid = _parse_uuid(job_id, kind="Job")

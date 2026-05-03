@@ -17,7 +17,7 @@ import json
 import logging
 import re
 import uuid as uuid_mod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, Field
@@ -27,10 +27,14 @@ from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
 from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit, get_redis_client
-from lintpdf.api.models import Job, JobStatus, Tenant
+from lintpdf.api.models import Job, JobStatus
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
+
+if TYPE_CHECKING:
+    from lintpdf.services.tenant_context import TenantContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +204,7 @@ async def _extract_batch_form(
 async def submit_batch(
     request: Request,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> BatchSubmitResponse:
     """Submit a batch of PDFs for preflight processing.
@@ -349,7 +353,7 @@ async def submit_batch(
 async def get_batch_status(
     batch_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> BatchStatusResponse:
     """Get the status of a batch operation."""
     job_ids = _load_batch(batch_id, str(tenant.id))
@@ -392,7 +396,7 @@ async def get_batch_status(
 async def get_batch_summary(
     batch_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> dict[str, Any]:
     """Get aggregated summary of all completed jobs in a batch."""
     job_ids = _load_batch(batch_id, str(tenant.id))

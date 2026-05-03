@@ -12,7 +12,7 @@ import logging
 import os
 import uuid as uuid_mod
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -23,12 +23,15 @@ from lintpdf.api.database import get_db
 from lintpdf.api.models import (
     Job,
     ReportToken,
-    Tenant,
     ViewerAnnotation,
     ViewerAnnotationComment,
 )
 from lintpdf.services.email import EmailService, get_email_service
 from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
+
+if TYPE_CHECKING:
+    from lintpdf.services.tenant_context import TenantContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +151,7 @@ def _to_response(row: ViewerAnnotation) -> AnnotationResponse:
     )
 
 
-def _dashboard_author_email(request: Request, tenant: Tenant) -> str:
+def _dashboard_author_email(request: Request, tenant: TenantContext) -> str:
     """Resolve the author email for a dashboard-side annotation/comment.
 
     The Next.js plugin proxy forwards the authenticated user's email as
@@ -174,7 +177,7 @@ def _validate_kind(kind: str) -> None:
 
 
 def _require_annotations_entitlement(
-    tenant: Tenant,
+    tenant: TenantContext,
     entitlements_service: EntitlementsService,
 ) -> None:
     """Raise a plan_upgrade_required 403 if the tenant's plan forbids annotations.
@@ -267,7 +270,7 @@ def _embed_comments(
 async def list_annotations_auth(
     job_id: str,
     include: str | None = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> list[AnnotationResponse] | list[AnnotationWithCommentsResponse]:
     """List all annotations for a job (tenant-scoped).
@@ -306,7 +309,7 @@ async def create_annotation_auth(
     job_id: str,
     body: AnnotationCreateRequest,
     request: Request,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> AnnotationResponse:
@@ -362,7 +365,7 @@ async def update_annotation_auth(
     job_id: str,
     annotation_id: str,
     body: AnnotationUpdateRequest,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> AnnotationResponse:
@@ -402,7 +405,7 @@ async def update_annotation_auth(
 async def delete_annotation_auth(
     job_id: str,
     annotation_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> None:
@@ -796,7 +799,7 @@ def _fan_out_comment_email(
 
 
 def _get_annotation_for_tenant(
-    *, annotation_id: str, tenant: Tenant, db: Session
+    *, annotation_id: str, tenant: TenantContext, db: Session
 ) -> ViewerAnnotation:
     aid = _parse_annotation_id(annotation_id)
     row = (
@@ -816,7 +819,7 @@ def _get_annotation_for_tenant(
 async def list_comments_auth(
     job_id: str,
     annotation_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> list[CommentResponse]:
     annotation = _get_annotation_for_tenant(annotation_id=annotation_id, tenant=tenant, db=db)
@@ -839,7 +842,7 @@ async def create_comment_auth(
     annotation_id: str,
     body: CommentCreateRequest,
     request: Request,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
     email: EmailService = Depends(get_email_service),
 ) -> CommentResponse:
@@ -881,7 +884,7 @@ async def update_comment_auth(
     annotation_id: str,
     comment_id: str,
     body: CommentUpdateRequest,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> CommentResponse:
     # Tenant scope inherits from annotation; we only need the comment id
@@ -912,7 +915,7 @@ async def delete_comment_auth(
     job_id: str,
     annotation_id: str,
     comment_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> None:
     cid = _parse_comment_id(comment_id)

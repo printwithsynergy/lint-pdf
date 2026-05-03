@@ -18,6 +18,11 @@ URLs and response shapes are preserved.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from lintpdf.services.tenant_context import TenantContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +31,6 @@ from sqlalchemy.orm import Session  # noqa: TC002, E402
 
 from lintpdf.api.auth import get_current_tenant  # noqa: E402
 from lintpdf.api.database import get_db  # noqa: E402
-from lintpdf.api.models import Tenant  # noqa: E402, TC001
 from lintpdf.api.schemas import (  # noqa: E402
     ProfileCreateRequest,
     ProfileCreateResponse,
@@ -61,7 +65,7 @@ def get_registry() -> ProfileRegistry:
 @router.get("", response_model=ProfileListResponse)
 async def list_profiles(
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> ProfileListResponse:
     """List all preflight profiles visible to ``tenant``.
 
@@ -120,7 +124,7 @@ async def list_profiles(
 async def get_profile(
     profile_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> ProfileDetailResponse:
     """Get detailed profile configuration.
 
@@ -166,7 +170,7 @@ async def get_profile(
 async def create_profile(
     request: ProfileCreateRequest,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> ProfileCreateResponse:
     """Create or update a custom preflight profile.
@@ -244,7 +248,7 @@ async def create_profile(
 async def delete_profile(
     profile_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> None:
     """Delete a custom profile. Built-in profiles cannot be deleted."""
     registry = get_registry()
