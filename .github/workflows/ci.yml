@@ -42,38 +42,14 @@ jobs:
         run: ruff format --check src/ tests/
 
       - name: pytest
-        # The 14 deselects below are pre-existing failures in lint-pdf
-        # at the moment of the Phase 4 extraction (verified by running
-        # the same suite in lint-pdf:packages/engine/). They are NOT
-        # caused by the lintpdf -> lintpdf rename. They fall into two
-        # categories:
-        #
-        # 1. tests/test_worker.py (8) — Celery config assertions drifted
-        #    from production values (e.g., max_tasks_per_child expected
-        #    25, runtime is 1). Fixing requires picking which value to
-        #    canonicalise; tracked separately.
-        #
-        # 2. tests/reports/test_check_names_shape.py (6) — overly-strict
-        #    regex flags real customer-facing check IDs (PDFX4-054, etc.)
-        #    Renaming the IDs is customer-visible and forbidden by the
-        #    bit-for-bit-identical Phase contract; the regex exemption
-        #    list is tracked separately.
-        run: |
-          pytest --no-header \
-            --deselect "tests/test_worker.py::TestCeleryAppCreation::test_max_tasks_per_child" \
-            --deselect "tests/test_worker.py::TestRunPreflightTask::test_task_time_limits" \
-            --deselect "tests/test_worker.py::TestRunPreflightTask::test_successful_preflight_run" \
-            --deselect "tests/test_worker.py::TestRunPreflightTask::test_r2_failure_falls_back_to_redis" \
-            --deselect "tests/test_worker.py::TestDispatchWebhook::test_task_retry_config" \
-            --deselect "tests/test_worker.py::TestDispatchWebhook::test_successful_dispatch" \
-            --deselect "tests/test_worker.py::TestDispatchWebhook::test_dispatch_sends_hmac_signature" \
-            --deselect "tests/test_worker.py::TestDispatchWebhook::test_dispatch_failure_returns_error" \
-            --deselect "tests/reports/test_check_names_shape.py::test_check_name_is_well_shaped[LPDF_COLOR_DIELINE_PRINTABLE-info218]" \
-            --deselect "tests/reports/test_check_names_shape.py::test_check_name_is_well_shaped[LPDF_DIE_BLEND_MODE-info223]" \
-            --deselect "tests/reports/test_check_names_shape.py::test_check_name_is_well_shaped[LPDF_DIE_OPACITY_LOW-info233]" \
-            --deselect "tests/reports/test_check_names_shape.py::test_check_name_is_well_shaped[PDFX4-054-info544]" \
-            --deselect "tests/reports/test_check_names_shape.py::test_check_name_is_well_shaped[PDFX4-092-info582]" \
-            --deselect "tests/reports/test_check_names_shape.py::test_no_truncated_names_with_dangling_prepositions"
+        # The 14 pre-existing-failure deselects from the Phase 4
+        # extraction were addressed in W6c-6b. test_worker.py was
+        # updated to match production Celery config values + the
+        # dispatcher session-management fix; test_check_names_shape.py
+        # gained an explicit exemption list for customer-facing check
+        # IDs whose Title-Case names use ``Has`` / ``Will``. CI now
+        # runs the full suite.
+        run: pytest --no-header
 
   tripwires:
     name: engine tripwires
