@@ -3,12 +3,10 @@
 Engine route handlers (``jobs.py``, ``viewer.py``, ``annotations.py``)
 fire transactional emails on certain state transitions: a tenant going
 into overage, a rate-limit warning, a one-off report share, an
-annotation reply notification. Today they import
-``lintpdf.email.service`` directly, which couples the OSS engine to
-Resend.
+annotation reply notification.
 
 The Protocol declared here lets routes accept the email service via
-``Depends(get_email_service)`` instead. The default factory returns a
+``Depends(get_email_service)``. The default factory returns a
 ``NoOpEmailService`` so the OSS engine boots standalone with no
 mailer configured and engine routes silently skip the send. The SaaS
 shell overrides the factory via FastAPI's ``app.dependency_overrides``
@@ -19,11 +17,7 @@ Migrating a callsite:
 
 .. code-block:: python
 
-    # Before
-    from lintpdf.email.service import send_overage_started
-    send_overage_started(to=tenant.contact_email, tenant_name=tenant.name)
-
-    # After
+    # In a route handler
     from lintpdf.services.email import EmailService, get_email_service
     @router.post("/jobs")
     async def submit_job(
@@ -36,11 +30,11 @@ Migrating a callsite:
         )
 
 Methods on the Protocol are intentionally narrow: only the message
-types that engine-side route handlers actually fire. The SaaS-side
+types that engine-side route handlers actually fire. SaaS-only
 helpers (``send_api_key_issued``, ``send_job_complete``,
 ``send_trial_report_email``, the approval-chain notifications) are
 called from SaaS-only routes (``trial.py``, ``approvals/service.py``)
-and stay in ``lintpdf_saas.email.service`` directly — they never
+and stay in ``lintpdf_saas.email.service`` directly -- they never
 touch this Protocol.
 """
 
