@@ -51,11 +51,6 @@ engine:
   - ai_audit_rerun_queue        # beat-driven AI audit rerun queue
                                 # (lintpdf.queue.audit_tasks.drain_ai_audit_rerun_queue)
 
-  # Engine legacy tables awaiting rewrite. Stay engine-scoped so OSS
-  # migrations don't trip the tripwire while the rewrite is pending.
-  - custom_endpoints            # Legacy submission endpoints --
-                                # rewrite planned on top of Workflow rows.
-
 saas:
   # lintpdf_saas.api.models.Base — SaaS-only billing / tenancy
   - ai_usage_logs
@@ -72,25 +67,25 @@ saas:
   - user_ai_access
 
 orphan:
-  # Truly orphan -- exists in alembic history + production DB but
-  # no current code path references the table. Candidate for a
-  # follow-up ``drop_table`` migration.
-  - waitlist_entries            # Created by alembic 003. Marketing
-                                # waitlist. Zero references in either
-                                # OSS engine or SaaS shell -- the
-                                # pre-launch waitlist flow moved to
-                                # the marketing site (packages/web)
-                                # before launch and the table was
-                                # never wired up.
-
-  # Already dropped from production (alembic 046 -- Phase 0.7
-  # PR-B4-final). Listed here so the migration-scope tripwire
-  # accepts the historical create/drop pairs in alembic history
-  # without flagging them as unclassified.
+  # Already dropped from production. Listed here so the
+  # migration-scope tripwire accepts the historical create/drop
+  # pairs in alembic history without flagging them as unclassified.
   #
-  # The legacy-fold (v13) migrated their data to ToggleOverride /
-  # Workflow rows; alembic 046 dropped the now-empty source tables.
+  # Dropped by alembic 053 -- the orphan-tables audit follow-up:
+  - waitlist_entries            # Pre-launch waitlist sign-up table.
+                                # Created by alembic 003 but the
+                                # flow ended up on the marketing
+                                # site (``packages/web``) and the
+                                # table was never wired up.
+
+  # Dropped by alembic 046 -- Phase 0.7 PR-B4-final. The legacy-fold
+  # (v13) migrated their data to ToggleOverride / Workflow rows;
+  # alembic 046 dropped the now-empty source tables:
   - custom_profiles
   - brand_specs
   - approval_chain_templates
   - tenant_import_mappings
+
+  # Dropped by alembic 047 -- Workflow-rows-rewrite of the legacy
+  # custom-endpoint submission flow:
+  - custom_endpoints
