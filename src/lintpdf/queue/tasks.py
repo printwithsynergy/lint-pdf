@@ -1512,46 +1512,11 @@ def prewarm_edge_cert(hostname: str) -> dict[str, Any]:
         return {"hostname": canonical, "status": "error", "error": str(exc)}
 
 
-def _activate_edge_domain(
-    db: Any,
-    row: Any,
-    domain: str,
-    verified_attr: str,
-    scope_label: str,
-    result: dict[str, Any],
-) -> bool:
-    """Flip ``verified=True`` if ``domain`` CNAMEs at our edge.
-
-    Shared by the four probe branches (tenant reports, tenant app,
-    profile reports, profile app) so there's exactly one place that
-    owns the "is this domain live?" check.
-
-    Returns True when the row was activated. On mismatch increments
-    ``result['cname_mismatch']`` and returns False.
-    """
-    cname = _resolve_cname(domain)
-    if not _cname_points_at_edge(cname):
-        result["cname_mismatch"] += 1
-        logger.info(
-            "%s %s not yet CNAMEd at %s (CNAME=%s)",
-            scope_label,
-            domain,
-            _EDGE_CNAME_TARGET,
-            cname,
-        )
-        return False
-    setattr(row, verified_attr, True)
-    db.commit()
-    result["activated"] += 1
-    logger.info("Activated %s %s via edge", scope_label, domain)
-    # Fire cert prewarm so the first real customer hit doesn't wait the
-    # 5-30s LE issuance latency. Delayed 3 s to let the DB commit settle
-    # + to stay off the probe-task's critical path.
-    try:
-        prewarm_edge_cert.apply_async(args=[domain], countdown=3)
-    except Exception:
-        logger.warning("Failed to schedule cert prewarm for %s", domain, exc_info=True)
-    return True
+# ``_activate_edge_domain`` was deleted in W6c-7k — the row-mutation
+# logic that owned "flip verified=True when the domain CNAMEs at our
+# edge" moved to the SaaS-side WhitelabelService implementation along
+# with the probe task body. The OSS engine no longer touches Tenant
+# / BrandProfile rows from queue/tasks.py.
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]
@@ -1560,121 +1525,22 @@ def _activate_edge_domain(
 def probe_pending_custom_domains() -> dict[str, Any]:
     """Flip ``verified=True`` on unverified custom domains whose CNAMEs point at our edge.
 
+    Dispatches through :class:`WhitelabelService.probe_pending_domains`.
+    OSS default returns ``{"checked": 0, ...}`` (no whitelabel tier on
+    OSS-only deploys); SaaS impl walks the unverified
+    ``Tenant.brand_custom_domain`` / ``Tenant.app_custom_domain`` /
+    ``BrandProfile.custom_domain`` / ``BrandProfile.app_custom_domain``
+    rows and flips ``verified=True`` when the CNAME resolves to our edge.
+
     Runs on a 5-minute Celery beat schedule. Safe to run concurrently
     (commits per-row) and idempotent (verified rows are ignored).
-
-    For each unverified domain -- tenant-level reports/app and
-    brand-profile-level reports/app -- we resolve the customer's CNAME
-    and flip ``verified=True`` if it points at ``edge.lintpdf.com``.
-    Caddy handles cert issuance on first HTTPS request; no Railway
-    round-trip or CF-Worker alias provisioning needed.
     """
     from lintpdf.api.database import get_db_session
-    from lintpdf.api.models import BrandProfile, Tenant
-
-    result: dict[str, Any] = {
-        "checked": 0,
-        "activated": 0,
-        "cname_mismatch": 0,
-    }
-
-    # Cap how many unverified rows we pull per beat tick. The DNS probes
-    # are cheap but a spam wave of signups can otherwise load tens of
-    # thousands of rows into memory at once; we'll catch the leftovers on
-    # the next 5-minute tick.
-    probe_batch_limit = 500
+    from lintpdf.services.whitelabel import get_whitelabel_service
 
     db = get_db_session()
     try:
-        pending_tenants: list[Tenant] = (
-            db.query(Tenant)
-            .filter(
-                Tenant.brand_custom_domain.isnot(None),
-                Tenant.brand_custom_domain_verified.is_(False),
-            )
-            .limit(probe_batch_limit)
-            .all()
-        )
-        for tenant in pending_tenants:
-            result["checked"] += 1
-            if not tenant.brand_custom_domain:
-                continue
-            _activate_edge_domain(
-                db,
-                tenant,
-                tenant.brand_custom_domain,
-                "brand_custom_domain_verified",
-                f"tenant {tenant.id} reports domain",
-                result,
-            )
-
-        pending_profiles: list[BrandProfile] = (
-            db.query(BrandProfile)
-            .filter(
-                BrandProfile.custom_domain.isnot(None),
-                BrandProfile.custom_domain_verified.is_(False),
-            )
-            .limit(probe_batch_limit)
-            .all()
-        )
-        for profile in pending_profiles:
-            result["checked"] += 1
-            if not profile.custom_domain:
-                continue
-            _activate_edge_domain(
-                db,
-                profile,
-                profile.custom_domain,
-                "custom_domain_verified",
-                f"profile {profile.id} reports domain",
-                result,
-            )
-
-        pending_app_tenants: list[Tenant] = (
-            db.query(Tenant)
-            .filter(
-                Tenant.app_custom_domain.isnot(None),
-                Tenant.app_custom_domain_verified.is_(False),
-            )
-            .limit(probe_batch_limit)
-            .all()
-        )
-        for tenant in pending_app_tenants:
-            result["checked"] += 1
-            if not tenant.app_custom_domain:
-                continue
-            _activate_edge_domain(
-                db,
-                tenant,
-                tenant.app_custom_domain,
-                "app_custom_domain_verified",
-                f"tenant {tenant.id} app domain",
-                result,
-            )
-
-        pending_app_profiles: list[BrandProfile] = (
-            db.query(BrandProfile)
-            .filter(
-                BrandProfile.app_custom_domain.isnot(None),
-                BrandProfile.app_custom_domain_verified.is_(False),
-            )
-            .limit(probe_batch_limit)
-            .all()
-        )
-        for profile in pending_app_profiles:
-            result["checked"] += 1
-            if not profile.app_custom_domain:
-                continue
-            _activate_edge_domain(
-                db,
-                profile,
-                profile.app_custom_domain,
-                "app_custom_domain_verified",
-                f"profile {profile.id} app domain",
-                result,
-            )
-
-        return result
+        return get_whitelabel_service().probe_pending_domains(db)
     finally:
         db.close()
 
