@@ -208,18 +208,22 @@ def resolve_signing_secret(
 
 
 def _load_tenant_default_secret(db: Session, tenant_id: uuid_mod.UUID) -> str | None:
-    """Read ``Tenant.webhook_signing_secret`` once per emission."""
-    from lintpdf.api.models import Tenant
+    """Read ``Tenant.webhook_signing_secret`` once per emission.
+
+    Dispatches through :class:`TenantContextService` so the OSS engine
+    never imports the SaaS-only ``Tenant`` ORM here.
+    """
+    from lintpdf.services.tenant_context import get_tenant_context_service
 
     try:
-        row = db.get(Tenant, tenant_id)
+        ctx = get_tenant_context_service().load(tenant_id, db)
     except Exception:
         logger.exception(
             "Webhook emit: failed to load tenant %s for default secret",
             tenant_id,
         )
         return None
-    return getattr(row, "webhook_signing_secret", None) if row else None
+    return ctx.webhook_signing_secret if ctx else None
 
 
 def _ensure_json_safe(value: Any) -> Any:
