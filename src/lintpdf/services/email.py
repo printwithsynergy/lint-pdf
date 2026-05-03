@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class EmailResult:
-    """Outcome of a transactional send. Mirrors ``lintpdf.email.service.EmailResult`` 1:1.
+    """Outcome of a transactional send. Mirrors ``lintpdf_saas.email.service.EmailResult`` 1:1.
 
     ``success`` is ``True`` only on confirmed delivery to the upstream
     mailer. ``email_id`` is populated on success; ``error`` carries the

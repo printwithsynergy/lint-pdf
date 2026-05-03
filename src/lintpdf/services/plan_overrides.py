@@ -5,8 +5,10 @@ The OSS engine's entitlement resolver
 plan-tier override lookup hook. The OSS package itself has no notion
 of plan tiers (that's a SaaS / multi-tenant concept), so the default
 implementation here is a pure no-op that returns ``{}`` for every
-call. ``resolve_entitlements`` falls back to the ``PLAN_LIMITS``
-hardcoded defaults when overrides are empty.
+call. ``resolve_entitlements`` falls back to the
+``EntitlementDefaultsService`` baseline (a permissive everything-
+enabled bag on OSS-only deploys; the real SaaS plan-tier baselines
+on hosted SaaS) when overrides are empty.
 
 The SaaS shell installs its own implementation at boot via
 ``set_plan_overrides_service`` that queries the SaaS-only
@@ -47,8 +49,8 @@ class DefaultPlanOverridesService:
 
     Plan-tier overrides are a SaaS concept (operator-edited rows in
     a multi-tenant database). The OSS preflight engine has no notion
-    of plan tiers at all; ``resolve_entitlements`` falls back to
-    ``PLAN_LIMITS`` hardcoded defaults when this returns ``{}``.
+    of plan tiers at all; ``resolve_entitlements`` falls back to the
+    ``EntitlementDefaultsService`` baseline when this returns ``{}``.
 
     Hosted SaaS deployments override the factory at boot via
     ``set_plan_overrides_service(SaaSPlanOverridesService())``
