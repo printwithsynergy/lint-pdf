@@ -82,29 +82,17 @@ def resolve_report_base_url(
 ) -> str:
     """Pick the report base URL for a tenant + active brand profile.
 
-    Resolution priority, highest wins:
-      1. brand_profile.custom_domain (if whitelabel_enabled AND verified)
-      2. tenant.brand_custom_domain   (if whitelabel_enabled AND verified)
-      3. settings.report_base_url     (the global default)
-
-    Unverified domains are ignored — the verified flag is the
-    source of truth for "this CNAME is actually live in Railway".
-    This prevents generating broken URLs during the onboarding
-    window between "customer enters domain" and "ops/probe marks active".
-
-    Tenants on plans without the whitelabel entitlement (FREE, STARTER,
-    GROWTH) always get the global default no matter what's in the DB.
+    Dispatches through :class:`WhitelabelService`. The OSS default
+    returns ``settings.report_base_url`` (no whitelabeling on OSS-only
+    deploys); ``lintpdf_saas`` installs an implementation that gates
+    ``custom_domain`` resolution on ``entitlements.whitelabel_enabled``
+    and the ``custom_domain_verified`` flag.
     """
-    if entitlements.whitelabel_enabled:
-        if (
-            brand_profile is not None
-            and brand_profile.custom_domain
-            and brand_profile.custom_domain_verified
-        ):
-            return f"https://{brand_profile.custom_domain}"
-        if tenant.brand_custom_domain and tenant.brand_custom_domain_verified:
-            return f"https://{tenant.brand_custom_domain}"
-    return settings.report_base_url
+    from lintpdf.services.whitelabel import get_whitelabel_service
+
+    return get_whitelabel_service().resolve_report_base_url(
+        tenant, brand_profile, entitlements, settings
+    )
 
 
 def resolve_viewer_base_url(
@@ -115,21 +103,15 @@ def resolve_viewer_base_url(
 ) -> str:
     """Pick the viewer/app base URL for a tenant + active brand profile.
 
-    Resolution priority, highest wins:
-      1. brand_profile.app_custom_domain (if whitelabel_enabled AND verified)
-      2. tenant.app_custom_domain        (if whitelabel_enabled AND verified)
-      3. settings.app_base_url           (the global default)
+    Dispatches through :class:`WhitelabelService`. OSS default returns
+    ``settings.app_base_url``; SaaS impl gates the ``app_custom_domain``
+    fields behind ``entitlements.whitelabel_enabled``.
     """
-    if entitlements.whitelabel_enabled:
-        if (
-            brand_profile is not None
-            and getattr(brand_profile, "app_custom_domain", None)
-            and brand_profile.app_custom_domain_verified
-        ):
-            return f"https://{brand_profile.app_custom_domain}"
-        if getattr(tenant, "app_custom_domain", None) and tenant.app_custom_domain_verified:
-            return f"https://{tenant.app_custom_domain}"
-    return settings.app_base_url
+    from lintpdf.services.whitelabel import get_whitelabel_service
+
+    return get_whitelabel_service().resolve_viewer_base_url(
+        tenant, brand_profile, entitlements, settings
+    )
 
 
 # Default LintPDF logo as an embedded base64 data URI so reports always have
