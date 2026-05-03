@@ -93,11 +93,8 @@ def default_capabilities(all_true: bool = True) -> dict[str, bool]:
     return {key: all_true for key in CAPABILITY_KEYS}
 
 
-class AIBillingMode(enum.StrEnum):
-    """AI credit billing mode."""
-
-    PAY_PER_USE = "pay_per_use"
-    CREDIT_PACKAGE = "credit_package"
+# AIBillingMode was extracted to lintpdf_saas.api.models in W6c-2r
+# (PR thinkneverland/lint-pdf#436 + thinkneverland/lint-pdf-saas#31).
 
 
 class Tenant(Base):
@@ -195,15 +192,13 @@ class Tenant(Base):
     webhook_endpoints: Mapped[list[WebhookEndpoint]] = relationship(
         back_populates="tenant", cascade="all, delete-orphan"
     )
-    ai_config: Mapped[TenantAIConfig | None] = relationship(
-        back_populates="tenant", uselist=False, cascade="all, delete-orphan"
-    )
-    ai_credit_packages: Mapped[list[TenantAICreditPackage]] = relationship(
-        back_populates="tenant", cascade="all, delete-orphan"
-    )
-    ai_usage_logs: Mapped[list[AIUsageLog]] = relationship(
-        back_populates="tenant", cascade="all, delete-orphan"
-    )
+    # ai_config / ai_credit_packages / ai_usage_logs relationships
+    # removed in W6c-2r: TenantAIConfig / TenantAICreditPackage /
+    # AIUsageLog live in lintpdf_saas.api.models on a separate
+    # MetaData. Code that needs these tables queries them via the
+    # SaaS-side service Protocols (AICreditBalanceService,
+    # AIMonthlyUsageService, AIUsageRecorderService).
+    #
     # color_config relationship removed in W6c-3: TenantColorConfig
     # lives in lintpdf_saas.api.models on a separate MetaData. No
     # OSS code accessed tenant.color_config directly anyway.
@@ -659,176 +654,16 @@ class ReportToken(Base):
 # --- AI Feature Models ---
 
 
-class TenantAIConfig(Base):
-    """AI feature configuration for a tenant (Fleet)."""
-
-    __tablename__ = "tenant_ai_configs"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
-    )
-    ai_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    billing_mode: Mapped[AIBillingMode] = mapped_column(
-        Enum(AIBillingMode, values_callable=lambda e: [m.value for m in e]),
-        nullable=False,
-        default=AIBillingMode.PAY_PER_USE,
-    )
-    credit_balance: Mapped[Any] = mapped_column(Numeric(12, 2), nullable=False, default=0)
-    overage_rate: Mapped[Any] = mapped_column(Numeric(8, 4), nullable=False, default=0.10)
-    monthly_spending_limit: Mapped[Any | None] = mapped_column(Numeric(10, 2), nullable=True)
-    enabled_categories: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
-    default_ai_features: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
-    trial_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    trial_expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    # Brand configuration for AI checks
-    brand_palette: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
-    reference_logos: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
-    custom_dictionary: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    industry_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    regulatory_market: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    # Threshold defaults
-    default_safe_zone_mm: Mapped[Any] = mapped_column(Numeric(6, 2), nullable=False, default=3.0)
-    default_package_capacity_ml: Mapped[Any | None] = mapped_column(Numeric(10, 2), nullable=True)
-    default_package_surface_area_cm2: Mapped[Any | None] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
-    min_image_quality_score: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
-    delta_e_warning_threshold: Mapped[Any] = mapped_column(
-        Numeric(6, 2), nullable=False, default=2.0
-    )
-    delta_e_error_threshold: Mapped[Any] = mapped_column(Numeric(6, 2), nullable=False, default=5.0)
-    severity_labels: Mapped[dict[str, str] | None] = mapped_column(
-        JSON,
-        nullable=True,
-        default=lambda: {"error": "Error", "warning": "Warning", "advisory": "Advisory"},
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-
-    # Relationships
-    tenant: Mapped[Tenant] = relationship(back_populates="ai_config")
-
-
-class TenantAICreditPackage(Base):
-    """Prepaid metered-resource package (AI credits or file quota).
-
-    Despite the legacy ``tenant_ai_credit_packages`` table name, this
-    table holds both kinds of packs — the ``kind`` discriminator column
-    selects between them. See ``packages/engine/src/lintpdf/billing/
-    metered_packs.py`` for the pack catalogue.
-
-    Sources:
-      - ``plan_monthly`` — granted on invoice.paid, expires on next cycle
-      - ``purchase`` — tenant bought via Stripe Checkout
-      - ``admin_grant`` — ops bypass via the admin API
-      - ``trial`` — trial allocation from the AI-trial endpoint
-    """
-
-    __tablename__ = "tenant_ai_credit_packages"
-    __table_args__ = (
-        Index("ix_ai_credit_packages_tenant", "tenant_id", "purchased_at"),
-        Index("ix_ai_credit_packages_tenant_kind", "tenant_id", "kind"),
-        Index(
-            "ix_ai_credit_packages_stripe_session",
-            "stripe_session_id",
-            unique=True,
-        ),
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    # Which metered resource this pack funds. 'credits' preserves
-    # pre-refactor behavior for existing rows (default).
-    kind: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="credits", server_default="credits"
-    )
-    # Origin of the package — see docstring for the enum values.
-    source: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="admin_grant", server_default="admin_grant"
-    )
-    credits_purchased: Mapped[int] = mapped_column(Integer, nullable=False)
-    credits_remaining: Mapped[int] = mapped_column(Integer, nullable=False)
-    price_paid: Mapped[Any] = mapped_column(Numeric(10, 2), nullable=False)
-    # Stripe checkout session id when source='purchase'. Unique to
-    # enforce webhook idempotency.
-    stripe_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    # For source='plan_monthly': the start of the billing period this
-    # allotment is for. Used to dedupe allocations so a replayed
-    # invoice.paid webhook never double-grants.
-    billing_period_start: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    purchased_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    # Relationships
-    tenant: Mapped[Tenant] = relationship(back_populates="ai_credit_packages")
-
-
-class AIUsageLog(Base):
-    """Log entry for AI feature usage and credit consumption.
-
-    Shared between the pre-existing credit-consumption accounting
-    (``credits_consumed``, ``cost`` in USD Numeric, ``processing_time_ms``,
-    ``result_summary``) and the WS-G per-Claude-call metering
-    columns added in Alembic 037 (``model``, ``input_tokens``,
-    ``output_tokens``, ``cache_read_tokens``, ``cache_write_tokens``,
-    ``cost_cents``). Quota + admin dashboard reads use the
-    ``cost_cents`` column; the old Numeric ``cost`` stays populated
-    for the credit-packages UI.
-    """
-
-    __tablename__ = "ai_usage_logs"
-    __table_args__ = (
-        Index("ix_ai_usage_logs_tenant_created", "tenant_id", "created_at"),
-        Index("ix_ai_usage_logs_job", "job_id"),
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
-    )
-    job_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True
-    )
-    category: Mapped[str] = mapped_column(String(100), nullable=False)
-    feature: Mapped[str] = mapped_column(String(100), nullable=False)
-    credits_consumed: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    cost: Mapped[Any] = mapped_column(Numeric(8, 4), nullable=False, default=0)
-    processing_time_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    result_summary: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    # WS-G per-call metering columns (Alembic 037). ``cost_cents``
-    # is the integer-cent cost computed by
-    # :func:`lintpdf.audit.metering.record_usage`. Sub-cent calls
-    # round UP to 1 so quota maths stay truthful. Nullable because
-    # older rows (pre-037) don't have a model/token breakdown.
-    model: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    cache_read_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    cache_write_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    cost_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
-    # Relationships
-    tenant: Mapped[Tenant] = relationship(back_populates="ai_usage_logs")
-
-
+# TenantAIConfig / TenantAICreditPackage / AIUsageLog and the
+# AIBillingMode enum were extracted to lintpdf_saas.api.models in
+# W6c-2r (PRs thinkneverland/lint-pdf-saas#31 + thinkneverland/lint-pdf#436).
+# Engine code reaches the underlying tables through Protocol seams in
+# lintpdf.services.* (AICreditBalanceService, AICreditCheckService,
+# AICreditDeductionService, AIMonthlyUsageService, AIUsageRecorderService,
+# AIConfigService) — no direct ORM import survives in OSS source.
+#
 # TenantColorConfig was extracted to lintpdf_saas.api.models in W6c-3
-# (PRs thinkneverland/lint-pdf-saas#26/#XX + thinkneverland/lint-pdf#418/#XX).
+# (PRs thinkneverland/lint-pdf-saas#26 + thinkneverland/lint-pdf#418/#419).
 # Engine code reaches it through the TenantColorService Protocol seam
 # at lintpdf.services.tenant_color (no direct import).
 
