@@ -2,10 +2,11 @@
 
 Engine route handlers gate features on tenant entitlements: viewer
 annotations, AI categories, custom profiles, batch submission,
-white-label branding, etc. Today they import
-``lintpdf.tenants.entitlements.resolve_entitlements`` directly, which
-couples the OSS engine to the SaaS-side ``Tenant`` SQLAlchemy model
-+ ``PLAN_LIMITS`` table.
+white-label branding, etc. They reach
+``lintpdf.tenants.entitlements.resolve_entitlements`` which itself
+dispatches through ``EntitlementDefaultsService`` for the layer-0
+plan baselines (a permissive bag on OSS, the real PLAN_LIMITS dict
+on SaaS) -- no direct SaaS coupling.
 
 The Protocol declared here lets routes accept the resolver via
 ``Depends(get_entitlements_service)`` instead. The default factory
