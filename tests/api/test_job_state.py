@@ -23,8 +23,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from lintpdf.api.models import (
-    ApprovalChain,
-    ApprovalStep,
     Job,
     JobStatus,
     ReportToken,
@@ -38,54 +36,92 @@ from lintpdf.services.approvals import set_approvals_service
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
 
-class _SaaSStyleApprovalsService:
-    """Test-side service mirroring the SaaS read pattern.
+# In-memory ledger of (chain_dict, [step_dicts]) keyed by (job_id, tenant_id).
+# The OSS engine no longer ships ``ApprovalChain`` / ``ApprovalStep`` ORM
+# models (W6c-5f); the test fixture uses plain Python objects to drive the
+# ``ApprovalsService`` Protocol contract.
+_APPROVAL_LEDGER: list[dict] = []
 
-    Reads ``ApprovalChain`` + ``ApprovalStep`` and assembles the
-    JobStateApprovalChain response — same query the previous in-tree
-    block in ``jobs.get_job_state`` ran.
+
+class _StubApprovalChain:
+    """Attribute-bag stub. Tests construct one to seed the ledger."""
+
+    def __init__(self, **kw):  # type: ignore[no-untyped-def]
+        for k, v in kw.items():
+            setattr(self, k, v)
+        # Default the steps list so callers don't need to pass it.
+        if not hasattr(self, "_steps"):
+            self._steps: list[_StubApprovalStep] = []
+
+
+class _StubApprovalStep:
+    """Attribute-bag stub for an ApprovalStep row."""
+
+    def __init__(self, **kw):  # type: ignore[no-untyped-def]
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+
+# Aliases the test asserts directly construct.
+ApprovalChain = _StubApprovalChain
+ApprovalStep = _StubApprovalStep
+
+
+def _seed_chain(db_session, chain: _StubApprovalChain) -> None:  # type: ignore[no-untyped-def]
+    _APPROVAL_LEDGER.append(
+        {
+            "chain": chain,
+            "steps": chain._steps,
+            "job_id": chain.job_id,
+            "tenant_id": chain.tenant_id,
+        }
+    )
+
+
+class _LedgerApprovalsService:
+    """Test-side service backed by ``_APPROVAL_LEDGER``.
+
+    No real ORM queries — the test seeds via ``_seed_chain`` instead of
+    ``db.add(...)``. Mirrors the JobStateApprovalChain assembly the
+    previous in-tree block ran.
     """
 
     def get_approval_chain_state(self, job_id, tenant_id, db):  # type: ignore[no-untyped-def]
-        chain = (
-            db.query(ApprovalChain)
-            .filter(ApprovalChain.job_id == job_id, ApprovalChain.tenant_id == tenant_id)
-            .first()
-        )
-        if chain is None:
-            return None
-
-        steps = (
-            db.query(ApprovalStep)
-            .filter(ApprovalStep.chain_id == chain.id)
-            .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
-            .all()
-        )
-        return JobStateApprovalChain(
-            id=str(chain.id),
-            template_id=str(chain.template_id) if chain.template_id else None,
-            status=chain.status,
-            current_step=chain.current_step,
-            step_history=[
-                JobStateApprovalStep(
-                    step_index=s.step_index,
-                    step_name=s.step_name,
-                    approver_email=s.approver_email,
-                    decision=s.decision,
-                    notes=s.notes,
-                    decided_at=s.decided_at,
+        for entry in _APPROVAL_LEDGER:
+            if entry["job_id"] == job_id and entry["tenant_id"] == tenant_id:
+                chain = entry["chain"]
+                steps = entry["steps"]
+                return JobStateApprovalChain(
+                    id=str(chain.id),
+                    template_id=str(chain.template_id) if chain.template_id else None,
+                    status=chain.status,
+                    current_step=chain.current_step,
+                    step_history=[
+                        JobStateApprovalStep(
+                            step_index=s.step_index,
+                            step_name=s.step_name,
+                            approver_email=s.approver_email,
+                            decision=s.decision,
+                            notes=s.notes,
+                            decided_at=s.decided_at,
+                        )
+                        for s in steps
+                    ],
+                    created_at=getattr(chain, "created_at", None) or datetime.now(timezone.utc),
+                    completed_at=getattr(chain, "completed_at", None),
                 )
-                for s in steps
-            ],
-            created_at=chain.created_at,
-            completed_at=chain.completed_at,
-        )
+        return None
+
+    def process_timeouts(self, db):  # type: ignore[no-untyped-def]
+        return {}
 
 
 @pytest.fixture(autouse=True)
 def _install_approvals_service():  # type: ignore[no-untyped-def]
-    set_approvals_service(_SaaSStyleApprovalsService())
+    _APPROVAL_LEDGER.clear()
+    set_approvals_service(_LedgerApprovalsService())
     yield
+    _APPROVAL_LEDGER.clear()
     set_approvals_service(None)
 
 
@@ -145,30 +181,31 @@ def test_state_stitches_every_section(client: TestClient, db_session: Session) -
     """Seed a fully-populated job (approvals + annotations + reports) and verify stitching."""
     job = _seed_complete_job(db_session)
 
-    # Approval chain with one decided step carrying notes
+    # Approval chain with one decided step carrying notes — seeded via
+    # the in-memory ledger (no ORM since W6c-5f extracted these models).
     chain = ApprovalChain(
         id=uuid.uuid4(),
         job_id=job.id,
         tenant_id=job.tenant_id,
         template_id=None,
-        steps=[{"name": "Print ops", "approvers": [{"email": "ops@example.com"}]}],
         status="approved",
         current_step=0,
+        completed_at=None,
     )
-    db_session.add(chain)
-    db_session.flush()
-    step = ApprovalStep(
-        id=uuid.uuid4(),
-        chain_id=chain.id,
-        step_index=0,
-        step_name="Print ops",
-        approver_email="ops@example.com",
-        decision="approved",
-        notes="Looks great, ship it.",
-        decided_at=datetime.now(timezone.utc),
-        access_token=uuid.uuid4().hex,
-    )
-    db_session.add(step)
+    chain._steps = [
+        ApprovalStep(
+            id=uuid.uuid4(),
+            chain_id=chain.id,
+            step_index=0,
+            step_name="Print ops",
+            approver_email="ops@example.com",
+            decision="approved",
+            notes="Looks great, ship it.",
+            decided_at=datetime.now(timezone.utc),
+            access_token=uuid.uuid4().hex,
+        )
+    ]
+    _seed_chain(db_session, chain)
 
     # One annotation + one comment
     ann = ViewerAnnotation(
