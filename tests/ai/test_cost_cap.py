@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import create_engine, event, func, select
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -24,7 +24,6 @@ from lintpdf.ai.cost_cap import (
     remaining_cents,
 )
 from lintpdf.api.models import (
-    AIUsageLog,
     Base,
     Tenant,
     TenantPlan,
@@ -45,12 +44,14 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 
-class _AIUsageLogMonthlyUsageService:
-    """Test-side implementation that sums ``AIUsageLog.cost_cents``.
+# In-memory usage ledger keyed by tenant. The OSS engine has no AI
+# billing concept, so the test fixtures use a plain list of records
+# rather than the SaaS-only ``AIUsageLog`` ORM model.
+_USAGE_LEDGER: list[tuple[uuid.UUID, int, datetime]] = []
 
-    Mirrors the SaaS implementation. Lives in tests/ rather than
-    src/ so the OSS engine stays free of AIUsageLog references.
-    """
+
+class _FakeMonthlyUsageService:
+    """Test-side service that sums the in-memory ``_USAGE_LEDGER``."""
 
     def monthly_usage_cents(
         self,
@@ -60,20 +61,17 @@ class _AIUsageLogMonthlyUsageService:
         now: datetime | None = None,
     ) -> int:
         start, end = _month_window(now=now)
-        total = db.execute(
-            select(func.coalesce(func.sum(AIUsageLog.cost_cents), 0)).where(
-                AIUsageLog.tenant_id == tenant_id,
-                AIUsageLog.created_at >= start,
-                AIUsageLog.created_at < end,
-            )
-        ).scalar_one()
-        return int(total or 0)
+        return sum(
+            cost for tid, cost, when in _USAGE_LEDGER if tid == tenant_id and start <= when < end
+        )
 
 
 @pytest.fixture(autouse=True)
 def _install_usage_service() -> Generator[None, None, None]:
-    set_ai_monthly_usage_service(_AIUsageLogMonthlyUsageService())
+    _USAGE_LEDGER.clear()
+    set_ai_monthly_usage_service(_FakeMonthlyUsageService())
     yield
+    _USAGE_LEDGER.clear()
     set_ai_monthly_usage_service(None)
 
 
@@ -153,21 +151,13 @@ def _add_usage(
     when: datetime | None = None,
     feature: str = "audit",
 ) -> None:
-    log = AIUsageLog(
-        id=uuid.uuid4(),
-        tenant_id=tenant_id,
-        job_id=None,
-        category=feature,
-        feature=feature,
-        credits_consumed=cost_cents,
-        cost=cost_cents / 100.0,
-        processing_time_ms=0,
-        cost_cents=cost_cents,
-    )
-    if when is not None:
-        log.created_at = when
-    db.add(log)
-    db.commit()
+    """Append a record to the in-memory ledger the fake service sums.
+
+    The OSS-side cost-cap tests don't need a real ``AIUsageLog`` row
+    — they exercise the ``AIMonthlyUsageService`` Protocol contract,
+    not the SaaS-only metering ORM.
+    """
+    _USAGE_LEDGER.append((tenant_id, cost_cents, when or datetime.now(tz=timezone.utc)))
 
 
 # ---- registry default behaviour ------------------------------------------
