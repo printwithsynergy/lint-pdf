@@ -1,10 +1,14 @@
 # Residual SaaS-shaped modules in the OSS engine
 
 Audit catalog produced after the W6c-7 cluster (Tenant + ApiKey
-extraction) and W7 (table-scope tripwire) landed. Captures the
-modules that still live under `src/lintpdf/` but are exclusively or
-predominantly consumed by `lintpdf_saas`. Each row is a candidate
-for a future extraction PR; no code changes here.
+extraction) and W7 (table-scope tripwire) landed.
+
+**Status: complete.** All three relocation candidates have shipped
+(items #1, #2, #3 below). The orphan-table audit at the end has
+been resolved -- 4 of the 7 originally-listed orphans were already
+dropped from production (alembic 046), 2 were re-classified as
+engine-scoped (raw-SQL or legacy-awaiting-rewrite), and 1
+(``waitlist_entries``) is genuinely vestigial.
 
 ## Methodology
 
@@ -23,7 +27,9 @@ shouldn't see Stripe price IDs.
 
 ## Catalog
 
-### 1. `src/lintpdf/billing/` — Stripe integration (extract)
+### 1. `src/lintpdf/billing/` — Stripe integration (DONE)
+
+**Status: extracted.** SaaS PR [#46](https://github.com/thinkneverland/lint-pdf-saas/pull/46) + OSS PR [#460](https://github.com/thinkneverland/lint-pdf/pull/460).
 
 | File | Status | Callers |
 |---|---|---|
@@ -34,7 +40,9 @@ shouldn't see Stripe price IDs.
 Both files are SaaS-only. The engine has no Stripe concept.
 Relocation target: `lintpdf_saas/billing/{stripe_client,metered_packs}.py`.
 
-### 2. `src/lintpdf/email/` — Resend-backed email service (extract)
+### 2. `src/lintpdf/email/` — Resend-backed email service (DONE)
+
+**Status: extracted.** SaaS PR [#45](https://github.com/thinkneverland/lint-pdf-saas/pull/45) + OSS PR [#459](https://github.com/thinkneverland/lint-pdf/pull/459).
 
 | File | Status | Callers |
 |---|---|---|
@@ -50,7 +58,12 @@ Test files (`tests/test_email_service.py`,
 `tests/email/test_email_service.py`) need to follow the move OR be
 rewritten as OSS test stubs of `EmailService` Protocol.
 
-### 3. `src/lintpdf/tenants/entitlements.py` — billing-tier defaults (split)
+### 3. `src/lintpdf/tenants/entitlements.py` — billing-tier defaults (DONE)
+
+**Status: split.** Three-stage delivery:
+- OSS Protocol foundation: PR [#461](https://github.com/thinkneverland/lint-pdf/pull/461) (audit-3a).
+- SaaS impl + wire-up: PR [#47](https://github.com/thinkneverland/lint-pdf-saas/pull/47) (audit-3b).
+- OSS callsite refactor + ``PLAN_LIMITS`` delete: PR [#462](https://github.com/thinkneverland/lint-pdf/pull/462) (audit-3c).
 
 The `TenantEntitlements` dataclass is engine-shaped (it's the
 abstract feature-flag bag the engine reads via the resolver). The
