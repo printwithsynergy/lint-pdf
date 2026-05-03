@@ -113,34 +113,31 @@ def record_usage(
     )
     try:
         from lintpdf.api.database import get_db_session
-        from lintpdf.api.models import AIUsageLog
+        from lintpdf.services.ai_usage_recorder import get_ai_usage_recorder_service
     except Exception:
         return cost
 
     session = None
     try:
+        from types import SimpleNamespace
+
         session = get_db_session()
-        # Also populate the pre-existing credit-packages columns so
-        # the legacy admin dashboards stay truthful. ``credits_consumed``
-        # is the cents-as-credit-unit; ``cost`` is the USD dollar
-        # equivalent (Numeric(8,4)) used by the credit-pack billing.
-        session.add(
-            AIUsageLog(
-                tenant_id=tenant_id,
-                job_id=job_id,
-                category="ai_audit" if feature == "audit" else feature,
-                feature=feature,
-                credits_consumed=cost,
-                cost=cost / 100.0,  # USD
-                processing_time_ms=0,
-                result_summary=None,
-                model=model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                cache_read_tokens=cache_read_tokens,
-                cache_write_tokens=cache_write_tokens,
-                cost_cents=cost,
-            )
+        # Build an Anthropic-SDK-shaped usage namespace so the
+        # AIUsageRecorderService extracts the same token counts.
+        usage = SimpleNamespace(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cache_read_input_tokens=cache_read_tokens,
+            cache_creation_input_tokens=cache_write_tokens,
+        )
+        get_ai_usage_recorder_service().record_usage(
+            session,
+            tenant_id=tenant_id,
+            job_id=job_id,
+            model=model,
+            usage=usage,
+            category="ai_audit" if feature == "audit" else feature,
+            feature=feature,
         )
         session.commit()
     except Exception:
