@@ -19,7 +19,6 @@ to bouncing every AI call because Postgres flaked.
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -28,26 +27,17 @@ logger = logging.getLogger(__name__)
 def current_month_usage_cents(db: Any, tenant_id: Any) -> int:
     """Sum of ``cost_cents`` for the current calendar month.
 
-    Uses ``COALESCE`` on ``cost_cents`` so pre-037 rows (which
-    stored ``cost`` as USD Numeric) count as zero rather than
-    breaking the aggregation.
+    Dispatches to the registered :class:`AIMonthlyUsageService`. The
+    OSS engine ships a no-op default returning ``0`` (no AI billing
+    on OSS-only deploys); ``lintpdf_saas`` installs an
+    ``AIUsageLog``-backed implementation at boot. Errors fall back
+    to ``0`` (fail-open) — losing quota enforcement is preferable
+    to bouncing every AI call because Postgres flaked.
     """
     try:
-        from sqlalchemy import func
+        from lintpdf.services.ai_monthly_usage import get_ai_monthly_usage_service
 
-        from lintpdf.api.models import AIUsageLog
-
-        now = datetime.now(UTC)
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        total = (
-            db.query(func.coalesce(func.sum(AIUsageLog.cost_cents), 0))
-            .filter(
-                AIUsageLog.tenant_id == tenant_id,
-                AIUsageLog.created_at >= month_start,
-            )
-            .scalar()
-        )
-        return int(total or 0)
+        return get_ai_monthly_usage_service().monthly_usage_cents(tenant_id, db)
     except Exception:
         logger.warning(
             "quota: current_month_usage_cents failed for tenant=%s — fail-open",
