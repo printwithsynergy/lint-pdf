@@ -486,7 +486,8 @@ async def generate_reports(  # skipcq: PY-R1000
         )
     except EntitlementDenied as exc:
         from lintpdf.api.gates import plan_upgrade_required
-        from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
+        from lintpdf.services.entitlement_defaults import get_entitlement_defaults_service
+        from lintpdf.tenants.models import TenantPlan
 
         requested = [spec.format for spec in body.formats]
         # Find the cheapest plan whose allowed_report_formats covers every
@@ -504,8 +505,9 @@ async def generate_reports(  # skipcq: PY-R1000
             TenantPlan.ENTERPRISE,
         ]
         required = "enterprise"
+        defaults_svc = get_entitlement_defaults_service()
         for plan in plan_order:
-            allowed = set(PLAN_LIMITS[plan].get("allowed_report_formats") or [])
+            allowed = set(defaults_svc.defaults_for(plan.value).get("allowed_report_formats") or [])
             if all(fmt in allowed for fmt in requested):
                 required = str(plan)
                 break
@@ -555,7 +557,7 @@ async def generate_reports(  # skipcq: PY-R1000
         resolve_report_base_url,
         resolve_viewer_base_url,
     )
-    from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
+    from lintpdf.services.entitlement_defaults import get_entitlement_defaults_service
 
     storage = get_storage()
     service = ReportService(storage, db)
@@ -570,7 +572,7 @@ async def generate_reports(  # skipcq: PY-R1000
     # Determine expiry
     expiry_days = body.expiry_days
     if expiry_days is None:
-        plan_limits = PLAN_LIMITS.get(TenantPlan(tenant.plan), {})
+        plan_limits = get_entitlement_defaults_service().defaults_for(str(tenant.plan))
         expiry_days = tenant.report_default_expiry_days or plan_limits.get(
             "report_default_expiry_days", 7
         )
