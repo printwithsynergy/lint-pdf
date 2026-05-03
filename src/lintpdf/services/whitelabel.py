@@ -53,6 +53,14 @@ class WhitelabelService(Protocol):
         """Pick the viewer / app base URL. Returns ``settings.app_base_url`` on OSS."""
         ...
 
+    def probe_pending_domains(self, db) -> dict[str, int]:  # type: ignore[no-untyped-def]
+        """Beat-driven sweep: flip ``verified=True`` on unverified custom domains.
+
+        Returns a counter dict (``{"checked": N, "activated": M, "cname_mismatch": K}``)
+        for the Celery task's structured log output.
+        """
+        ...
+
 
 class DefaultWhitelabelService:
     """OSS default: always returns the global settings URLs.
@@ -79,6 +87,10 @@ class DefaultWhitelabelService:
         settings: Settings,
     ) -> str:
         return settings.app_base_url
+
+    def probe_pending_domains(self, db) -> dict[str, int]:  # type: ignore[no-untyped-def]
+        # OSS-only deploys have no custom-domain concept — beat tick is a no-op.
+        return {"checked": 0, "activated": 0, "cname_mismatch": 0}
 
 
 _service: WhitelabelService | None = None
