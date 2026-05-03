@@ -70,3 +70,9 @@ jobs:
 
       - name: route-classification
         run: python scripts/check_route_classification.py
+
+      - name: install pyyaml for migration-scope tripwire
+        run: pip install pyyaml
+
+      - name: migration-scope (W7 alembic-split tripwire)
+        run: python scripts/check_migration_scope.py

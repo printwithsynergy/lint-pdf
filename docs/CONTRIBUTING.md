@@ -40,7 +40,7 @@ The `[ai]` extra pulls in the heavy vision/AI deps
 …). Skip it if you're only working on non-AI analyzers — the
 imports self-skip cleanly.
 
-## The two CI tripwires
+## The CI tripwires
 
 LintPDF has two CI guards that run on every PR. Understand them
 before you start a refactor that might trip them.
@@ -78,7 +78,24 @@ experience.
 
 Baseline: 0. New fields without `description=` fail the build.
 
-Both tripwires are idempotent and fast (~2 seconds combined). The
+### Migration scope (W7 alembic-split tripwire)
+
+`scripts/check_migration_scope.py` enforces the engine ↔ SaaS
+table-scope boundary in alembic migrations. Every Postgres table
+is classified in `audit/table-scopes.yaml` as `engine`, `saas`,
+or `orphan`. New migrations must touch tables in exactly one
+scope — no cross-scope changes.
+
+Historical pre-W6 migrations that legitimately mixed scopes (back
+when both lived on a single `Base`) are tolerated via
+`scripts/migration_scope_baseline.txt`. Don't add new entries
+there: split the migration instead.
+
+The tripwire runs on every PR via the `engine tripwires` job in
+`.github/workflows/ci.yml`. New tables must be classified in
+`audit/table-scopes.yaml` or the build fails with exit code 2.
+
+Each tripwire is idempotent and fast (~2 seconds combined). The
 pre-commit hook runs them on staged files only.
 
 ## Test conventions
