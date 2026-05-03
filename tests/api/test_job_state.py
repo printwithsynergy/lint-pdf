@@ -35,7 +35,6 @@ from lintpdf.api.schemas import JobStateApprovalChain, JobStateApprovalStep
 from lintpdf.services.approvals import set_approvals_service
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-
 # In-memory ledger of (chain_dict, [step_dicts]) keyed by (job_id, tenant_id).
 # The OSS engine no longer ships ``ApprovalChain`` / ``ApprovalStep`` ORM
 # models (W6c-5f); the test fixture uses plain Python objects to drive the
