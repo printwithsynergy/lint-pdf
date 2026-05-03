@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ApprovalsService(Protocol):
-    """Look up the approval chain state for a job."""
+    """Look up + maintain approval chains."""
 
     def get_approval_chain_state(
         self,
@@ -34,6 +34,14 @@ class ApprovalsService(Protocol):
         db: Session,
     ) -> JobStateApprovalChain | None:
         """Return the assembled response shape, or ``None`` when no chain exists."""
+        ...
+
+    def process_timeouts(self, db: Session) -> dict[str, int]:
+        """Beat-driven sweep: time out pending approval steps past expiry.
+
+        Returns a counters dict (e.g. ``{"rejected": N, "advanced": M}``)
+        for the Celery task's structured log output.
+        """
         ...
 
 
@@ -47,6 +55,9 @@ class DefaultApprovalsService:
         db: Session,
     ) -> JobStateApprovalChain | None:
         return None
+
+    def process_timeouts(self, db: Session) -> dict[str, int]:
+        return {}
 
 
 _service: ApprovalsService | None = None

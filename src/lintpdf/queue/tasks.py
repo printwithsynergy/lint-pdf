@@ -2005,17 +2005,19 @@ def sweep_webhook_deliveries() -> dict[str, Any]:
 def process_approval_timeouts() -> dict[str, Any]:
     """Celery Beat: handle approval steps whose expires_at has passed.
 
-    Each step's on_timeout setting determines behavior:
-    - "reject": mark chain rejected
-    - "advance": treat as approved
-    - "notify": re-notify approvers, reset expiry
+    Dispatches through :class:`ApprovalsService.process_timeouts`. OSS
+    default returns ``{}`` (no approval workflow concept on OSS-only
+    deploys, so the beat tick is a no-op); ``lintpdf_saas`` installs an
+    implementation that walks pending ``ApprovalStep`` rows and applies
+    each step's ``on_timeout`` setting (``reject`` / ``advance`` /
+    ``notify``).
     """
     from lintpdf.api.database import get_db_session
-    from lintpdf.approvals.service import process_timeouts
+    from lintpdf.services.approvals import get_approvals_service
 
     db = get_db_session()
     try:
-        return process_timeouts(db)
+        return get_approvals_service().process_timeouts(db)
     finally:
         db.close()
 
