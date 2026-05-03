@@ -21,11 +21,12 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import BrandProfile, Job, JobStatus, Tenant
+from lintpdf.api.models import BrandProfile, Job, JobStatus
 from lintpdf.api.storage import get_storage
 from lintpdf.reports.service import _LINTPDF_DEFAULT_LOGO
 from lintpdf.services.email import EmailService, get_email_service
 from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
+from lintpdf.services.tenant_context import TenantContext  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,7 @@ def _get_job_pdf_by_token(
 
 def _get_job_pdf(
     job_id: str,
-    tenant: Tenant,
+    tenant: TenantContext,
     db: Session,
 ) -> tuple[Job, bytes]:
     """Fetch the job and its original PDF bytes from storage."""
@@ -297,7 +298,7 @@ def _tac_runs_cache_key(
 @router.get("/jobs/{job_id}/pages", response_model=PagesResponse)
 async def list_pages(
     job_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> PagesResponse:
     """Return page count and dimensions for all pages in a job's PDF."""
@@ -390,7 +391,7 @@ async def get_page_tile(
             "``ocg_on`` and ``ocg_off`` is rejected with 422."
         ),
     ),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
     """Render a single page as a PNG tile at the requested DPI.
@@ -566,7 +567,7 @@ async def get_page_tile(
 async def get_page_info(
     job_id: str,
     page_num: int,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> PageInfo:
     """Return dimensions and box info for a single page."""
@@ -594,7 +595,7 @@ async def get_page_info(
 @router.get("/jobs/{job_id}/separations", response_model=SeparationsResponse)
 async def get_separations(
     job_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> SeparationsResponse:
     """List all ink channels (CMYK + spot colors) in the job's PDF."""
@@ -617,7 +618,7 @@ async def get_separation_channel(
         le=600,
         description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
     ),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
     """Render a single ink channel as a grayscale PNG."""
@@ -783,7 +784,7 @@ async def get_tac_heatmap(
             "Defaults to 300% (typical for sheetfed offset)."
         ),
     ),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
     """Render a TAC heatmap overlay as an RGBA PNG."""
@@ -824,7 +825,7 @@ async def get_tac_runs(
         le=500,
         description="Total area coverage threshold in percent (100-500).",
     ),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> TacRunsResponse:
     """Return per-text-run mean TAC metadata for tooltip overlays.
@@ -915,7 +916,9 @@ class ViewerConfigResponse(BaseModel):
     ocr_text_layer: list[dict[str, Any]] | None = None
 
 
-def _apply_branding_to_config(config: ViewerConfigResponse, branding: Any, tenant: Tenant) -> None:
+def _apply_branding_to_config(
+    config: ViewerConfigResponse, branding: Any, tenant: TenantContext
+) -> None:
     """Project a :class:`BrandingContext` onto a :class:`ViewerConfigResponse`.
 
     ``branding.anonymous`` wipes every identifying field so the viewer
@@ -943,7 +946,7 @@ def _apply_branding_to_config(config: ViewerConfigResponse, branding: Any, tenan
 def _build_viewer_config(
     *,
     job: Job,
-    tenant: Tenant,
+    tenant: TenantContext,
     db: Session,
     brand_param: str | None,
     entitlements_service: EntitlementsService,
@@ -1112,7 +1115,7 @@ async def get_viewer_config(
             "'lintpdf' (LintPDF default), or a BrandProfile UUID."
         ),
     ),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> ViewerConfigResponse:
@@ -1283,7 +1286,7 @@ def _load_tile_warming_status(
 )
 async def get_tile_warming_status(
     job_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> TileWarmingStatusResponse:
     """Report the current tile-warming progress for a job.
@@ -1336,7 +1339,7 @@ class CapabilityFillResponse(BaseModel):
 async def fill_job_capability(
     job_id: str,
     capability: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> CapabilityFillResponse:
@@ -1425,7 +1428,7 @@ async def sample_color(
             "finer geometry. 72-600, defaults to 300."
         ),
     ),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> ColorSampleResponse:
     """Sample the color at a point on a PDF page.
@@ -1576,7 +1579,7 @@ async def sample_densitometer_auth(
     y: float = Query(..., description="Y coordinate in PDF points"),
     dpi: int = Query(default=300, ge=72, le=600),
     tac_limit: float = Query(default=300, ge=100, le=500),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> DensitometerResponse:
     """Sample per-channel ink coverage and TAC at a point on a PDF page.
@@ -1620,7 +1623,7 @@ class LayersResponse(BaseModel):
 @router.get("/jobs/{job_id}/layers", response_model=LayersResponse)
 async def list_layers(
     job_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> LayersResponse:
     """List PDF Optional Content Groups (layers)."""
@@ -1730,7 +1733,7 @@ async def _get_layer_tile_bytes(
     page_num: int,
     layer_index: int,
     dpi: int,
-    tenant: Tenant,
+    tenant: TenantContext,
     db: Session,
 ) -> bytes:
     """Shared body for the auth + public layer-tile endpoints.
@@ -1809,7 +1812,7 @@ async def get_layer_tile(
     page_num: int,
     layer_index: int,
     dpi: int = Query(default=150, ge=36, le=600),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
     """Render one OCG (layer) in isolation against a transparent
@@ -1831,7 +1834,7 @@ async def get_layer_tile(
 @router.get("/jobs/{job_id}/verdict", response_model=VerdictResponse)
 async def get_verdict(
     job_id: str,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> VerdictResponse:
     """Get the current verdict for a job."""
@@ -1862,7 +1865,7 @@ async def get_verdict(
 async def set_verdict(
     job_id: str,
     body: VerdictRequest,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> VerdictResponse:
     """Set a manual verdict (pass/fail) on a job."""
@@ -1942,7 +1945,7 @@ class ComparisonResponse(BaseModel):
 @router.post("/compare", response_model=ComparisonResponse)
 async def create_comparison(
     body: ComparisonRequest,
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> ComparisonResponse:
     """Compare two jobs' PDFs and return per-page similarity scores."""

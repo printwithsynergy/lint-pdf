@@ -34,7 +34,8 @@ from lintpdf.api.database import get_db
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
-    from lintpdf.api.models import Tenant
+    from lintpdf.services.tenant_context import TenantContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ def _profile_description(content: bytes) -> str | None:
 )
 async def set_active_profile(
     file: UploadFile = File(..., description="ICC profile file (.icc / .icm)."),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> IccProfileResponse:
     """Upload + activate a substrate ICC profile for the tenant."""
@@ -169,7 +170,7 @@ async def set_active_profile(
 
 @router.get("/active", response_model=IccProfileResponse | None)
 async def get_active_profile(
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> IccProfileResponse | None:
     """Return metadata for the tenant's active ICC profile, or null."""
@@ -193,7 +194,7 @@ async def get_active_profile(
 
 @router.delete("/active", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_active_profile(
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> None:
     """Clear the tenant's active ICC profile."""

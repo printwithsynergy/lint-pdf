@@ -23,7 +23,8 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from lintpdf.api.config import Settings
-    from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.api.models import BrandProfile
+    from lintpdf.services.tenant_context import TenantContext
     from lintpdf.tenants.entitlements import TenantEntitlements
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class WhitelabelService(Protocol):
 
     def resolve_report_base_url(
         self,
-        tenant: Tenant,
+        tenant: TenantContext,
         brand_profile: BrandProfile | None,
         entitlements: TenantEntitlements,
         settings: Settings,
@@ -44,7 +45,7 @@ class WhitelabelService(Protocol):
 
     def resolve_viewer_base_url(
         self,
-        tenant: Tenant,
+        tenant: TenantContext,
         brand_profile: BrandProfile | None,
         entitlements: TenantEntitlements,
         settings: Settings,
@@ -63,7 +64,7 @@ class DefaultWhitelabelService:
 
     def resolve_report_base_url(
         self,
-        tenant: Tenant,
+        tenant: TenantContext,
         brand_profile: BrandProfile | None,
         entitlements: TenantEntitlements,
         settings: Settings,
@@ -72,7 +73,7 @@ class DefaultWhitelabelService:
 
     def resolve_viewer_base_url(
         self,
-        tenant: Tenant,
+        tenant: TenantContext,
         brand_profile: BrandProfile | None,
         entitlements: TenantEntitlements,
         settings: Settings,

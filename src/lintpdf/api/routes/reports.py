@@ -13,13 +13,14 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import BrandProfile, BrandProfileType, Job, JobFinding, ReportToken, Tenant
+from lintpdf.api.models import BrandProfile, BrandProfileType, Job, JobFinding, ReportToken
 from lintpdf.overrides import (
     EntitlementDenied,
     OverridesEnvelope,
     enforce_report_entitlements,
 )
 from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
+from lintpdf.services.tenant_context import TenantContext  # noqa: TC001
 
 if TYPE_CHECKING:
     from lintpdf.reports.service import BrandingContext
@@ -276,7 +277,7 @@ class ReportListResponse(BaseModel):
 
 
 def _resolve_branding(
-    tenant: Tenant,
+    tenant: TenantContext,
     override: object | None,
     whitelabel_enabled: bool,
     db: Session,
@@ -373,7 +374,7 @@ async def generate_reports(  # skipcq: PY-R1000
     request: Request,
     body: GenerateReportsRequest | None = None,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> GenerateReportsResponse:
     """Generate hosted reports for a completed job."""
@@ -683,7 +684,7 @@ async def batch_mint_reports(
     body: BatchMintRequest,
     request: Request,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> BatchMintResponse:
     """Mint report tokens for N completed jobs in a single round trip.
 
@@ -760,7 +761,7 @@ async def batch_mint_reports(
 async def list_reports(
     job_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> ReportListResponse:
     """List existing report tokens for a job."""
     try:
@@ -799,7 +800,7 @@ async def revoke_report(
     job_id: str,
     token: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> None:
     """Revoke a report token and delete from storage."""
     record: ReportToken | None = (

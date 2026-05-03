@@ -35,7 +35,6 @@ from lintpdf.api.models import (
     JobImportedReport,
     JobStatus,
     PreflightSource,
-    Tenant,
 )
 from lintpdf.api.schemas import (
     FindingResponse,
@@ -55,6 +54,7 @@ from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.services.billing import BillingService, get_billing_service
 from lintpdf.services.email import EmailService, get_email_service
 from lintpdf.services.entitlements import EntitlementsService, get_entitlements_service
+from lintpdf.services.tenant_context import TenantContext  # noqa: TC001
 from lintpdf.tenants.models import RATE_LIMIT_WARN_THRESHOLD
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ _overrides_param = Form(
 
 
 def _send_rate_warning_if_needed(
-    tenant: Tenant,
+    tenant: TenantContext,
     usage: object,
     email: EmailService,
 ) -> None:  # skipcq: PY-R1000
@@ -291,7 +291,7 @@ async def submit_job(  # skipcq: PY-R1000
         ),
     ),
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     email: EmailService = Depends(get_email_service),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
     billing_service: BillingService = Depends(get_billing_service),
@@ -1095,7 +1095,7 @@ async def poll_job_until_terminal(
 async def get_job(
     job_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> JobResponse:
     """Get job status and results."""
@@ -1165,7 +1165,7 @@ async def get_job_state(
     job_id: str,
     include: str | None = None,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
     entitlements_service: EntitlementsService = Depends(get_entitlements_service),
 ) -> JobStateResponse:
     """Return the universal state of a preflight job in one call.
@@ -1329,7 +1329,7 @@ async def list_jobs(
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> JobListResponse:
     """List jobs for the current tenant (paginated)."""
     # Clamp pagination parameters to safe ranges
@@ -1368,7 +1368,7 @@ async def list_jobs(
 async def delete_job(
     job_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> None:
     """Cancel or delete a job."""
     try:
@@ -1418,7 +1418,7 @@ class RerunAuditResponse(BaseModel):
 async def rerun_audit(
     job_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> RerunAuditResponse:
     """Re-run the customer AI audit against an already-complete job.
 

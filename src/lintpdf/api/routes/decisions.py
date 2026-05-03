@@ -31,13 +31,14 @@ from pydantic import BaseModel, Field
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Job, JobFinding, Tenant
+from lintpdf.api.models import Job, JobFinding
 from lintpdf.decisions import service as decisions_service
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
     from lintpdf.decisions.models import Decision
+    from lintpdf.services.tenant_context import TenantContext
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +199,7 @@ async def list_decisions(
     include_revoked: bool = False,
     limit: int = 200,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> DecisionListResponse:
     """List decisions on a job (newest first, active-only by default)."""
     job_uid = _parse_uuid(job_id, kind="Job")
@@ -226,7 +227,7 @@ async def record_job_decision(
     payload: RecordDecisionRequest,
     request: Request,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> DecisionResponse:
     """Record a job-level decision (no finding scope)."""
     job_uid = _parse_uuid(job_id, kind="Job")
@@ -266,7 +267,7 @@ async def record_finding_decision(
     payload: RecordDecisionRequest,
     request: Request,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> DecisionResponse:
     """Record a finding-level decision."""
     job_uid = _parse_uuid(job_id, kind="Job")
@@ -307,7 +308,7 @@ async def revoke_decision_route(
     decision_id: str,
     payload: RevokeDecisionRequest,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> DecisionResponse:
     """Soft-revoke a decision (Q-2). Idempotent: re-revoking is a no-op."""
     job_uid = _parse_uuid(job_id, kind="Job")

@@ -68,14 +68,15 @@ class ReportDetailLevel(StrEnum):
 
 if TYPE_CHECKING:
     from lintpdf.api.config import Settings
-    from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.api.models import BrandProfile
+    from lintpdf.services.tenant_context import TenantContext
     from lintpdf.tenants.entitlements import TenantEntitlements
 
 logger = logging.getLogger(__name__)
 
 
 def resolve_report_base_url(
-    tenant: Tenant,
+    tenant: TenantContext,
     brand_profile: BrandProfile | None,
     entitlements: TenantEntitlements,
     settings: Settings,
@@ -96,7 +97,7 @@ def resolve_report_base_url(
 
 
 def resolve_viewer_base_url(
-    tenant: Tenant,
+    tenant: TenantContext,
     brand_profile: BrandProfile | None,
     entitlements: TenantEntitlements,
     settings: Settings,
@@ -319,7 +320,7 @@ def build_anonymous_filename(job_id: str, extension: str = "pdf") -> str:
 
 def resolve_branding(
     *,
-    tenant: Tenant,
+    tenant: TenantContext,
     job: Any | None,
     brand_param: str | None,
     default_lintpdf: BrandingContext,

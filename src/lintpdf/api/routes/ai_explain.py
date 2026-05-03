@@ -32,10 +32,12 @@ from lintpdf.ai.cost_cap import CostCapExceededError, remaining_cents
 from lintpdf.ai.explain import explain_finding
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Job, JobFinding, Tenant
+from lintpdf.api.models import Job, JobFinding
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+    from lintpdf.services.tenant_context import TenantContext
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +96,7 @@ async def explain_job_finding(
     job_id: str,
     finding_id: str,
     db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+    tenant: TenantContext = Depends(get_current_tenant),
 ) -> ExplanationResponse:
     """Return a cached or freshly-rendered explanation for a finding."""
     job_uid = _parse_uuid(job_id, kind="Job")
