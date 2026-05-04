@@ -4,13 +4,34 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lintpdf"
-version = "0.1.0"
+version = "0.1.0b1"
 description = "Detection-only PDF preflight engine"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
 authors = [
     { name = "Think Neverland", email = "dev@thinkneverland.com" },
 ]
+keywords = ["pdf", "preflight", "print", "packaging", "prepress", "color", "fonts"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Printing",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://lintpdf.com"
+Repository = "https://github.com/printwithsynergy/lint-pdf"
+Issues = "https://github.com/printwithsynergy/lint-pdf/issues"
+Changelog = "https://github.com/printwithsynergy/lint-pdf/releases"
 
 dependencies = [
     "pikepdf>=9.0.0",
