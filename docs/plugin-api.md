@@ -1,3 +1,10 @@
+---
+title: "Plugin API"
+description: "Full Protocol reference for analyzer plugins — manifest fields, AnalyzerContext, banned imports, capability providers, and tier guidance."
+group: "Reference"
+order: 5
+---
+
 # Plugin API — engine analyzer protocol
 
 Phase 1 deliverable for the LintPDF / LintPDF / LoupePDF brand split (see

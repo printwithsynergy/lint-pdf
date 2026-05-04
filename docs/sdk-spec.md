@@ -1,3 +1,10 @@
+---
+title: "SDK contract"
+description: "Cross-language SDK contract — transport rules, security primitives (webhook signing, share-link tokens), and the type surface every official LintPDF SDK must implement."
+group: "Reference"
+order: 6
+---
+
 # LintPDF SDK Specification
 
 The contract every official LintPDF client SDK must implement. The

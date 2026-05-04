@@ -1,3 +1,10 @@
+---
+title: "Deployment"
+description: "Self-hosting reference for the LintPDF OSS engine — environment variables, supporting services, Docker / Railway / single-node topology, and the OSS-mode hard-fail toggles."
+group: "Getting started"
+order: 2
+---
+
 # Deployment
 
 This guide covers self-hosting the LintPDF OSS engine — running it

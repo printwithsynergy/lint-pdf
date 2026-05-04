@@ -1,3 +1,10 @@
+---
+title: "Extending the engine"
+description: "How to override service seams (email, entitlements, billing, auth) and a quick reference for authoring analyzer plugins."
+group: "Reference"
+order: 4
+---
+
 # Extending the engine
 
 Two extension surfaces:

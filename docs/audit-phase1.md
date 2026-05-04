@@ -1,3 +1,10 @@
+---
+title: "Audit phase 1"
+description: "Engineering record of the Phase 1 plugin-protocol refactor — background reading for understanding how the analyzer Protocol came to be."
+group: "Project"
+order: 10
+---
+
 # Engine audit — Phase 1 / Track A discovery
 
 Captured during the Phase 1 plugin-protocol track. Every count and file
