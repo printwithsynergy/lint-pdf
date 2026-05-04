@@ -7,7 +7,7 @@
 #
 # Setup:
 #   1. Railway dashboard -> Add Service -> Docker Image: verapdf/rest:latest
-#      OR: Source -> Repo: thinkneverland/lint-pdf, Branch: main,
+#      OR: Source -> Repo: printwithsynergy/lint-pdf, Branch: main,
 #      Root Directory: packages/engine/verapdf
 #   2. Set env var on the Engine service:
 #        LINTPDF_VERAPDF_URL=http://verapdf.railway.internal:8080

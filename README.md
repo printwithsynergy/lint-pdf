@@ -67,7 +67,7 @@ For the deeper architectural picture see
 
 ```bash
 # Clone + boot the full stack (engine + Postgres + Redis + ClamAV)
-git clone https://github.com/thinkneverland/lint-pdf.git
+git clone https://github.com/printwithsynergy/lint-pdf.git
 cd lint-pdf
 docker compose up -d
 
@@ -86,7 +86,10 @@ beat + ClamAV sidecar. For production / HA topology see
 
 ```bash
 # 3.11+ required
-pip install "lintpdf @ git+https://github.com/thinkneverland/lint-pdf.git@main"
+pip install lintpdf
+
+# Or pin to a specific git ref:
+#   pip install "lintpdf @ git+https://github.com/printwithsynergy/lint-pdf.git@main"
 
 # Minimum env (production refuses to boot without these)
 export LINTPDF_SAAS_MODE=false
@@ -201,7 +204,7 @@ on shape before you write code.
 
 - **Hosted product** — [lintpdf.com](https://lintpdf.com) — fully
   managed, white-label, billing + admin included.
-- **OSS issues** — [GitHub Issues](https://github.com/thinkneverland/lint-pdf/issues)
+- **OSS issues** — [GitHub Issues](https://github.com/printwithsynergy/lint-pdf/issues)
   for bug reports, feature requests, and security disclosures
   (mark security issues with the `security` label and we'll triage
   off-list).
