@@ -54,8 +54,11 @@ OSS engine as a Python dep.
 ## Boot a server (pip)
 
 ```bash
-# Install (pip from git+https for now; PyPI publishing on the roadmap)
-pip install "lintpdf @ git+https://github.com/thinkneverland/lint-pdf.git@main"
+# Install from PyPI
+pip install lintpdf
+
+# Or pin to a specific git ref:
+#   pip install "lintpdf @ git+https://github.com/printwithsynergy/lint-pdf.git@main"
 
 # Minimum viable env
 export LINTPDF_SAAS_MODE=false
@@ -81,7 +84,7 @@ The repo ships a `docker-compose.yml` that wires the engine +
 Postgres + Redis + ClamAV + a Celery worker + beat:
 
 ```bash
-git clone https://github.com/thinkneverland/lint-pdf.git
+git clone https://github.com/printwithsynergy/lint-pdf.git
 cd lint-pdf
 docker compose up -d
 

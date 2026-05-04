@@ -11,7 +11,7 @@
 # Conventions:
 #
 # - ``engine`` — table has an ORM model on a ``lintpdf.*`` Base.
-#   Schema changes belong in OSS alembic (``thinkneverland/lint-pdf``).
+#   Schema changes belong in OSS alembic (``printwithsynergy/lint-pdf``).
 # - ``saas`` — table has an ORM model on the ``lintpdf_saas.api.models.Base``.
 #   Schema changes belong in SaaS alembic (``thinkneverland/lint-pdf-saas``).
 # - ``orphan`` — table created by alembic history but no current ORM

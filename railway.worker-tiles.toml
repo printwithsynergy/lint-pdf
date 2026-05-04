@@ -16,7 +16,7 @@ watchPatterns = [
 #
 # This service is a staged config; actually create it via the
 # Railway API once tile-warming volume demands the split:
-#   serviceCreate(name="Worker-Tiles", source={repo: "thinkneverland/lint-pdf"})
+#   serviceCreate(name="Worker-Tiles", source={repo: "printwithsynergy/lint-pdf"})
 #   serviceInstanceUpdate(serviceId, env, input: {
 #     railwayConfigFile: "packages/engine/railway.worker-tiles.toml" })
 # Then: change queue="default" → queue="tiles" in

@@ -2,7 +2,7 @@
 #
 # To activate this replacement image:
 #   1. Railway dashboard -> ClamAV service -> Settings -> Source
-#   2. Repo: thinkneverland/lint-pdf
+#   2. Repo: printwithsynergy/lint-pdf
 #      Branch: main
 #      Root Directory: packages/engine/clamav
 #   3. Clear the runtime startCommand override (it's no longer needed —

@@ -23,7 +23,7 @@ CI rejects unsigned commits.
 ## Development environment
 
 ```bash
-git clone https://github.com/thinkneverland/lint-pdf.git
+git clone https://github.com/printwithsynergy/lint-pdf.git
 cd lint-pdf
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[ai,dev]"
@@ -232,7 +232,7 @@ right channel.
 ## Questions
 
 Open a discussion issue on
-[GitHub](https://github.com/thinkneverland/lint-pdf/discussions),
+[GitHub](https://github.com/printwithsynergy/lint-pdf/discussions),
 or reach `dev@thinkneverland.com` for commercial-license / paid
 support topics.
 
