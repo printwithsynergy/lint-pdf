@@ -1,3 +1,10 @@
+---
+title: "Contributing"
+description: "Dev environment setup, sign-off and DCO, test conventions, commit / PR style, and the engine-purity tripwire that gates every analyzer change."
+group: "Project"
+order: 9
+---
+
 # Contributing to LintPDF
 
 We accept patches via pull request. Before opening a PR, please

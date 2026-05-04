@@ -1,3 +1,10 @@
+---
+title: "Architecture"
+description: "Component layout, request flow, the three-scope toggle cascade, snapshots, and the AI-tier model that gates which analyzers run."
+group: "Getting started"
+order: 3
+---
+
 # Architecture
 
 This doc walks the LintPDF engine from a request entering the API
