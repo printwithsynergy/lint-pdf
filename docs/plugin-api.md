@@ -1,6 +1,6 @@
 ---
 title: "Plugin API"
-description: "Full Protocol reference for analyzer plugins — manifest fields, AnalyzerContext, banned imports, capability providers, and tier guidance."
+description: "Full Protocol reference for analyzer plugins — manifest fields, AnalyzerContext shape, banned imports policed by the engine-purity tripwire, capability providers, and tier guidance for CPU / GPU / external-AI analyzers."
 group: "Reference"
 order: 5
 ---
