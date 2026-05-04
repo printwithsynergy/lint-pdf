@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-description: "Component layout, request flow, the three-scope toggle cascade, snapshots, and the AI-tier model that gates which analyzers run."
+description: "Component layout, request flow through the API and Celery worker, the three-scope toggle cascade, snapshot recording, and the AI-tier model that gates which analyzers run."
 group: "Getting started"
 order: 3
 ---

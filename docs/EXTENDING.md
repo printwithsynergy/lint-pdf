@@ -1,6 +1,6 @@
 ---
 title: "Extending the engine"
-description: "How to override service seams (email, entitlements, billing, auth) and a quick reference for authoring analyzer plugins."
+description: "How to override the engine's service seams (email, entitlements, billing, auth) and a quick-reference walkthrough for authoring analyzer plugins via the lintpdf.plugins entry point."
 group: "Reference"
 order: 4
 ---

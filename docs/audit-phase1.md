@@ -1,6 +1,6 @@
 ---
 title: "Audit phase 1"
-description: "Engineering record of the Phase 1 plugin-protocol refactor — background reading for understanding how the analyzer Protocol came to be."
+description: "Engineering record of the Phase 1 plugin-protocol refactor — file-by-file audit and rationale for the analyzer Protocol, capability providers, and engine-purity tripwire that ship today."
 group: "Project"
 order: 10
 ---
