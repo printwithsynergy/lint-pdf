@@ -13,6 +13,7 @@ from lintpdf.api.models import (
     Job,
     JobStatus,
     PreflightSource,
+    ReportToken,
 )
 
 if TYPE_CHECKING:
@@ -120,6 +121,68 @@ class TestViewerConfigProjection:
         assert data["brand_name"] == "LintPDF"
 
     @staticmethod
+    def test_external_job_auto_enqueues_missing_cmyk_capabilities(
+        client: TestClient, db_session: Session, monkeypatch
+    ) -> None:
+        from lintpdf.queue import tasks as queue_tasks
+
+        mock_task = MagicMock()
+        mock_task.id = "task-auto-1"
+        apply_async = MagicMock(return_value=mock_task)
+        monkeypatch.setattr(queue_tasks.fill_capability, "apply_async", apply_async)
+
+        job = _seed_job(
+            db_session,
+            preflight_source=PreflightSource.EXTERNAL,
+            data_capabilities={"separations": False, "tac": False},
+        )
+
+        resp = client.get(f"/api/v1/viewer/jobs/{job.id}/config")
+        assert resp.status_code == 200, resp.text
+        payload = resp.json()
+        assert payload["capability_status"]["separations"] == "pending"
+        assert payload["capability_status"]["tac"] == "pending"
+
+        db_session.refresh(job)
+        fill_status = (job.data_capabilities or {}).get("_fill_status", {})
+        assert fill_status.get("separations") == "pending"
+        assert fill_status.get("tac") == "pending"
+        assert apply_async.call_count == 2
+
+    @staticmethod
+    def test_public_config_auto_enqueue_works_for_external_jobs(
+        client: TestClient, db_session: Session, monkeypatch
+    ) -> None:
+        from lintpdf.queue import tasks as queue_tasks
+
+        mock_task = MagicMock()
+        mock_task.id = "task-public-auto"
+        apply_async = MagicMock(return_value=mock_task)
+        monkeypatch.setattr(queue_tasks.fill_capability, "apply_async", apply_async)
+
+        job = _seed_job(
+            db_session,
+            preflight_source=PreflightSource.EXTERNAL,
+            data_capabilities={"separations": False, "tac": False},
+        )
+        token = ReportToken(
+            job_id=job.id,
+            tenant_id=PLACEHOLDER_TENANT_ID,
+            token="share-token-auto-fill",
+            format="html",
+            brand_mode="lintpdf",
+        )
+        db_session.add(token)
+        db_session.commit()
+
+        resp = client.get("/api/v1/viewer/public/share-token-auto-fill/config")
+        assert resp.status_code == 200, resp.text
+        payload = resp.json()
+        assert payload["capability_status"]["separations"] == "pending"
+        assert payload["capability_status"]["tac"] == "pending"
+        assert apply_async.call_count == 2
+
+    @staticmethod
     def test_job_unbranded_override_wins_over_tenant_default(
         client: TestClient, db_session: Session
     ) -> None:
@@ -189,6 +252,20 @@ class TestCapabilityFillEndpoint:
         resp = client.post(f"/api/v1/viewer/jobs/{job.id}/capabilities/separations")
         assert resp.status_code == 202, resp.text
         assert resp.json()["status"] == "already_filled"
+
+    @staticmethod
+    def test_short_circuits_when_already_queued(client: TestClient, db_session: Session) -> None:
+        job = _seed_job(
+            db_session,
+            data_capabilities={
+                "findings": True,
+                "separations": False,
+                "_fill_status": {"separations": "pending"},
+            },
+        )
+        resp = client.post(f"/api/v1/viewer/jobs/{job.id}/capabilities/separations")
+        assert resp.status_code == 202, resp.text
+        assert resp.json()["status"] == "already_queued"
 
     @staticmethod
     def test_non_fillable_capability_returns_422(client: TestClient, db_session: Session) -> None:

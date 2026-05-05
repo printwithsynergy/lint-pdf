@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import logging
@@ -2289,6 +2290,13 @@ def fill_capability(job_id: str, capability: str) -> dict[str, Any]:
             job.detected_text_regions = _serialise_text_regions(document)
             caps = dict(job.data_capabilities or {})
             caps[capability] = True
+            status_map = caps.get("_fill_status")
+            if isinstance(status_map, dict):
+                status_map.pop(capability, None)
+                if status_map:
+                    caps["_fill_status"] = status_map
+                else:
+                    caps.pop("_fill_status", None)
             job.data_capabilities = caps
             db.commit()
             return {
@@ -2307,6 +2315,13 @@ def fill_capability(job_id: str, capability: str) -> dict[str, Any]:
 
         caps = dict(job.data_capabilities or {})
         caps[capability] = True
+        status_map = caps.get("_fill_status")
+        if isinstance(status_map, dict):
+            status_map.pop(capability, None)
+            if status_map:
+                caps["_fill_status"] = status_map
+            else:
+                caps.pop("_fill_status", None)
         job.data_capabilities = caps
         db.commit()
 
@@ -2317,6 +2332,17 @@ def fill_capability(job_id: str, capability: str) -> dict[str, Any]:
             "new_findings": len(findings),
         }
     except Exception:
+        if "job" in locals() and job is not None:
+            caps = dict(job.data_capabilities or {})
+            status_map = caps.get("_fill_status")
+            if isinstance(status_map, dict):
+                status_map[capability] = "failed"
+                caps["_fill_status"] = status_map
+            else:
+                caps["_fill_status"] = {capability: "failed"}
+            job.data_capabilities = caps
+            with contextlib.suppress(Exception):
+                db.commit()
         logger.exception("fill_capability failed for job %s / %s", job_id, capability)
         raise
     finally:

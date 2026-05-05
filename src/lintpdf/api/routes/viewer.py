@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import BrandProfile, Job, JobStatus
+from lintpdf.api.models import CAPABILITY_KEYS, BrandProfile, Job, JobStatus, PreflightSource
 from lintpdf.api.storage import get_storage
 from lintpdf.reports.service import _LINTPDF_DEFAULT_LOGO
 from lintpdf.services.email import EmailService, get_email_service
@@ -895,6 +895,10 @@ class ViewerConfigResponse(BaseModel):
     # backed by data; ``False`` means unavailable (the UI may offer a
     # one-click fill-in for supported capabilities).
     capabilities: dict[str, bool] = {}
+    # Per-capability lifecycle state projected to the viewer:
+    # ``ready`` (authoritative data available), ``pending`` (fill queued
+    # or in progress), or ``missing`` (no data and no queued fill).
+    capability_status: dict[str, str] = {}
     # Whether the tenant's plan allows on-demand capability fill-in.
     # When ``False`` the UI must hide Load buttons and render the
     # ``UpgradePrompt`` component instead.
@@ -963,7 +967,11 @@ def _build_viewer_config(
     """
     from lintpdf.reports.service import BrandingContext, resolve_branding
 
-    caps = dict(job.data_capabilities or {})
+    caps_raw = dict(job.data_capabilities or {})
+    capability_status = _build_capability_status(caps_raw)
+    caps: dict[str, bool] = {
+        key: value for key, value in caps_raw.items() if isinstance(value, bool)
+    }
     # ``tac_runs`` is derived on demand from the PDF's CMYK channels — it
     # does not have a dedicated analyzer, so it tracks ``tac``. If TAC
     # data is available, so is the per-run tooltip metadata. This keeps
@@ -1005,6 +1013,7 @@ def _build_viewer_config(
             else str(job.preflight_source or "engine")
         ),
         capabilities=caps,
+        capability_status=capability_status,
         capability_fillin_enabled=entitlements.capability_fillin_enabled,
         annotations_enabled=entitlements.annotations_enabled,
         allowed_report_formats=list(entitlements.allowed_report_formats),
@@ -1105,6 +1114,92 @@ def _build_viewer_config(
     return config
 
 
+_CAPABILITY_STATUS_KEY = "_fill_status"
+_AUTO_FILL_CAPABILITIES: tuple[str, ...] = ("separations", "tac")
+
+
+def _get_capability_status_map(caps: dict[str, Any]) -> dict[str, str]:
+    raw = caps.get(_CAPABILITY_STATUS_KEY)
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, str] = {}
+    for key, value in raw.items():
+        if not isinstance(key, str):
+            continue
+        if value in {"pending", "failed"}:
+            out[key] = value
+    return out
+
+
+def _set_capability_status_map(caps: dict[str, Any], statuses: dict[str, str]) -> None:
+    if statuses:
+        caps[_CAPABILITY_STATUS_KEY] = statuses
+    else:
+        caps.pop(_CAPABILITY_STATUS_KEY, None)
+
+
+def _build_capability_status(caps: dict[str, Any]) -> dict[str, str]:
+    pending = _get_capability_status_map(caps)
+    status: dict[str, str] = {}
+    known = set(CAPABILITY_KEYS) | set(_AUTO_FILL_CAPABILITIES)
+    for capability in known:
+        if pending.get(capability) == "pending":
+            status[capability] = "pending"
+        else:
+            status[capability] = "ready" if bool(caps.get(capability)) else "missing"
+    return status
+
+
+def _mark_capabilities_pending(job: Job, capabilities: list[str]) -> None:
+    caps = dict(job.data_capabilities or {})
+    status = _get_capability_status_map(caps)
+    for capability in capabilities:
+        status[capability] = "pending"
+    _set_capability_status_map(caps, status)
+    job.data_capabilities = caps
+
+
+def _auto_enqueue_missing_capabilities(job: Job, db: Session) -> None:
+    """Queue backend fill for external-report jobs missing CMYK data."""
+    source = job.preflight_source
+    if hasattr(source, "value"):
+        source = source.value
+    if source != PreflightSource.EXTERNAL.value:
+        return
+
+    caps = dict(job.data_capabilities or {})
+    status = _get_capability_status_map(caps)
+    to_queue = [
+        capability
+        for capability in _AUTO_FILL_CAPABILITIES
+        if not bool(caps.get(capability)) and status.get(capability) != "pending"
+    ]
+    if not to_queue:
+        return
+
+    from lintpdf.queue.tasks import fill_capability
+
+    _mark_capabilities_pending(job, to_queue)
+    db.add(job)
+    db.commit()
+
+    for capability in to_queue:
+        try:
+            fill_capability.apply_async(
+                args=[str(job.id), capability],
+                queue="default",
+            )
+        except Exception:
+            logger.exception("auto capability fill enqueue failed: %s/%s", job.id, capability)
+            caps_retry = dict(job.data_capabilities or {})
+            status_retry = _get_capability_status_map(caps_retry)
+            status_retry[capability] = "failed"
+            _set_capability_status_map(caps_retry, status_retry)
+            job.data_capabilities = caps_retry
+            db.add(job)
+            db.commit()
+
+
 @router.get("/jobs/{job_id}/config", response_model=ViewerConfigResponse)
 async def get_viewer_config(
     job_id: str,
@@ -1128,6 +1223,9 @@ async def get_viewer_config(
     job = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    _auto_enqueue_missing_capabilities(job, db)
+    db.refresh(job)
 
     return _build_viewer_config(
         job=job,
@@ -1327,7 +1425,7 @@ _FILLABLE_CAPABILITIES: frozenset[str] = frozenset(
 class CapabilityFillResponse(BaseModel):
     job_id: str
     capability: str
-    status: str  # "queued" | "already_filled"
+    status: str  # "queued" | "already_filled" | "already_queued"
     task_id: str | None = None
 
 
@@ -1385,13 +1483,33 @@ async def fill_job_capability(
     caps = dict(job.data_capabilities or {})
     if caps.get(capability) is True:
         return CapabilityFillResponse(job_id=job_id, capability=capability, status="already_filled")
+    status_map = _get_capability_status_map(caps)
+    if status_map.get(capability) == "pending":
+        return CapabilityFillResponse(job_id=job_id, capability=capability, status="already_queued")
 
     from lintpdf.queue.tasks import fill_capability
 
-    task = fill_capability.apply_async(
-        args=[str(uid), capability],
-        queue="default",
-    )
+    _mark_capabilities_pending(job, [capability])
+    db.add(job)
+    db.commit()
+
+    try:
+        task = fill_capability.apply_async(
+            args=[str(uid), capability],
+            queue="default",
+        )
+    except Exception as exc:
+        caps_retry = dict(job.data_capabilities or {})
+        status_retry = _get_capability_status_map(caps_retry)
+        status_retry[capability] = "failed"
+        _set_capability_status_map(caps_retry, status_retry)
+        job.data_capabilities = caps_retry
+        db.add(job)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to queue capability fill task",
+        ) from exc
     return CapabilityFillResponse(
         job_id=job_id,
         capability=capability,
@@ -2360,6 +2478,9 @@ async def public_config(
     # overrides. The token snapshot is what the minter asked for at share
     # time; if it's absent, the job's own overrides still apply.
     overrides_for_config = record.overrides or job.overrides
+
+    _auto_enqueue_missing_capabilities(job, db)
+    db.refresh(job)
 
     config = _build_viewer_config(
         job=job,

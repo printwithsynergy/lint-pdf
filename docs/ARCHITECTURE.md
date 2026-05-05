@@ -122,6 +122,12 @@ the embedded viewer
 fetches as the user scrolls. Annotations are CRUD'd via
 `POST /api/v1/viewer/jobs/{id}/annotations`.
 
+For `preflight_source=external` jobs, viewer config reads now auto-enqueue
+missing CMYK capability fills (`separations` + `tac`) so the UI can start
+with immediate RGB fallback and then deterministically swap to authoritative
+backend data when analysis completes. The config payload includes
+`capability_status` (`ready` / `pending` / `missing`) for each capability.
+
 Share links are minted by the SaaS shell on top of the OSS engine —
 the OSS package itself does not carry tenant-domain probing or
 brand-profile management.
