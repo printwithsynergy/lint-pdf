@@ -2827,6 +2827,7 @@ async def public_share(
 
     from lintpdf.api.config import get_settings
     from lintpdf.api.models import BrandProfile
+    from lintpdf.reports.service import build_viewer_handoff_url
     from lintpdf.services.tenant_context import get_tenant_context_service
 
     # Validate emails
@@ -2851,11 +2852,11 @@ async def public_share(
         )
 
     settings = get_settings()
-    app_base = settings.app_base_url.rstrip("/")
+    app_base = settings.viewer_handoff_base_url.rstrip("/")
     if tenant and getattr(tenant, "app_custom_domain", None) and tenant.app_custom_domain_verified:
-        app_base = f"https://{tenant.app_custom_domain}"
+        app_base = f"https://{tenant.app_custom_domain}/view/{{token}}"
 
-    viewer_url = f"{app_base}/view/{token}"
+    viewer_url = build_viewer_handoff_url(app_base, token)
     brand_name = (
         (profile.brand_name if profile else None)
         or (tenant.brand_name if tenant else None)

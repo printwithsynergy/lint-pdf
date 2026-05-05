@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
 
 # Format-classification sets must match ``lintpdf.api.routes.reports``.
 # Duplicated here (instead of imported) because the service layer is
@@ -102,17 +103,35 @@ def resolve_viewer_base_url(
     entitlements: TenantEntitlements,
     settings: Settings,
 ) -> str:
-    """Pick the viewer/app base URL for a tenant + active brand profile.
+    """Pick the viewer handoff base URL for a tenant + active brand profile.
 
     Dispatches through :class:`WhitelabelService`. OSS default returns
-    ``settings.app_base_url``; SaaS impl gates the ``app_custom_domain``
-    fields behind ``entitlements.whitelabel_enabled``.
+    ``settings.viewer_handoff_base_url``; SaaS impl can still gate
+    tenant app-domain templates behind ``entitlements.whitelabel_enabled``.
     """
     from lintpdf.services.whitelabel import get_whitelabel_service
 
     return get_whitelabel_service().resolve_viewer_base_url(
         tenant, brand_profile, entitlements, settings
     )
+
+
+def build_viewer_handoff_url(viewer_base_url: str, token: str) -> str:
+    """Build a hosted-viewer handoff URL from base + token.
+
+    ``viewer_base_url`` accepts either:
+    - template style: ``https://app.example.com/view/{token}``
+    - host page style: ``https://loupepdf.com/demo``
+      (adds ``source=lintpdf`` + ``lintpdf_token`` query params)
+    """
+    token_q = quote(token, safe="")
+    base = (viewer_base_url or "").strip()
+    if "{token}" in base:
+        return base.replace("{token}", token_q)
+    if not base:
+        return f"/view/{token_q}"
+    sep = "&" if "?" in base else "?"
+    return f"{base.rstrip('/')}{sep}source=lintpdf&lintpdf_token={token_q}"
 
 
 # Default LintPDF logo as an embedded base64 data URI so reports always have
@@ -553,8 +572,9 @@ class ReportService:
 
         if "html" in tokens:
             branding.report_url = f"{report_base_url}/r/{tokens['html']}"
-            # Link to the interactive viewer (served by the Next.js app).
-            branding.viewer_url = f"{viewer_base}/view/{tokens['html']}"
+            branding.viewer_url = build_viewer_handoff_url(
+                viewer_base, tokens["html"]
+            )
 
         # Fetch original PDF bytes for page screenshot rendering (lazy, once).
         # Executive reports skip screenshots entirely — no PDF fetch needed.
@@ -621,7 +641,11 @@ class ReportService:
             if existing is not None and not needs_inline:
                 # Pure URL reuse — no body work.
                 url = f"{report_base_url}/r/{existing.token}{_suffix_by_format.get(fmt, '')}"
-                viewer_url = f"{viewer_base}/view/{existing.token}" if fmt == "html" else None
+                viewer_url = (
+                    build_viewer_handoff_url(viewer_base, existing.token)
+                    if fmt == "html"
+                    else None
+                )
                 report_result.reports.append(
                     {
                         "format": fmt,
@@ -782,7 +806,7 @@ class ReportService:
                     content_type_value = None
 
             viewer_url_out = (
-                f"{viewer_base}/view/{token_value_out}"
+                build_viewer_handoff_url(viewer_base, token_value_out)
                 if fmt == "html" and token_value_out
                 else None
             )

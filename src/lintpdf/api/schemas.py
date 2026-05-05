@@ -337,7 +337,7 @@ class JobStateReportInfo(BaseModel):
     allow_annotations: bool = Field(
         default=False,
         description=(
-            "When True, anonymous viewers at `/view/{token}` can POST annotations if "
+            "When True, anonymous viewers opened from the hosted viewer URL can POST annotations if "
             "they supply an `X-Visitor-Email` header. Default False = read-only share."
         ),
     )

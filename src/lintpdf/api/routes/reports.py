@@ -109,12 +109,12 @@ class GenerateReportsRequest(BaseModel):
     branding: BrandingOverride | None = None
     detail_level: str = "standard"  # "executive", "standard", "comprehensive"
     summary_page: str | None = None  # "prepend" (default ON), "only", "off"
-    # When true, anonymous share-link viewers at /view/{token} can draw
-    # annotations on the interactive viewer after providing an email via
-    # the X-Visitor-Email header. Defaults to read-only (false) so
+    # When true, anonymous share-link viewers opened from the hosted
+    # viewer handoff URL can draw annotations after providing an email
+    # via the X-Visitor-Email header. Defaults to read-only (false) so
     # existing share behaviour is unchanged.
     allow_annotations: bool = False
-    # Per-mint override for the email-capture gate on ``/view/{token}``.
+    # Per-mint override for the email-capture gate on the hosted viewer URL.
     #   - ``None`` (default) → inherit the tenant's ``share_email_required``
     #     setting; brokers who need lead-gen keep the gate on, internal
     #     shares from tenants that flipped the tenant flag off don't.
@@ -160,12 +160,11 @@ class ReportInfo(BaseModel):
     viewer_url: str | None = Field(
         default=None,
         description=(
-            "Public interactive viewer URL (Next.js app at "
-            "``{viewer_base}/view/{token}``). Populated for the ``html`` "
+            "Public interactive viewer handoff URL. Populated for the ``html`` "
             "format when a token is minted; null for non-HTML formats and "
             "for inline-only HTML deliveries. ``viewer_base`` honors the "
-            "tenant's verified ``app_custom_domain`` for white-labeled "
-            "share links, falls back to the global default otherwise."
+            "tenant's verified ``app_custom_domain`` template when present, "
+            "falls back to the global hosted-viewer handoff URL otherwise."
         ),
     )
     token: str | None = None

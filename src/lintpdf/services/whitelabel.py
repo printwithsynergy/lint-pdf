@@ -50,7 +50,7 @@ class WhitelabelService(Protocol):
         entitlements: TenantEntitlements,
         settings: Settings,
     ) -> str:
-        """Pick the viewer / app base URL. Returns ``settings.app_base_url`` on OSS."""
+        """Pick the viewer handoff base URL on OSS."""
         ...
 
     def probe_pending_domains(self, db) -> dict[str, int]:  # type: ignore[no-untyped-def]
@@ -86,7 +86,7 @@ class DefaultWhitelabelService:
         entitlements: TenantEntitlements,
         settings: Settings,
     ) -> str:
-        return settings.app_base_url
+        return settings.viewer_handoff_base_url
 
     def probe_pending_domains(self, db) -> dict[str, int]:  # type: ignore[no-untyped-def]
         # OSS-only deploys have no custom-domain concept — beat tick is a no-op.

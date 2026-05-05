@@ -100,9 +100,15 @@ class Settings(BaseSettings):
     # resolved by lintpdf.reports.service.resolve_report_base_url().
     report_base_url: str = "https://reports.lintpdf.com"
 
-    # App base URL (Next.js dashboard — used to build interactive viewer links
-    # in static HTML reports).  Override via LINTPDF_APP_BASE_URL.
+    # App base URL (Next.js dashboard).
     app_base_url: str = "https://app.lintpdf.com"
+
+    # Hosted viewer handoff URL for interactive links emitted by engine
+    # APIs/reports. Supports either:
+    #   1) A direct token template, e.g. "https://app.example.com/view/{token}"
+    #   2) A host page URL, e.g. "https://loupepdf.com/demo"
+    #      (engine appends source=lintpdf&lintpdf_token=<token>).
+    viewer_handoff_base_url: str = "https://loupepdf.com/demo"
 
     # Admin
     admin_api_key: str = ""

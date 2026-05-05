@@ -227,6 +227,7 @@ def _auto_generate_reports(
         BrandingContext,
         ReportDetailLevel,
         ReportService,
+        build_viewer_handoff_url,
         resolve_branding,
     )
     from lintpdf.services.tenant_context import get_tenant_context_service
@@ -321,7 +322,9 @@ def _auto_generate_reports(
         and tenant_obj.app_custom_domain_verified
     ):
         viewer_base = f"https://{tenant_obj.app_custom_domain}"
-    branding.viewer_url = f"{viewer_base.rstrip('/')}/view/{tokens['html']}"
+    branding.viewer_url = build_viewer_handoff_url(
+        viewer_base.rstrip("/"), tokens["html"]
+    )
 
     for fmt in ["html", "pdf"]:
         content = service._generate_format(
