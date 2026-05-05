@@ -84,24 +84,26 @@ def _run_flavour(
     pdf_bytes: bytes,
     *,
     verapdf_profile: str,
-) -> tuple[bool, list[dict[str, Any]]]:
-    """Call veraPDF for one profile. Returns (compliant, failure_list).
+) -> tuple[str, list[dict[str, Any]]]:
+    """Call veraPDF for one profile.
 
-    ``compliant`` is ``True`` when no findings come back (either the
-    PDF really is conformant, or veraPDF was unreachable — callers
-    treat "no failures returned" as "don't emit this finding").
-    ``compliant`` is ``False`` when at least one failed rule was
-    returned.
+    Returns ``(status, failure_summary)`` where ``status`` is:
+
+    * ``"fail"`` — veraPDF returned at least one failed rule (``failures``
+      is the capped summary list).
+    * ``"pass"`` — HTTP OK and veraPDF returned no failed-rule rows (either
+      truly conformant or an empty parse — same ambiguity as before).
+    * ``"error"`` — client/network/parse failure before a usable result.
     """
     try:
         raw = validate_with_verapdf(pdf_bytes, profile=verapdf_profile)
     except Exception:
         logger.exception("veraPDF %s invocation failed", verapdf_profile)
-        return True, []
+        return "error", []
     if not raw:
-        return True, []
+        return "pass", []
     summary = _summarise_failures(raw)
-    return False, summary
+    return "fail", summary
 
 
 def run_verapdf_checks(
@@ -109,6 +111,7 @@ def run_verapdf_checks(
     *,
     conformance: str | None,
     enabled_ua: bool,
+    metadata_out: dict[str, Any] | None = None,
 ) -> list[Finding]:
     """Run any applicable veraPDF flavours and emit stable findings.
 
@@ -120,6 +123,11 @@ def run_verapdf_checks(
         enabled_ua: True when the profile's checks include any
             ``LPDF_UA_*`` pattern (i.e., accessibility validation is
             on for this job).
+        metadata_out: When provided, replaced in-place with a JSON-
+            serialisable summary of what veraPDF did (configured or not,
+            which flavours were invoked, pass/fail/error per flavour).
+            Lets reports distinguish "skipped because not configured"
+            from "ran and passed".
 
     Returns:
         Up to three findings (LPDF_PDFX_CONF / LPDF_PDFA_CONF /
@@ -127,18 +135,44 @@ def run_verapdf_checks(
         Empty list when veraPDF isn't configured, isn't reachable, or
         the PDF passes every configured flavour.
     """
-    if not is_verapdf_configured():
+    trace: dict[str, Any] = {
+        "configured": is_verapdf_configured(),
+        "empty_input": not bool(pdf_bytes),
+        "conformance": conformance,
+        "ua_requested": enabled_ua,
+        "flavours": [],
+    }
+
+    if not trace["configured"]:
+        trace["skipped_reason"] = "not_configured"
+        if metadata_out is not None:
+            metadata_out.clear()
+            metadata_out.update(trace)
         return []
-    if not pdf_bytes:
+    if trace["empty_input"]:
+        trace["skipped_reason"] = "empty_pdf_bytes"
+        if metadata_out is not None:
+            metadata_out.clear()
+            metadata_out.update(trace)
         return []
 
     findings: list[Finding] = []
 
+    def _record_flavour(profile: str, status: str, failure_count: int) -> None:
+        trace["flavours"].append(
+            {
+                "verapdf_profile": profile,
+                "status": status,
+                "failure_count": failure_count,
+            }
+        )
+
     # PDF/X → LPDF_PDFX_CONF (T1-CMP01)
     if conformance and conformance.lower() in _CONF_TO_VERAPDF_PDFX:
         vera_profile = _CONF_TO_VERAPDF_PDFX[conformance.lower()]
-        compliant, failures = _run_flavour(pdf_bytes, verapdf_profile=vera_profile)
-        if not compliant:
+        status, failures = _run_flavour(pdf_bytes, verapdf_profile=vera_profile)
+        _record_flavour(vera_profile, status, len(failures))
+        if status == "fail":
             findings.append(
                 Finding(
                     inspection_id="LPDF_PDFX_CONF",
@@ -161,8 +195,9 @@ def run_verapdf_checks(
     # PDF/A → LPDF_PDFA_CONF (T4-A02)
     if conformance and conformance.lower() in _CONF_TO_VERAPDF_PDFA:
         vera_profile = _CONF_TO_VERAPDF_PDFA[conformance.lower()]
-        compliant, failures = _run_flavour(pdf_bytes, verapdf_profile=vera_profile)
-        if not compliant:
+        status, failures = _run_flavour(pdf_bytes, verapdf_profile=vera_profile)
+        _record_flavour(vera_profile, status, len(failures))
+        if status == "fail":
             findings.append(
                 Finding(
                     inspection_id="LPDF_PDFA_CONF",
@@ -184,8 +219,9 @@ def run_verapdf_checks(
 
     # PDF/UA-1 → LPDF_UA_CONF (T4-A01). Only run when the profile opts in.
     if enabled_ua:
-        compliant, failures = _run_flavour(pdf_bytes, verapdf_profile="PDFUA_1")
-        if not compliant:
+        status, failures = _run_flavour(pdf_bytes, verapdf_profile="PDFUA_1")
+        _record_flavour("PDFUA_1", status, len(failures))
+        if status == "fail":
             findings.append(
                 Finding(
                     inspection_id="LPDF_UA_CONF",
@@ -203,5 +239,11 @@ def run_verapdf_checks(
                     iso_clause="ISO 14289-1 (PDF/UA) / Matterhorn Protocol",
                 )
             )
+
+    trace["skipped_reason"] = None
+    trace["finding_ids"] = [f.inspection_id for f in findings]
+    if metadata_out is not None:
+        metadata_out.clear()
+        metadata_out.update(trace)
 
     return findings

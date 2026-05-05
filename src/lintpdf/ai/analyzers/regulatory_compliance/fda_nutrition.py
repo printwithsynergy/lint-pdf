@@ -18,6 +18,7 @@ from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import (
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.analyzers.text_metrics import effective_font_size_pt
 
 if TYPE_CHECKING:
     from lintpdf.plugin.protocol import AnalyzerContext
@@ -76,7 +77,7 @@ def _extract_text_events_for_page(
             text_events.append(
                 {
                     "font_name": event.font_name,
-                    "font_size": abs(event.font_size),
+                    "font_size": effective_font_size_pt(event),
                     "page_num": event.page_num,
                     "bbox": event.bbox,
                     "rendering_mode": event.rendering_mode,

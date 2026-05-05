@@ -212,6 +212,120 @@ def _looks_like_2d_barcode(
     return density >= _BARCODE_MIN_FILL_DENSITY
 
 
+# Reject "2D barcode" candidates whose union bbox covers most of the trim
+# rectangle — typical of full-panel splatter art / decorative grids
+# (2026-04-23 Opus audit false positives on Pavette / Nutrops back panels).
+_2D_MAX_TRIM_COVERAGE = 0.70
+
+
+def _page_trim_like(document: SemanticDocument, page_num: int) -> Any | None:
+    """Trim box for ``page_num``, falling back to crop then media."""
+    idx = page_num - 1
+    if idx < 0 or idx >= len(document.pages):
+        return None
+    page = document.pages[idx]
+    return page.trim_box or page.crop_box or page.media_box
+
+
+def _region_covers_trim_excessively(
+    region_bbox: tuple[float, float, float, float],
+    trim: Any,
+) -> bool:
+    """True when the candidate region spans both trim axes beyond
+    ``_2D_MAX_TRIM_COVERAGE`` — almost never a real isolated 2D symbol."""
+    rx0, ry0, rx1, ry1 = region_bbox
+    region_w = rx1 - rx0
+    region_h = ry1 - ry0
+    tw = float(trim.width)
+    th = float(trim.height)
+    if tw <= 0 or th <= 0:
+        return False
+    return (region_w / tw) > _2D_MAX_TRIM_COVERAGE and (region_h / th) > _2D_MAX_TRIM_COVERAGE
+
+
+def _zxing_format_is_2d_matrix(sym: str) -> bool:
+    """True for QR / Data Matrix / Aztec / PDF417 symbologies."""
+    f = sym.replace("BarcodeFormat.", "").upper()
+    return any(
+        token in f
+        for token in (
+            "QRCODE",
+            "DATA_MATRIX",
+            "DATAMATRIX",
+            "AZTEC",
+            "PDF417",
+        )
+    )
+
+
+def _zxing_decodes_2d_matrix_in_region(
+    pdf_bytes: bytes,
+    *,
+    page_num: int,
+    region_bbox: tuple[float, float, float, float],
+    document: SemanticDocument,
+) -> bool:
+    """Raster-crop to ``region_bbox`` and ask zxing-cpp for a 2D matrix decode.
+
+    Returns ``False`` when zxing isn't installed, bytes are missing, render
+    fails, or no QR/DataMatrix/Aztec/PDF417 is read from the crop.
+    """
+    if not _HAS_ZXING or not pdf_bytes or _zxing is None:
+        return False
+    page_idx = page_num - 1
+    if page_idx < 0 or page_idx >= len(document.pages):
+        return False
+    page = document.pages[page_idx]
+    media_box = page.media_box
+
+    try:
+        from lintpdf.rendering import render_page_to_image
+
+        png_bytes = render_page_to_image(pdf_bytes, page_num=page_num, dpi=300)
+    except (RuntimeError, ImportError, OSError, ValueError):
+        return False
+
+    try:
+        import io
+
+        from PIL import Image as _PILImage
+
+        page_img = _PILImage.open(io.BytesIO(png_bytes))
+        img_w, img_h = page_img.size
+        page_w = media_box.width
+        page_h = media_box.height
+        if page_w <= 0 or page_h <= 0:
+            return False
+
+        bbox = region_bbox
+        scale_x = img_w / page_w
+        scale_y = img_h / page_h
+
+        crop_x0 = max(0, int((bbox[0] - media_box.x0) * scale_x))
+        crop_y0 = max(0, int((page_h - (bbox[3] - media_box.y0)) * scale_y))
+        crop_x1 = min(img_w, int((bbox[2] - media_box.x0) * scale_x))
+        crop_y1 = min(img_h, int((page_h - (bbox[1] - media_box.y0)) * scale_y))
+
+        pad_x = max(2, int((crop_x1 - crop_x0) * 0.08))
+        pad_y = max(2, int((crop_y1 - crop_y0) * 0.08))
+        crop_x0 = max(0, crop_x0 - pad_x)
+        crop_y0 = max(0, crop_y0 - pad_y)
+        crop_x1 = min(img_w, crop_x1 + pad_x)
+        crop_y1 = min(img_h, crop_y1 + pad_y)
+
+        if crop_x1 <= crop_x0 or crop_y1 <= crop_y0:
+            return False
+
+        cropped = page_img.crop((crop_x0, crop_y0, crop_x1, crop_y1))
+        results = _zxing.read_barcodes(cropped)
+        for result in results:
+            if _zxing_format_is_2d_matrix(str(result.format)):
+                return True
+    except Exception:
+        return False
+    return False
+
+
 def _grade_value(grade: str) -> int:
     """Return numeric value for a grade letter (A=4, F=0)."""
     return _GRADE_ORDER.get(grade.upper(), -1)
@@ -1752,6 +1866,25 @@ class BarcodeAnalyzer(BaseAnalyzer):
             if not _looks_like_2d_barcode(fills, region_w, region_h):
                 continue
 
+            trim = _page_trim_like(document, page_num)
+            if trim is not None and _region_covers_trim_excessively(region_bbox, trim):
+                continue
+
+            raw_pdf = getattr(document, "_pdf_bytes", None)
+            pdf_bytes = raw_pdf if isinstance(raw_pdf, (bytes, bytearray)) else None
+            require_zxing_decode = bool(_HAS_ZXING and pdf_bytes)
+            verified_by = "heuristic"
+            if require_zxing_decode:
+                decoded_ok = _zxing_decodes_2d_matrix_in_region(
+                    bytes(pdf_bytes),
+                    page_num=page_num,
+                    region_bbox=region_bbox,
+                    document=document,
+                )
+                if not decoded_ok:
+                    continue
+                verified_by = "zxing"
+
             # LPDF_BARCODE_014: 2D barcode detected
             findings.append(
                 Finding(
@@ -1766,6 +1899,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                         "module_count": len(fills),
                         "region_width_pts": round(region_w, 1),
                         "region_height_pts": round(region_h, 1),
+                        "verification": verified_by,
                     },
                     bbox=region_bbox,
                 )

@@ -88,6 +88,23 @@ class TestUnconfigured:
             assert run_verapdf_checks(_FAKE_PDF, conformance="pdfx4", enabled_ua=True) == []
 
     @staticmethod
+    def test_metadata_out_when_not_configured() -> None:
+        """``metadata_out`` records why veraPDF did not run."""
+        meta: dict = {}
+        with patch(
+            "lintpdf.conformance.verapdf_runner.is_verapdf_configured",
+            return_value=False,
+        ):
+            assert run_verapdf_checks(
+                _FAKE_PDF,
+                conformance="pdfx4",
+                enabled_ua=True,
+                metadata_out=meta,
+            ) == []
+        assert meta.get("configured") is False
+        assert meta.get("skipped_reason") == "not_configured"
+
+    @staticmethod
     def test_empty_pdf_bytes_silent() -> None:
         assert run_verapdf_checks(b"", conformance="pdfx4", enabled_ua=True) == []
 

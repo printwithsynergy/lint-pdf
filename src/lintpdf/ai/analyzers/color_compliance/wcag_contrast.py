@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.analyzers.text_metrics import effective_font_size_pt
 
 if TYPE_CHECKING:
     from lintpdf.plugin.protocol import AnalyzerContext
@@ -125,10 +126,12 @@ class WcagContrastAnalyzer(BaseAIAnalyzer):
             if fg_srgb is None:
                 continue
 
+            font_size_pt = effective_font_size_pt(event)
+
             # Deduplicate: one finding per unique (page, color, font_size, font) combo
             dedup_key = (
                 f"{event.page_num}:{fg_srgb[0]:.3f},{fg_srgb[1]:.3f},{fg_srgb[2]:.3f}"
-                f":{event.font_size:.1f}:{event.font_name}"
+                f":{font_size_pt:.1f}:{event.font_name}"
             )
             if dedup_key in checked:
                 continue
@@ -139,7 +142,6 @@ class WcagContrastAnalyzer(BaseAIAnalyzer):
             ratio_rounded = round(ratio, 2)
 
             # Determine if this is "large text" per WCAG
-            font_size_pt = abs(event.font_size)
 
             # Skip degenerate sub-2pt sizes. The 2026-04-27 Opus audit
             # flagged AI_WCAG_001 false positives where the engine

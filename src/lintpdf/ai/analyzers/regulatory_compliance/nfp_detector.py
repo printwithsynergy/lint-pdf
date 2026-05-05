@@ -100,6 +100,25 @@ def _page_text(page: object) -> str:
     return str(raw)
 
 
+def _page_text_with_ocr(page: object) -> str:
+    """Content-stream text plus OCR ``detected_text_regions`` (outlined type).
+
+    Outlined Nutrition / Supplement Facts headers often do not appear as
+    literal strings in ``content_stream``; the shared OCR pass stores
+    recovered text on ``SemanticPage.detected_text_regions``.
+    """
+    chunks: list[str] = []
+    stream = _page_text(page)
+    if stream.strip():
+        chunks.append(stream)
+    regions = getattr(page, "detected_text_regions", None) or []
+    for region in regions:
+        rt = getattr(region, "text", None) or ""
+        if rt.strip():
+            chunks.append(rt)
+    return "\n".join(chunks)
+
+
 def detect_nfp_regions(page: object) -> list[NfpPanelRegion]:
     """Return one ``NfpPanelRegion`` when the page carries a
     structurally valid Nutrition Facts panel, or an empty list
@@ -110,7 +129,7 @@ def detect_nfp_regions(page: object) -> list[NfpPanelRegion]:
     future per-region localisation (e.g. multi-panel mixed
     labels) slots in without an API break.
     """
-    text = _page_text(page)
+    text = _page_text_with_ocr(page)
     if not text:
         return []
 
@@ -182,16 +201,9 @@ def is_supplement_facts_page(page) -> bool:  # type: ignore[no-untyped-def]
     text. Marketing copy that says "supplement facts may vary" won't
     trigger because the regex requires the exact two-word header.
     """
-    raw = getattr(page, "content_stream", None)
-    if not raw:
+    text = _page_text_with_ocr(page)
+    if not text.strip():
         return False
-    if isinstance(raw, bytes):
-        try:
-            text = raw.decode("latin-1")
-        except Exception:
-            return False
-    else:
-        text = str(raw)
     return bool(_SUPPLEMENT_FACTS_PATTERN.search(text))
 
 

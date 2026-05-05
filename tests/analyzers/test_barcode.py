@@ -265,3 +265,49 @@ def test_barcode_031_skipped_when_no_trim_box() -> None:
     findings = BarcodeAnalyzer().analyze(doc, events)
     qz = [f for f in findings if f.inspection_id == "LPDF_BARCODE_031"]
     assert qz == []
+
+
+def _fill_grid_events(
+    *,
+    rows: int,
+    cols: int,
+    module: float,
+    step_x: float,
+    step_y: float,
+    page_num: int = 1,
+) -> list[PathPaintingEvent]:
+    """Dense small rectangular fills (2D-heuristic bait)."""
+    events: list[PathPaintingEvent] = []
+    idx = 0
+    for r in range(rows):
+        for c in range(cols):
+            x0 = c * step_x
+            y0 = r * step_y
+            events.append(
+                PathPaintingEvent(
+                    operator="f",
+                    page_num=page_num,
+                    operator_index=idx,
+                    fill=True,
+                    stroke=False,
+                    bbox=(x0, y0, x0 + module, y0 + module),
+                )
+            )
+            idx += 1
+    return events
+
+
+def test_2d_barcode_suppressed_when_region_covers_trim_excessively() -> None:
+    """WS-10 can admit a sub-200pt symbol that still covers most of a small trim box."""
+    trim = PdfBox(0, 0, 200, 140)
+    doc = _doc_with_trim(trim)
+    doc._pdf_bytes = b"%PDF-1.4\n1 0 obj<<>>endobj trailer<<>>\n%%EOF\n"  # type: ignore[attr-defined]
+    events = _fill_grid_events(rows=20, cols=30, module=4.0, step_x=5.0, step_y=6.0)
+    findings = BarcodeAnalyzer().analyze(doc, events)
+    two_d = [
+        f
+        for f in findings
+        if f.inspection_id
+        in ("LPDF_BARCODE_014", "LPDF_BARCODE_015", "LPDF_BARCODE_016", "LPDF_BARCODE_017", "LPDF_BARCODE_018")
+    ]
+    assert two_d == []

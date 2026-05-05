@@ -18,7 +18,7 @@ from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import (
     pages_with_nfp,
     supplement_facts_pages,
 )
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.model import DetectedTextRegion, PdfBox, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
@@ -71,6 +71,20 @@ def test_detector_fires_on_valid_panel() -> None:
     assert r.page_num == 1
     assert len(r.nutrient_tokens) >= 3
     assert r.numeric_values >= 2
+
+
+def test_detector_reads_nutrition_panel_from_ocr_regions_only() -> None:
+    """Outlined labels: header + nutrients may live only in ``detected_text_regions``."""
+    page = SemanticPage(
+        page_num=1,
+        media_box=PdfBox(0, 0, 612, 792),
+        content_stream=b"",
+        detected_text_regions=[
+            DetectedTextRegion(bbox=PdfBox(0, 0, 100, 100), text=_VALID_PANEL, confidence=0.9),
+        ],
+    )
+    regions = detect_nfp_regions(page)
+    assert len(regions) == 1
 
 
 def test_detector_rejects_header_only() -> None:

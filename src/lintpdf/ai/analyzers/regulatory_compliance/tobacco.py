@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.analyzers.text_metrics import effective_font_size_pt
 
 if TYPE_CHECKING:
     from lintpdf.plugin.protocol import AnalyzerContext
@@ -131,7 +132,7 @@ class TobaccoWarningAnalyzer(BaseAIAnalyzer):
                 continue
             if event.page_num != page_num or event.bbox is None:
                 continue
-            if event.font_size < 8.0:
+            if effective_font_size_pt(event) < 8.0:
                 continue
             any_match = True
             ex0, ey0, ex1, ey1 = event.bbox

@@ -384,6 +384,10 @@ class PreflightOrchestrator:
         # Step 1-3: Parse, build model, interpret
         document, events = self._parse_and_interpret(pdf_bytes)
 
+        # Raw PDF bytes for analyzers that rasterise crops (2D barcode
+        # zxing verification, etc.). Not a dataclass field — set dynamically.
+        document._pdf_bytes = pdf_bytes  # type: ignore[attr-defined]
+
         # Step 3b (PR-W): attach DielineResult to the document so
         # analyzers (BarcodeAnalyzer, etc.) can read fold geometry
         # without re-running detection. Best-effort: failure leaves
@@ -441,11 +445,13 @@ class PreflightOrchestrator:
         ua_enabled = any(
             p.startswith("LPDF_UA_") or p == "LPDF_UA_*" for p in self._plan.checks.enabled
         ) and not any(p == "LPDF_UA_*" or p == "LPDF_UA_CONF" for p in self._plan.checks.disabled)
+        verapdf_trace: dict[str, Any] = {}
         raw_findings.extend(
             run_verapdf_checks(
                 pdf_bytes,
                 conformance=self._plan.conformance,
                 enabled_ua=ua_enabled,
+                metadata_out=verapdf_trace,
             )
         )
 
@@ -509,6 +515,7 @@ class PreflightOrchestrator:
             "workflow": self._plan.workflow,
             "ai_enabled": self._plan.ai.enabled if self._plan.ai else False,
             "ai_findings_count": len(ai_findings),
+            "verapdf": verapdf_trace,
         }
         if color_score_data:
             metadata.update(color_score_data)
