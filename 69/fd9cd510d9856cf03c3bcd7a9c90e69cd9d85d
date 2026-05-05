@@ -1,0 +1,23 @@
+.gitignore
+  482cc3651bc5a909 1-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "69fd9cd510d9856cf03c3bcd7a9c90e69cd9d85d",
+  "prompts": {
+    "482cc3651bc5a909": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d9b2aa4e-be81-4410-b773-a9cfc21d6ccd",
+        "model": "default"
+      },
+      "human_author": "Quincy Adams",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 0,
+      "accepted_lines": 33,
+      "overriden_lines": 0
+    }
+  }
+}
