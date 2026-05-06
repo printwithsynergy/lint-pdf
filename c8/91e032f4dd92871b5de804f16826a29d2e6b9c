@@ -1,0 +1,23 @@
+src/lintpdf/__init__.py
+  s_3f0cdbd772e3e8::t_cb7554f18ac875 3
+tests/test_scaffold.py
+  s_3f0cdbd772e3e8::t_ed9334d1569fbf 10
+pyproject.toml
+  s_3f0cdbd772e3e8::t_a169371bb679e2 6-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "c891e032f4dd92871b5de804f16826a29d2e6b9c",
+  "prompts": {},
+  "sessions": {
+    "s_3f0cdbd772e3e8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "35baf435-0446-43c6-8341-50917f7cd5d6",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
