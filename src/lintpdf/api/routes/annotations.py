@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/viewer", tags=["viewer-annotations"])
 
 _ALLOWED_KINDS = {"rect", "circle", "arrow", "freehand", "note"}
 

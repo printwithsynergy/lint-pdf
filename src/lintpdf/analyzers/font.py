@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from lintpdf.analyzers._font_sfnt import parse_fstype
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -460,5 +461,98 @@ class FontAnalyzer(BaseAnalyzer):
                             iso_clause="ISO 32000-2:2020 9.9",
                         )
                     )
+
+        return findings
+
+    @staticmethod
+    def _check_fstype(
+        font: PdfFont,
+        *,
+        page_num: int,
+        font_file_bytes: bytes | None,
+    ) -> list[Finding]:
+        """Legacy fsType compatibility surface used by sfnt tests.
+
+        This helper intentionally remains side-effect free and only
+        emits fsType-derived findings when font bytes are available.
+        """
+        if not font_file_bytes:
+            return []
+        if font.font_type in {"Type1", "Type3"}:
+            return []
+
+        fs_info = parse_fstype(font_file_bytes)
+        if fs_info is None:
+            return []
+
+        findings: list[Finding] = []
+
+        if fs_info.has_embedding_restriction:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_FONT_015",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Font '{font.base_font}' has fsType embedding restrictions: "
+                        f"{', '.join(fs_info.flags) or 'unknown'}"
+                    ),
+                    page_num=page_num,
+                    details={
+                        "font_name": font.name,
+                        "base_font": font.base_font,
+                        "fs_type_value": fs_info.value,
+                        "fs_type_flags": fs_info.flags,
+                        "has_embedding_restriction": fs_info.has_embedding_restriction,
+                    },
+                    iso_clause="OpenType OS/2 fsType",
+                    object_id=font.name,
+                    object_type="font",
+                )
+            )
+
+        if fs_info.no_subsetting and font.subset:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_FONT_016",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Font '{font.base_font}' is subsetted but fsType forbids subsetting"
+                    ),
+                    page_num=page_num,
+                    details={
+                        "font_name": font.name,
+                        "base_font": font.base_font,
+                        "fs_type_value": fs_info.value,
+                        "fs_type_flags": fs_info.flags,
+                        "no_subsetting": fs_info.no_subsetting,
+                    },
+                    iso_clause="OpenType OS/2 fsType",
+                    object_id=font.name,
+                    object_type="font",
+                )
+            )
+
+        if fs_info.bitmap_only and font.font_type in {"TrueType", "CIDFontType2", "Type0"}:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_FONT_017",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Font '{font.base_font}' embeds outline data but fsType is bitmap-only"
+                    ),
+                    page_num=page_num,
+                    details={
+                        "font_name": font.name,
+                        "base_font": font.base_font,
+                        "font_type": font.font_type,
+                        "fs_type_value": fs_info.value,
+                        "fs_type_flags": fs_info.flags,
+                        "bitmap_only": fs_info.bitmap_only,
+                    },
+                    iso_clause="OpenType OS/2 fsType",
+                    object_id=font.name,
+                    object_type="font",
+                )
+            )
 
         return findings

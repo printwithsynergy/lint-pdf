@@ -23,6 +23,7 @@ from lintpdf import decisions as _decisions  # noqa: F401  (registration import)
 from lintpdf.api.routes import (
     ai_explain,
     ai_health,
+    annotations,
     batch,
     decisions,
     epm_summary,
@@ -31,6 +32,7 @@ from lintpdf.api.routes import (
     jobs,
     profiles,
     reports,
+    viewer,
 )
 
 logger = logging.getLogger(__name__)
@@ -319,8 +321,10 @@ def create_app() -> FastAPI:
     if not control_plane_only:
         app.include_router(reports.router)
     if not control_plane_only:
-        # Interactive viewer endpoints are no longer served from lint-pdf.
-        # LoupePDF provides the interactive viewing surface.
+        # Compatibility surface: keep viewer + annotation APIs mounted in
+        # lint-pdf while codex migration is in-flight.
+        app.include_router(viewer.router)
+        app.include_router(annotations.router)
 
         # All SaaS-only routes — admin / billing / branding / trial /
         # webhooks / approvals / toggles / workflows / AI knobs /

@@ -121,7 +121,8 @@ def build_viewer_handoff_url(viewer_base_url: str, token: str) -> str:
 
     ``viewer_base_url`` accepts either:
     - template style: ``https://app.example.com/view/{token}``
-    - host page style: ``https://loupepdf.com/demo``
+    - base host style: ``https://app.example.com`` (appends ``/view/{token}``)
+    - query handoff style: ``https://loupepdf.com/demo?foo=bar``
       (adds ``source=lintpdf`` + ``lintpdf_token`` query params)
     """
     token_q = quote(token, safe="")
@@ -130,6 +131,12 @@ def build_viewer_handoff_url(viewer_base_url: str, token: str) -> str:
         return base.replace("{token}", token_q)
     if not base:
         return f"/view/{token_q}"
+    # Compatibility default: plain host/path bases mint canonical
+    # /view/{token} URLs consumed by existing dashboard + API clients.
+    if "?" not in base:
+        return f"{base.rstrip('/')}/view/{token_q}"
+    # Query-style handoff is still supported for third-party hosts that
+    # parse lintpdf_token from query parameters.
     sep = "&" if "?" in base else "?"
     return f"{base.rstrip('/')}{sep}source=lintpdf&lintpdf_token={token_q}"
 
