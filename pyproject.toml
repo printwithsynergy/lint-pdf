@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lintpdf"
-version = "0.1.0b2"
+name = "lint-pdf"
+version = "0.1.0b3"
 description = "Detection-only PDF preflight engine"
 readme = "README.md"
 requires-python = ">=3.11"

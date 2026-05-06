@@ -1162,8 +1162,8 @@ wheels = [
 ]
 
 [[package]]
-name = "lintpdf"
-version = "0.1.0b1"
+name = "lint-pdf"
+version = "0.1.0b3"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
