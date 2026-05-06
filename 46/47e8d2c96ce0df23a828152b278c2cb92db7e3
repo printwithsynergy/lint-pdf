@@ -1,0 +1,62 @@
+src/lintpdf/analyzers/cutting_overprint.py
+  3f0cdbd772e3e829 26,167-198
+src/lintpdf/analyzers/font.py
+  3f0cdbd772e3e829 37
+pyproject.toml
+  s_3f0cdbd772e3e8::t_95b79c4877bf9e 7
+tests/test_scaffold.py
+  s_3f0cdbd772e3e8::t_8afce4534f2027 10
+src/lintpdf/queue/tasks.py
+  3f0cdbd772e3e829 733-736,824-826
+src/lintpdf/codex_adapter.py
+  s_3f0cdbd772e3e8::t_58565677698274 171-175
+  3f0cdbd772e3e829 1,3-4,9-15,22,28-59,62-120,124-136,138-170,176-198,200-203,206-207,209-214,216-217,220-384,388-394
+src/lintpdf/profiles/orchestrator.py
+  3f0cdbd772e3e829 3-4,86-89,91,93,95-99,368-370,693-694,696,766
+src/lintpdf/api/routes/viewer.py
+  s_3f0cdbd772e3e8::t_22c5d7f52eff1c 2092-2094
+  s_3f0cdbd772e3e8::t_7d1b3fd4eb988a 255-260
+  s_3f0cdbd772e3e8::t_8e691d8f15559d 1696-1698,1701-1702
+  s_3f0cdbd772e3e8::t_a54ce8159a3d89 1843
+  s_3f0cdbd772e3e8::t_ecceaee2a9425f 158-168,170,176,178-179,181,184-202,204-252
+  s_3f0cdbd772e3e8::t_2efdf01cdcc686 639-645
+  s_3f0cdbd772e3e8::t_521067d76eae2d 1791-1794
+  s_3f0cdbd772e3e8::t_d80060ff0d458a 2211-2215,2275-2278,2284-2286,2288-2296,2520,2560-2564
+  s_3f0cdbd772e3e8::t_e5fc788539d113 1617-1619,1628-1629
+  s_3f0cdbd772e3e8::t_58475657d41f3e 388-391
+src/lintpdf/api/app.py
+  s_3f0cdbd772e3e8::t_dcb688a12519b9 322-323
+src/lintpdf/__init__.py
+  s_3f0cdbd772e3e8::t_74f1f52029e9a3 3
+src/lintpdf/primitives/object_class.py
+  s_3f0cdbd772e3e8::t_e015397b8cf8ad 11-13,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "4647e8d2c96ce0df23a828152b278c2cb92db7e3",
+  "prompts": {
+    "3f0cdbd772e3e829": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "35baf435-0446-43c6-8341-50917f7cd5d6",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>",
+      "total_additions": 578,
+      "total_deletions": 8967,
+      "accepted_lines": 450,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_3f0cdbd772e3e8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "35baf435-0446-43c6-8341-50917f7cd5d6",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
