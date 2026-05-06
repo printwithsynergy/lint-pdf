@@ -72,6 +72,9 @@ dependencies = [
     "anthropic>=0.30.0",
 ]
 
+[project.scripts]
+lint-pdf = "lintpdf.cli:main"
+
 [project.optional-dependencies]
 ai = [
     "pyzbar>=0.1.9",
