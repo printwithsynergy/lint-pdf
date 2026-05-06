@@ -1,0 +1,27 @@
+src/lintpdf/api/routes/annotations.py
+  s_61dcd6c953a4d4::t_aaf17a451c1ec9 38
+src/lintpdf/analyzers/font.py
+  s_61dcd6c953a4d4::t_f0b1e801dcf35e 29,466-556
+src/lintpdf/reports/service.py
+  s_61dcd6c953a4d4::t_db2ba94f6659e8 124-125,134-139
+src/lintpdf/api/app.py
+  s_61dcd6c953a4d4::t_1ea17b92b396e5 26,35,324-327
+src/lintpdf/parser/__init__.py
+  s_61dcd6c953a4d4::t_84b51174330fbb 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "f843dba0712c5f3a65420c0259a65a8ca9d75d15",
+  "prompts": {},
+  "sessions": {
+    "s_61dcd6c953a4d4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ab032076-abc5-4289-bbf6-4f2db76dfed2",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
