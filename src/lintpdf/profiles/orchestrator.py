@@ -1,7 +1,7 @@
 """Preflight orchestrator - runs the full preflight pipeline.
 
-Coordinates parsing, semantic model building, content stream interpretation,
-analyzer execution, conformance validation, and finding filtering.
+Coordinates codex extraction, analyzer execution, conformance validation,
+and finding filtering.
 """
 
 from __future__ import annotations
@@ -83,43 +83,20 @@ class ViewerEssentials:
 def extract_viewer_essentials(pdf_bytes: bytes) -> ViewerEssentials:
     """Parse a PDF just enough for viewer use.
 
-    Shares the parser/semantic-builder chain with
-    :meth:`PreflightOrchestrator._parse_and_interpret` but skips content
-    stream interpretation, analyzer execution, conformance validation, and
-    AI analyzers. Returns page geometry (media/crop/trim/bleed boxes,
-    rotation, user unit), page count, encryption flag, and the Info dict.
+    Uses codex extraction only; skips analyzer execution, conformance
+    validation, and AI analyzers. Returns page geometry (media/crop/trim/
+    bleed boxes, rotation, user unit), page count, encryption flag,
+    and the Info dict.
     """
-    from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
-    from lintpdf.semantic.builder import SemanticModelBuilder
+    from lintpdf.codex_adapter import extract_viewer_payload_via_codex
 
-    adapter = PikePDFAdapter()
-    pdf_doc = adapter.open(pdf_bytes)
-    builder = SemanticModelBuilder(adapter)
-    document = builder.build(pdf_doc)
-
-    pages: list[dict[str, Any]] = []
-    for page in document.pages:
-        pages.append(
-            {
-                "page_num": page.page_num,
-                "rotate": page.rotate,
-                "user_unit": page.user_unit,
-                "media_box": _box_to_list(page.media_box),
-                "crop_box": _box_to_list(page.crop_box),
-                "bleed_box": _box_to_list(page.bleed_box),
-                "trim_box": _box_to_list(page.trim_box),
-                "art_box": _box_to_list(page.art_box),
-                "width_pts": page.effective_width,
-                "height_pts": page.effective_height,
-            }
-        )
-
+    codex_payload = extract_viewer_payload_via_codex(pdf_bytes)
     return ViewerEssentials(
-        pdf_version=document.version,
-        page_count=document.page_count,
-        is_encrypted=document.is_encrypted,
-        pages=pages,
-        info_dict={k: str(v) for k, v in (document.info_dict or {}).items()},
+        pdf_version=codex_payload.pdf_version,
+        page_count=codex_payload.page_count,
+        is_encrypted=codex_payload.is_encrypted,
+        pages=codex_payload.pages,
+        info_dict={k: str(v) for k, v in codex_payload.info_dict.items()},
     )
 
 
@@ -388,26 +365,9 @@ class PreflightOrchestrator:
         # zxing verification, etc.). Not a dataclass field — set dynamically.
         document._pdf_bytes = pdf_bytes  # type: ignore[attr-defined]
 
-        # Step 3b (PR-W): attach DielineResult to the document so
-        # analyzers (BarcodeAnalyzer, etc.) can read fold geometry
-        # without re-running detection. Best-effort: failure leaves
-        # ``document.dieline_result = None`` and consumers skip.
-        try:
-            from lintpdf.analyzers.dieline import detect_dieline
-            from lintpdf.plugin.host import default_services_for_saas
-
-            ai_features = getattr(self._ai_config, "features", None) if self._ai_config else None
-            # Phase 3d: pass services.llm_client through so the
-            # Sonnet fallback inside dieline_claude doesn't have to
-            # instantiate Anthropic() directly.
-            services = default_services_for_saas()
-            document.dieline_result = detect_dieline(
-                pdf_bytes,
-                ai_features=ai_features,
-                llm_client=getattr(services, "llm_client", None),
-            )
-        except Exception:  # pragma: no cover — never fail the job
-            document.dieline_result = None
+        # Step 3b: dieline parsing moved to codex. Lint-side parser-era
+        # detection is removed in the big-bang cutover.
+        document.dieline_result = None
 
         # Step 4: Run analyzers
         raw_findings: list[Finding] = []
@@ -730,30 +690,10 @@ class PreflightOrchestrator:
 
     @staticmethod
     def _parse_and_interpret(pdf_bytes: bytes) -> tuple[Any, list[Any]]:
-        """Parse PDF and return (SemanticDocument, events)."""
-        from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
-        from lintpdf.semantic.builder import SemanticModelBuilder
-        from lintpdf.semantic.interpreter import ContentStreamInterpreter
+        """Build SemanticDocument from codex and return empty event stream."""
+        from lintpdf.codex_adapter import extract_semantic_document_via_codex
 
-        adapter = PikePDFAdapter()
-        pdf_doc = adapter.open(pdf_bytes)
-        builder = SemanticModelBuilder(adapter)
-        document = builder.build(pdf_doc)
-
-        events: list[Any] = []
-        for pdf_page in pdf_doc.pages:
-            instructions = adapter.parse_content_stream(pdf_page)
-            if instructions:
-                # Find the matching semantic page for resources
-                sem_page = document.pages[pdf_page.page_num - 1]
-                interpreter = ContentStreamInterpreter(
-                    page_num=pdf_page.page_num,
-                    resources=sem_page.resources or {},
-                )
-                page_events = interpreter.interpret(instructions)
-                events.extend(page_events)
-
-        return document, events
+        return extract_semantic_document_via_codex(pdf_bytes)
 
     def _create_analyzers(self) -> list[Any]:
         """Create analyzer instances with configured thresholds."""
@@ -823,7 +763,7 @@ class PreflightOrchestrator:
                 tac_limit=t.tac_limit,
                 brand_palette_present=brand_palette_present,
             ),
-            FontAnalyzer(pdf_bytes=self._pdf_bytes),
+            FontAnalyzer(),
             PageGeometryAnalyzer(
                 min_bleed_pts=bleed_pts,
                 safety_margin_pts=safety_pts,

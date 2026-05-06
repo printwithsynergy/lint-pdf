@@ -24,10 +24,8 @@ Check IDs:
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
-from lintpdf.analyzers._font_sfnt import parse_fstype
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -35,21 +33,8 @@ if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import PdfFont, SemanticDocument
 
-logger = logging.getLogger(__name__)
-
-
 class FontAnalyzer(BaseAnalyzer):
-    """Analyzer for font embedding, subsetting, and encoding issues.
-
-    Args:
-        pdf_bytes: Raw PDF bytes. Optional. When provided, the analyzer
-            re-opens the PDF with pikepdf once to extract each embedded
-            font program's OS/2 fsType field (T1-F04 / LPDF_FONT_015).
-            When absent the fsType check silently no-ops.
-    """
-
-    def __init__(self, pdf_bytes: bytes | None = None) -> None:
-        self._pdf_bytes = pdf_bytes
+    """Analyzer for font embedding, subsetting, and encoding issues."""
 
     def analyze(
         self,
@@ -59,12 +44,6 @@ class FontAnalyzer(BaseAnalyzer):
         """Analyze all fonts across all pages."""
         findings: list[Finding] = []
         seen_fonts: set[str] = set()
-
-        # Build an optional base_font -> font-file-bytes map so the
-        # LPDF_FONT_015 fsType branch has bytes to parse. Absent pdf_bytes
-        # (or any error re-opening the PDF) leaves the map empty and the
-        # check silently skips — embedding-licence inspection is advisory.
-        font_bytes_map = self._extract_font_file_bytes() if self._pdf_bytes else {}
 
         for page in document.pages:
             for font_name, font in page.fonts.items():
@@ -76,9 +55,6 @@ class FontAnalyzer(BaseAnalyzer):
                 seen_fonts.add(font_key)
 
                 findings.extend(self._check_font(font, page.page_num))
-                findings.extend(
-                    self._check_fstype(font, page.page_num, font_bytes_map.get(font.base_font))
-                )
 
         # PR-I (audit miss closure): empty-fonts-with-text-content
         # advisory. Outlined-text fixtures (Pink-Slush, Cherry-Twist,
@@ -139,184 +115,6 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
         return out
-
-    def _extract_font_file_bytes(self) -> dict[str, bytes]:
-        """Return a ``base_font -> font-program bytes`` map for embedded fonts.
-
-        Walks every page's /Resources /Font entries via pikepdf, finds
-        /FontDescriptor /FontFile2 or /FontFile3 streams, and reads their
-        decoded bytes. Keyed by the font's /BaseFont (subset prefix
-        included) so the caller matches against ``PdfFont.base_font``.
-
-        Silent on errors — returns whatever it got up to the failure
-        point. T1-F04 is advisory; we never want a parse problem to
-        break the broader preflight run.
-        """
-        out: dict[str, bytes] = {}
-        if not self._pdf_bytes:
-            return out
-        try:
-            import io
-
-            import pikepdf
-        except Exception:
-            return out
-
-        try:
-            with pikepdf.open(io.BytesIO(self._pdf_bytes)) as pdf:
-                for page in pdf.pages:
-                    resources = page.obj.get("/Resources")
-                    if resources is None:
-                        continue
-                    font_dict = resources.get("/Font")
-                    if font_dict is None:
-                        continue
-                    for _fname, font_obj in font_dict.items():
-                        self._collect_font_file_bytes(font_obj, out)
-        except Exception as exc:
-            logger.debug("T1-F04: could not walk font tree for fsType: %s", exc)
-        return out
-
-    @staticmethod
-    def _collect_font_file_bytes(font_obj: object, out: dict[str, bytes]) -> None:
-        """Read FontFile2 / FontFile3 stream bytes from ``font_obj`` into ``out``."""
-        try:
-            base_font_raw = font_obj.get("/BaseFont") if hasattr(font_obj, "get") else None
-            if base_font_raw is None:
-                return
-            base_font = str(base_font_raw).lstrip("/")
-            if base_font in out:
-                return
-
-            descriptor = font_obj.get("/FontDescriptor")
-            # CID parent fonts wrap the descriptor inside a DescendantFonts array.
-            if descriptor is None:
-                descendants = font_obj.get("/DescendantFonts")
-                if descendants is not None and len(descendants) > 0:
-                    desc_font = descendants[0]
-                    descriptor = desc_font.get("/FontDescriptor")
-            if descriptor is None:
-                return
-
-            for key in ("/FontFile2", "/FontFile3"):
-                file_stream = descriptor.get(key)
-                if file_stream is None:
-                    continue
-                try:
-                    data = bytes(file_stream.read_bytes())
-                except Exception:
-                    continue
-                if data:
-                    out[base_font] = data
-                    return
-        except Exception:
-            return
-
-    @staticmethod
-    def _check_fstype(font: PdfFont, page_num: int, font_file_bytes: bytes | None) -> list[Finding]:
-        """fsType licence-bit checks.
-
-        Reads the embedded font program's OS/2 fsType field and emits up
-        to three distinct findings:
-
-          - LPDF_FONT_015 — bits 1/2/3 (restricted / preview-and-print /
-            editable embedding). Advisory. Enabled by default.
-          - LPDF_FONT_016 — bit 8 (no_subsetting) AND the PDF actually
-            subset this font. Real licence violation — the vendor said
-            don't subset, and the embedder did anyway. Default-OFF in
-            bundled profiles; tenants with licensed-font-only workflows
-            enable it via the rules editor.
-          - LPDF_FONT_017 — bit 9 (bitmap_only) on an outline-format
-            font (TrueType / OpenType CFF). Advertises that only bitmap
-            data should be embedded; the PDF embedded outlines. Same
-            default-OFF as LPDF_FONT_016.
-        """
-        if font_file_bytes is None:
-            return []
-        # Skip fonts where fsType has no meaning (Type 1, Type 3, bitmap).
-        if font.font_type in ("Type1", "Type3"):
-            return []
-
-        info = parse_fstype(font_file_bytes)
-        if info is None:
-            return []
-
-        findings: list[Finding] = []
-        common_details = {
-            "font_name": font.name,
-            "base_font": font.base_font,
-            "font_type": font.font_type,
-            "fs_type_value": info.value,
-            "fs_type_flags": info.flags,
-            "no_subsetting": info.no_subsetting,
-            "bitmap_only": info.bitmap_only,
-        }
-
-        # LPDF_FONT_015 — generic licence-restriction advisory (bits 1-3).
-        if info.has_embedding_restriction:
-            findings.append(
-                Finding(
-                    inspection_id="LPDF_FONT_015",
-                    severity=Severity.ADVISORY,
-                    message=(
-                        f"Font '{font.base_font}' has restricted embedding licence "
-                        f"(fsType=0x{info.value:04x}: {', '.join(info.flags)})"
-                    ),
-                    page_num=page_num,
-                    details=common_details,
-                    iso_clause="ISO 32000-2:2020 9.8.2 / OpenType OS/2 §1.2",
-                    object_id=font.name,
-                    object_type="font",
-                )
-            )
-
-        # LPDF_FONT_016 — no-subsetting bit set AND the embedder subset
-        # the font anyway. Conditional on font.subset so this fires only
-        # on actual violations, not on "vendor declared it, we honoured
-        # it" cases.
-        if info.no_subsetting and font.subset:
-            findings.append(
-                Finding(
-                    inspection_id="LPDF_FONT_016",
-                    severity=Severity.WARNING,
-                    message=(
-                        f"Font '{font.base_font}' was subsetted but the vendor "
-                        f"forbids subsetting (fsType no_subsetting bit set)"
-                    ),
-                    page_num=page_num,
-                    details=common_details,
-                    iso_clause="OpenType OS/2 §1.2 (bit 8)",
-                    object_id=font.name,
-                    object_type="font",
-                )
-            )
-
-        # LPDF_FONT_017 — bitmap-only bit set AND the font is an outline
-        # format. The embedder included outlines against the vendor's
-        # declared policy.
-        if info.bitmap_only and font.font_type in (
-            "TrueType",
-            "Type0",
-            "CIDFontType0",
-            "CIDFontType2",
-        ):
-            findings.append(
-                Finding(
-                    inspection_id="LPDF_FONT_017",
-                    severity=Severity.WARNING,
-                    message=(
-                        f"Font '{font.base_font}' embeds outline data but the "
-                        f"vendor declares bitmap-only embedding (fsType bit 9)"
-                    ),
-                    page_num=page_num,
-                    details=common_details,
-                    iso_clause="OpenType OS/2 §1.2 (bit 9)",
-                    object_id=font.name,
-                    object_type="font",
-                )
-            )
-
-        return findings
 
     @staticmethod
     def _check_font(font: PdfFont, page_num: int) -> list[Finding]:  # skipcq: PY-R1000

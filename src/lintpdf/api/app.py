@@ -23,7 +23,6 @@ from lintpdf import decisions as _decisions  # noqa: F401  (registration import)
 from lintpdf.api.routes import (
     ai_explain,
     ai_health,
-    annotations,
     batch,
     decisions,
     epm_summary,
@@ -32,7 +31,6 @@ from lintpdf.api.routes import (
     jobs,
     profiles,
     reports,
-    viewer,
 )
 
 logger = logging.getLogger(__name__)
@@ -320,11 +318,9 @@ def create_app() -> FastAPI:
     # extracted in earlier W5 PRs.
     if not control_plane_only:
         app.include_router(reports.router)
-        app.include_router(viewer.router)
     if not control_plane_only:
-        # toggles + workflows + approvals + import_mappings: extracted
-        # to lintpdf_saas in W5i (#18) and W5j (#19).
-        app.include_router(annotations.router, prefix="/api/v1/viewer")
+        # Interactive viewer endpoints are no longer served from lint-pdf.
+        # LoupePDF provides the interactive viewing surface.
 
         # All SaaS-only routes — admin / billing / branding / trial /
         # webhooks / approvals / toggles / workflows / AI knobs /

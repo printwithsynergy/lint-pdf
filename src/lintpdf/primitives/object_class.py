@@ -8,12 +8,9 @@ All predicates take a Python tuple ``(operator: str, operands: list)`` plus
 optional graphics-state context, and return ``bool``. They do not mutate
 state. They do not raise on unknown operators (return ``False``).
 
-The (operator, operands) shape is produced by
-``ParserAdapter.parse_content_stream(page)`` —
-``list[tuple[list[Any], str]]`` — note that the parser returns
-``(operands, operator)`` ordering. These predicates accept the swapped
-``(operator, operands)`` ordering for readability; callers passing the
-parser's tuples should swap with :func:`from_parser_tuple`.
+Legacy stream tokenizers often emit ``(operands, operator)`` tuples.
+These predicates accept the swapped ``(operator, operands)`` ordering
+for readability; callers can swap with :func:`from_parser_tuple`.
 """
 
 from __future__ import annotations
@@ -55,7 +52,7 @@ _INLINE_IMAGE_SENTINEL = "BI_ID_EI"
 def from_parser_tuple(parser_tuple: tuple[list[Any], str]) -> tuple[str, list[Any]]:
     """Swap ``(operands, operator)`` to ``(operator, operands)``.
 
-    The pikepdf adapter returns ``(operands, operator_name)`` per stream
+    Some tokenizers return ``(operands, operator_name)`` per stream
     element. Predicates here expect ``(operator, operands)`` for readability.
     """
     operands, operator = parser_tuple

@@ -13,7 +13,6 @@ import uuid as uuid_mod
 from datetime import datetime, timezone
 from typing import Any
 
-import pikepdf
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -156,14 +155,7 @@ def _validate_page_num(pdf_bytes: bytes, page_num: int) -> None:
     404 rather than a 503 from the rendering backend's "Failed to render
     page" RuntimeError.
     """
-    try:
-        with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-            page_count = len(pdf.pages)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not read PDF",
-        ) from exc
+    page_count = len(_get_codex_pages(pdf_bytes))
     if page_num < 1 or page_num > page_count:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -171,13 +163,101 @@ def _validate_page_num(pdf_bytes: bytes, page_num: int) -> None:
         )
 
 
-def _extract_box(page: Any, name: str) -> PageBox | None:
-    """Extract a named box from a pikepdf page, returning None if absent."""
-    raw = page.get(name)
-    if raw is None:
+def _get_codex_document(pdf_bytes: bytes) -> dict[str, Any]:
+    from lintpdf.codex_adapter import extract_codex_document_via_codex
+
+    try:
+        doc = extract_codex_document_via_codex(pdf_bytes)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not read PDF",
+        ) from exc
+    if not isinstance(doc, dict):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not read PDF",
+        )
+    return doc
+
+
+def _get_codex_pages(pdf_bytes: bytes) -> list[dict[str, Any]]:
+    doc = _get_codex_document(pdf_bytes)
+    pages = doc.get("pages")
+    if not isinstance(pages, list):
+        return []
+    return [p for p in pages if isinstance(p, dict)]
+
+
+def _box_from_codex(raw: Any) -> PageBox | None:
+    if not isinstance(raw, dict):
         return None
-    coords = [float(c) for c in raw]
-    return PageBox(x0=coords[0], y0=coords[1], x1=coords[2], y1=coords[3])
+    try:
+        return PageBox(
+            x0=float(raw["x0"]),
+            y0=float(raw["y0"]),
+            x1=float(raw["x1"]),
+            y1=float(raw["y1"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _page_info_from_codex(page: dict[str, Any], page_num_fallback: int) -> PageInfo | None:
+    boxes = page.get("boxes")
+    if not isinstance(boxes, dict):
+        return None
+    media = _box_from_codex(boxes.get("media"))
+    if media is None:
+        return None
+    page_num = page.get("page_num")
+    try:
+        page_idx = int(page_num)
+    except (TypeError, ValueError):
+        page_idx = page_num_fallback
+    try:
+        rotation = int(page.get("rotation", 0))
+    except (TypeError, ValueError):
+        rotation = 0
+    return PageInfo(
+        page_num=page_idx,
+        width_pts=media.x1 - media.x0,
+        height_pts=media.y1 - media.y0,
+        media_box=media,
+        crop_box=_box_from_codex(boxes.get("crop")),
+        trim_box=_box_from_codex(boxes.get("trim")),
+        bleed_box=_box_from_codex(boxes.get("bleed")),
+        rotation=rotation,
+    )
+
+
+def _media_box_for_page(pdf_bytes: bytes, page_num: int) -> PageBox:
+    pages = _get_codex_pages(pdf_bytes)
+    page: dict[str, Any] | None = None
+    for candidate in pages:
+        try:
+            if int(candidate.get("page_num")) == page_num:
+                page = candidate
+                break
+        except (TypeError, ValueError):
+            continue
+    if page is None and 1 <= page_num <= len(pages):
+        page = pages[page_num - 1]
+    if page is None:
+        raise HTTPException(status_code=404, detail=f"Page {page_num} not found")
+    boxes = page.get("boxes")
+    media = _box_from_codex(boxes.get("media") if isinstance(boxes, dict) else None)
+    if media is None:
+        raise HTTPException(status_code=500, detail="Page has no MediaBox")
+    return media
+
+
+def _get_codex_layers(pdf_bytes: bytes) -> list[dict[str, Any]]:
+    doc = _get_codex_document(pdf_bytes)
+    ocgs = doc.get("ocgs")
+    if not isinstance(ocgs, list):
+        return []
+    return [layer for layer in ocgs if isinstance(layer, dict)]
 
 
 def _expand_int_list(value: list[int] | list[str] | None) -> list[int] | None:
@@ -305,27 +385,10 @@ async def list_pages(
     _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
 
     pages: list[PageInfo] = []
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        for i, page in enumerate(pdf.pages, start=1):
-            media = _extract_box(page, "/MediaBox")
-            if not media:
-                continue
-            crop = _extract_box(page, "/CropBox")
-            trim = _extract_box(page, "/TrimBox")
-            bleed = _extract_box(page, "/BleedBox")
-            rotation = int(page.get("/Rotate", 0))
-            pages.append(
-                PageInfo(
-                    page_num=i,
-                    width_pts=media.x1 - media.x0,
-                    height_pts=media.y1 - media.y0,
-                    media_box=media,
-                    crop_box=crop,
-                    trim_box=trim,
-                    bleed_box=bleed,
-                    rotation=rotation,
-                )
-            )
+    for idx, page in enumerate(_get_codex_pages(pdf_bytes), start=1):
+        info = _page_info_from_codex(page, idx)
+        if info is not None:
+            pages.append(info)
 
     return PagesResponse(job_id=job_id, page_count=len(pages), pages=pages)
 
@@ -573,23 +636,13 @@ async def get_page_info(
     """Return dimensions and box info for a single page."""
     _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
 
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        if page_num < 1 or page_num > len(pdf.pages):
-            raise HTTPException(status_code=404, detail=f"Page {page_num} not found")
-        page = pdf.pages[page_num - 1]
-        media = _extract_box(page, "/MediaBox")
-        if not media:
-            raise HTTPException(status_code=500, detail="Page has no MediaBox")
-        return PageInfo(
-            page_num=page_num,
-            width_pts=media.x1 - media.x0,
-            height_pts=media.y1 - media.y0,
-            media_box=media,
-            crop_box=_extract_box(page, "/CropBox"),
-            trim_box=_extract_box(page, "/TrimBox"),
-            bleed_box=_extract_box(page, "/BleedBox"),
-            rotation=int(page.get("/Rotate", 0)),
-        )
+    pages = _get_codex_pages(pdf_bytes)
+    if page_num < 1 or page_num > len(pages):
+        raise HTTPException(status_code=404, detail=f"Page {page_num} not found")
+    info = _page_info_from_codex(pages[page_num - 1], page_num)
+    if info is None:
+        raise HTTPException(status_code=500, detail="Page has no MediaBox")
+    return info
 
 
 @router.get("/jobs/{job_id}/separations", response_model=SeparationsResponse)
@@ -1561,16 +1614,9 @@ async def sample_color(
     _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
 
-    # Get page dimensions for coordinate conversion
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        page = pdf.pages[page_num - 1]
-        mb = page.get("/MediaBox")
-        if mb is None:
-            raise HTTPException(status_code=500, detail="Page has no MediaBox")
-        mb_vals = [float(v) for v in mb]
-
-    page_w = mb_vals[2] - mb_vals[0]
-    page_h = mb_vals[3] - mb_vals[1]
+    media_box = _media_box_for_page(pdf_bytes, page_num)
+    page_w = media_box.x1 - media_box.x0
+    page_h = media_box.y1 - media_box.y0
 
     # Render page
     png_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
@@ -1579,8 +1625,8 @@ async def sample_color(
     # Convert PDF coords to pixel coords
     scale_x = img.width / page_w
     scale_y = img.height / page_h
-    px_x = int((x - mb_vals[0]) * scale_x)
-    px_y = int(img.height - (y - mb_vals[1]) * scale_y)  # Y-flip
+    px_x = int((x - media_box.x0) * scale_x)
+    px_y = int(img.height - (y - media_box.y0) * scale_y)  # Y-flip
 
     # Clamp to image bounds
     px_x = max(0, min(px_x, img.width - 1))
@@ -1647,19 +1693,13 @@ async def _sample_densitometer(
     """
     from lintpdf.reports.separation_renderer import sample_densitometer
 
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        page = pdf.pages[page_num - 1]
-        mb = page.get("/MediaBox")
-        if mb is None:
-            raise HTTPException(status_code=500, detail="Page has no MediaBox")
-        mb_vals = [float(v) for v in mb]
-
-    page_w = mb_vals[2] - mb_vals[0]
-    page_h = mb_vals[3] - mb_vals[1]
+    media_box = _media_box_for_page(pdf_bytes, page_num)
+    page_w = media_box.x1 - media_box.x0
+    page_h = media_box.y1 - media_box.y0
     # Translate MediaBox-origin coordinate (bottom-left of the crop) into
     # a 0-origin sample — consistent with sample_color above.
-    local_x = x - mb_vals[0]
-    local_y = y - mb_vals[1]
+    local_x = x - media_box.x0
+    local_y = y - media_box.y0
 
     storage = get_storage() if (tenant_id and job_id) else None
 
@@ -1748,40 +1788,10 @@ async def list_layers(
     _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
 
     layers: list[LayerInfo] = []
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        catalog = pdf.Root
-        oc_props = catalog.get("/OCProperties")
-        if oc_props is None:
-            return LayersResponse(job_id=job_id, layers=[])
-
-        ocgs = oc_props.get("/OCGs")
-        if ocgs is None:
-            return LayersResponse(job_id=job_id, layers=[])
-
-        # Get default ON/OFF state
-        default_config = oc_props.get("/D", {})
-        off_list = default_config.get("/OFF", [])
-        off_set: set[int] = set()
-        try:
-            for ref in off_list:
-                off_set.add(id(ref))
-        except Exception:
-            pass
-
-        for idx, ocg_ref in enumerate(ocgs):
-            try:
-                ocg = ocg_ref
-                if hasattr(ocg, "resolve"):
-                    ocg = (
-                        ocg_ref.resolve()
-                        if callable(getattr(ocg_ref, "resolve", None))
-                        else ocg_ref
-                    )
-                name = str(ocg.get("/Name", f"Layer {idx + 1}"))
-                default_on = id(ocg_ref) not in off_set
-                layers.append(LayerInfo(name=name, ocg_index=idx, default_on=default_on))
-            except Exception:
-                layers.append(LayerInfo(name=f"Layer {idx + 1}", ocg_index=idx))
+    for idx, ocg in enumerate(_get_codex_layers(pdf_bytes)):
+        name = str(ocg.get("name") or f"Layer {idx + 1}")
+        default_on = bool(ocg.get("default_visible", True))
+        layers.append(LayerInfo(name=name, ocg_index=idx, default_on=default_on))
 
     return LayersResponse(job_id=job_id, layers=layers)
 
@@ -1830,20 +1840,7 @@ def _list_all_layer_indices(pdf_bytes: bytes) -> list[int]:
     Mirrors the index space used by ``/jobs/{id}/layers``: position
     in ``/Root/OCProperties/OCGs``.
     """
-    indices: list[int] = []
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        oc_props = pdf.Root.get("/OCProperties")
-        if oc_props is None:
-            return indices
-        ocgs = oc_props.get("/OCGs")
-        if ocgs is None:
-            return indices
-        try:
-            for idx, _ in enumerate(ocgs):
-                indices.append(idx)
-        except Exception:
-            pass
-    return indices
+    return [idx for idx, _ in enumerate(_get_codex_layers(pdf_bytes))]
 
 
 async def _get_layer_tile_bytes(
@@ -2092,11 +2089,9 @@ async def create_comparison(
     pdf_a = storage.download_pdf(job_a.file_key)
     pdf_b = storage.download_pdf(job_b.file_key)
 
-    # Get page counts
-    with pikepdf.open(io.BytesIO(pdf_a)) as pa:
-        pages_a = len(pa.pages)
-    with pikepdf.open(io.BytesIO(pdf_b)) as pb:
-        pages_b = len(pb.pages)
+    # Get page counts from codex metadata.
+    pages_a = len(_get_codex_pages(pdf_a))
+    pages_b = len(_get_codex_pages(pdf_b))
 
     comparison_id = str(uuid_mod.uuid4())
     max_pages = min(pages_a, pages_b, 50)
@@ -2213,23 +2208,11 @@ async def public_list_pages(token: str, db: Session = Depends(get_db)) -> PagesR
     """Public: list pages via report token."""
     job, pdf_bytes = _get_job_pdf_by_token(token, db)
     pages: list[PageInfo] = []
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        for i, page in enumerate(pdf.pages, start=1):
-            media = _extract_box(page, "/MediaBox")
-            if media is None:
-                media = PageBox(x0=0, y0=0, x1=612, y1=792)
-            pages.append(
-                PageInfo(
-                    page_num=i,
-                    width_pts=media.x1 - media.x0,
-                    height_pts=media.y1 - media.y0,
-                    media_box=media,
-                    crop_box=_extract_box(page, "/CropBox"),
-                    trim_box=_extract_box(page, "/TrimBox"),
-                    bleed_box=_extract_box(page, "/BleedBox"),
-                    rotation=int(page.get("/Rotate", 0)),
-                )
-            )
+    for i, page in enumerate(_get_codex_pages(pdf_bytes), start=1):
+        info = _page_info_from_codex(page, i)
+        if info is None:
+            continue
+        pages.append(info)
     return PagesResponse(job_id=str(job.id), page_count=len(pages), pages=pages)
 
 
@@ -2289,18 +2272,28 @@ async def public_page_info(
     """Public: get page dimensions and box info."""
     _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        page = pdf.pages[page_num - 1]
-        media = _extract_box(page, "/MediaBox") or PageBox(x0=0, y0=0, x1=612, y1=792)
+    pages = _get_codex_pages(pdf_bytes)
+    info = _page_info_from_codex(pages[page_num - 1], page_num)
+    if info is None:
+        media = PageBox(x0=0, y0=0, x1=612, y1=792)
         return {
             "page_num": page_num,
             "width_pts": media.x1 - media.x0,
             "height_pts": media.y1 - media.y0,
             "media_box": media.model_dump(),
-            "crop_box": (_extract_box(page, "/CropBox") or media).model_dump(),
-            "trim_box": (b.model_dump() if (b := _extract_box(page, "/TrimBox")) else None),
-            "bleed_box": (b2.model_dump() if (b2 := _extract_box(page, "/BleedBox")) else None),
+            "crop_box": media.model_dump(),
+            "trim_box": None,
+            "bleed_box": None,
         }
+    return {
+        "page_num": page_num,
+        "width_pts": info.width_pts,
+        "height_pts": info.height_pts,
+        "media_box": info.media_box.model_dump(),
+        "crop_box": (info.crop_box or info.media_box).model_dump(),
+        "trim_box": info.trim_box.model_dump() if info.trim_box else None,
+        "bleed_box": info.bleed_box.model_dump() if info.bleed_box else None,
+    }
 
 
 @router.get("/public/{token}/separations")
@@ -2524,9 +2517,7 @@ async def public_sample(
 
     png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
     img = Image.open(io.BytesIO(png)).convert("RGB")
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        page = pdf.pages[page_num - 1]
-        mb = _extract_box(page, "/MediaBox") or PageBox(x0=0, y0=0, x1=612, y1=792)
+    mb = _media_box_for_page(pdf_bytes, page_num)
     pw, ph = mb.x1 - mb.x0, mb.y1 - mb.y0
     px = int((x - mb.x0) / pw * img.width) if pw > 0 else 0
     py = int((1 - (y - mb.y0) / ph) * img.height) if ph > 0 else 0
@@ -2566,13 +2557,11 @@ async def public_layers(token: str, db: Session = Depends(get_db)) -> dict:
     """Public: list PDF layers (OCGs)."""
     _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     layers = []
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        ocprops = pdf.Root.get("/OCProperties")
-        if ocprops:
-            ocgs = ocprops.get("/OCGs", [])
-            for i, ocg in enumerate(ocgs):
-                name = str(ocg.get("/Name", f"Layer {i + 1}"))
-                layers.append({"name": name, "ocg_index": i, "default_on": True})
+    for i, ocg in enumerate(_get_codex_layers(pdf_bytes)):
+        name = str(ocg.get("name") or f"Layer {i + 1}")
+        layers.append(
+            {"name": name, "ocg_index": i, "default_on": bool(ocg.get("default_visible", True))}
+        )
     return {"layers": layers}
 
 

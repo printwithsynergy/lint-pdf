@@ -7,7 +7,7 @@ def test_lintpdf_importable() -> None:
     """Verify the lintpdf package can be imported."""
     import lintpdf
 
-    assert lintpdf.__version__ == "0.1.0"
+    assert lintpdf.__version__ == "0.1.0b2"
 
 
 def test_exceptions_importable() -> None:

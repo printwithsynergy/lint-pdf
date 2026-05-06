@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import io
 import json
 import logging
 import os
@@ -731,101 +730,10 @@ def run_preflight(
 
             duration_ms = int((time.monotonic() - start) * 1000)
 
-            # WS-19b — populate ``job.dieline`` so the viewer's Art
-            # Info panel can highlight the dieline polygon. The
-            # detect_dieline() pipeline runs name-match → geometry
-            # fallback → Sonnet (gated on the ``sonnet_fallback``
-            # feature). Failures are non-fatal: the preflight
-            # already finished and the absence of a dieline payload
-            # just means the panel renders the "No dieline detected"
-            # state.
-            try:
-                from lintpdf.analyzers.dieline import (
-                    detect_dieline,
-                    result_to_json,
-                )
-
-                tenant_features = frozenset(job.tenant.ai_features or [])
-                dieline_result = detect_dieline(pdf_bytes, ai_features=tenant_features)
-                if dieline_result.source != "missing":
-                    job.dieline = result_to_json(dieline_result)
-                    logger.info(
-                        "Job %s dieline detected via %s (confidence=%.2f)",
-                        job_id,
-                        dieline_result.source,
-                        dieline_result.confidence,
-                    )
-                else:
-                    job.dieline = None
-            except Exception:
-                logger.exception(
-                    "Job %s dieline detection raised — leaving job.dieline=None",
-                    job_id,
-                )
-                job.dieline = None
-
-            # Trim-size derivation. When the dieline detector returned
-            # actual polylines (geometry fallback or Sonnet path) we
-            # measure them directly. Otherwise (name-match path) we
-            # fall back to the page's TrimBox metadata — the dieline
-            # match confirms the file is designed for cutting and the
-            # designer's TrimBox is the next-best ground truth.
-            # Without this fallback the viewer's Art Info panel
-            # contradicts itself: "Dieline: Spot name match" alongside
-            # "Trim Size: Unavailable — no dieline detected".
-            try:
-                from lintpdf.analyzers.art_size import (
-                    compute_art_size,
-                )
-                from lintpdf.analyzers.art_size import (
-                    result_to_json as art_size_to_json,
-                )
-
-                if job.dieline:
-                    art_size = compute_art_size(dieline_result)
-                    if (
-                        art_size is None
-                        and (job.dieline.get("source") if job.dieline else None) == "name"
-                    ):
-                        # Name-match path returns no polylines; fall
-                        # back to TrimBox via pikepdf.
-                        try:
-                            import pikepdf
-
-                            with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-                                page = pdf.pages[0]
-                                tb = page.get("/TrimBox") or page.get("/MediaBox")
-                                if tb is not None and len(tb) == 4:
-                                    x0, y0, x1, y1 = (float(tb[i]) for i in range(4))
-                                    fake_polys = [
-                                        [
-                                            [x0, y0],
-                                            [x1, y0],
-                                            [x1, y1],
-                                            [x0, y1],
-                                            [x0, y0],
-                                        ]
-                                    ]
-                                    from lintpdf.analyzers.dieline import DielineResult
-
-                                    art_size = compute_art_size(
-                                        DielineResult(
-                                            source="name+trimbox",
-                                            polylines=fake_polys,
-                                            confidence=dieline_result.confidence,
-                                        )
-                                    )
-                        except Exception:
-                            logger.exception("Job %s trimbox fallback for art_size raised", job_id)
-                    job.art_size_mm = art_size_to_json(art_size)
-                else:
-                    job.art_size_mm = None
-            except Exception:
-                logger.exception(
-                    "Job %s art_size computation raised — leaving job.art_size_mm=None",
-                    job_id,
-                )
-                job.art_size_mm = None
+            # Big-bang codex cutover: dieline/art-size parsing lives in codex.
+            # Lint worker no longer executes parser-era dieline detection.
+            job.dieline = None
+            job.art_size_mm = None
 
             # Serialize result for storage. Findings are denormalised
             # into a plain dict list so downstream report generators
@@ -865,126 +773,6 @@ def run_preflight(
                 ],
             }
 
-            # WS-die-multi-color — append a post-detection warning
-            # when the dieline layer paints its strokes in more than
-            # one color. A clean dieline is always a single ink; a
-            # multi-color cut layer typically means misplaced
-            # artwork on the cutter plate.
-            if job.dieline and job.dieline.get("multi_color"):
-                result_dict["findings"].append(
-                    {
-                        "inspection_id": "LPDF_DIE_MULTI_COLOR",
-                        "severity": "warning",
-                        "message": (
-                            "Dieline layer / spot contains multiple stroke "
-                            "colors — expected exactly one ink on a cut path."
-                        ),
-                        "page_num": 1,
-                        "bbox": None,
-                        "details": {
-                            "spot_name": job.dieline.get("spot_name"),
-                            "source": job.dieline.get("source"),
-                        },
-                        "source": "engine",
-                        "category": "dieline",
-                        "object_id": None,
-                        "object_type": None,
-                    }
-                )
-                result_dict["summary"]["total_findings"] += 1
-                result_dict["summary"]["warning_count"] += 1
-
-            # Batches 4+5 — dieline-quality findings (T3-D02/03/15)
-            # plus OCG / envelope / varnish checks (T3-D01/05/10).
-            # Always call the check: Batch 5 T3-D10 (varnish
-            # collision) fires without any dieline detection, so
-            # gating on job.dieline misses valid findings.
-            if pdf_bytes:
-                try:
-                    from lintpdf.analyzers.dieline_quality import (
-                        check_dieline_quality,
-                    )
-
-                    dq_findings = check_dieline_quality(
-                        pdf_bytes,
-                        spot_name=(job.dieline or {}).get("spot_name"),
-                        source=(job.dieline or {}).get("source") or "missing",
-                        regions=(job.dieline or {}).get("regions"),
-                        polylines=(job.dieline or {}).get("polylines"),
-                        max_bleed_mm=profile.thresholds.max_bleed_mm,
-                        min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
-                        min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
-                        white_coverage_min=profile.thresholds.white_coverage_min,
-                        barcode_quiet_zone_mm=profile.thresholds.barcode_quiet_zone_mm,
-                        text_to_fold_distance_mm=profile.thresholds.text_to_fold_distance_mm,
-                    )
-                except Exception:
-                    logger.exception("Job %s dieline_quality check raised", job_id)
-                    dq_findings = []
-
-                for df in dq_findings:
-                    result_dict["findings"].append(
-                        {
-                            "inspection_id": df.inspection_id,
-                            "severity": df.severity.value,
-                            "message": df.message,
-                            "page_num": df.page_num,
-                            "bbox": list(df.bbox) if df.bbox else None,
-                            "details": df.details,
-                            "source": "engine",
-                            "category": "dieline",
-                            "object_id": df.object_id,
-                            "object_type": df.object_type,
-                        }
-                    )
-                    result_dict["summary"]["total_findings"] += 1
-                    sev_key = f"{df.severity.value}_count"
-                    if sev_key in result_dict["summary"]:
-                        result_dict["summary"][sev_key] += 1
-
-            # Batch 7 — T3-D11 spot-name canonical-taxonomy advisories.
-            # Batch 9c — T2-ISO05 ISO 19593-1 ProcessingSteps suggestions.
-            # Batch 10a — T2-ISO02 / T2-ISO03 / T2-SPT03 spot extras.
-            # Independent of dieline detection; runs on any PDF.
-            if pdf_bytes:
-                try:
-                    from lintpdf.analyzers.spot_name_normaliser import (
-                        check_deprecated_pantone_names,
-                        check_spot_naming,
-                        check_white_subtype_specificity,
-                        suggest_position_tagging,
-                        suggest_processing_steps,
-                    )
-
-                    sn_findings = check_spot_naming(pdf_bytes)
-                    sn_findings.extend(suggest_processing_steps(pdf_bytes))
-                    sn_findings.extend(suggest_position_tagging(pdf_bytes))
-                    sn_findings.extend(check_white_subtype_specificity(pdf_bytes))
-                    sn_findings.extend(check_deprecated_pantone_names(pdf_bytes))
-                except Exception:
-                    logger.exception("Job %s spot_name_normaliser raised", job_id)
-                    sn_findings = []
-
-                for sf in sn_findings:
-                    result_dict["findings"].append(
-                        {
-                            "inspection_id": sf.inspection_id,
-                            "severity": sf.severity.value,
-                            "message": sf.message,
-                            "page_num": sf.page_num,
-                            "bbox": list(sf.bbox) if sf.bbox else None,
-                            "details": sf.details,
-                            "source": "engine",
-                            "category": "spot_color",
-                            "object_id": sf.object_id,
-                            "object_type": sf.object_type,
-                        }
-                    )
-                    result_dict["summary"]["total_findings"] += 1
-                    sev_key = f"{sf.severity.value}_count"
-                    if sev_key in result_dict["summary"]:
-                        result_dict["summary"][sev_key] += 1
-
             # Upload results JSON to storage (best-effort — results are in DB too)
             try:
                 storage.upload_results(
@@ -1012,7 +800,6 @@ def run_preflight(
             job.structural_evidence = (result.metadata or {}).get("structural_evidence")
 
             # Store individual findings
-            ai_features_used: set[tuple[str, str]] = set()
             for finding in result.findings:
                 bbox = finding.bbox
                 db.add(
@@ -1034,145 +821,9 @@ def run_preflight(
                     )
                 )
 
-            # Persist the multi-color dieline finding alongside the
-            # orchestrator outputs so it shows up in the Findings
-            # panel + the report bundle.
-            if job.dieline and job.dieline.get("multi_color"):
-                db.add(
-                    JobFinding(
-                        job_id=job.id,
-                        inspection_id="LPDF_DIE_MULTI_COLOR",
-                        severity="warning",
-                        message=(
-                            "Dieline layer / spot contains multiple stroke "
-                            "colors — expected exactly one ink on a cut path."
-                        ),
-                        page_num=1,
-                        details={
-                            "spot_name": job.dieline.get("spot_name"),
-                            "source": job.dieline.get("source"),
-                        },
-                        source="engine",
-                        category="dieline",
-                    )
-                )
-
-            # Batches 4+5 — persist dieline-quality findings.
-            # Same pattern as LPDF_DIE_MULTI_COLOR above. Always call:
-            # T3-D10 varnish collision runs without a detected dieline.
-            if pdf_bytes:
-                try:
-                    from lintpdf.analyzers.dieline_quality import (
-                        check_dieline_quality,
-                    )
-
-                    for df in check_dieline_quality(
-                        pdf_bytes,
-                        spot_name=(job.dieline or {}).get("spot_name"),
-                        source=(job.dieline or {}).get("source") or "missing",
-                        regions=(job.dieline or {}).get("regions"),
-                        polylines=(job.dieline or {}).get("polylines"),
-                        max_bleed_mm=profile.thresholds.max_bleed_mm,
-                        min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
-                        min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
-                        white_coverage_min=profile.thresholds.white_coverage_min,
-                        barcode_quiet_zone_mm=profile.thresholds.barcode_quiet_zone_mm,
-                        text_to_fold_distance_mm=profile.thresholds.text_to_fold_distance_mm,
-                    ):
-                        db.add(
-                            JobFinding(
-                                job_id=job.id,
-                                inspection_id=df.inspection_id,
-                                severity=df.severity.value,
-                                message=df.message,
-                                page_num=df.page_num,
-                                details=df.details,
-                                source="engine",
-                                category="dieline",
-                                object_id=df.object_id,
-                                object_type=df.object_type,
-                            )
-                        )
-                except Exception:
-                    logger.exception("Job %s dieline_quality persistence raised", job_id)
-
-            # Batch 7 — persist spot-name canonical-taxonomy advisories.
-            # Batch 9c — also persist T2-ISO05 ProcessingSteps suggestions.
-            # Batch 10a — persist T2-ISO02 / T2-ISO03 / T2-SPT03 too.
-            if pdf_bytes:
-                try:
-                    from lintpdf.analyzers.spot_name_normaliser import (
-                        check_deprecated_pantone_names,
-                        check_spot_naming,
-                        check_white_subtype_specificity,
-                        suggest_position_tagging,
-                        suggest_processing_steps,
-                    )
-
-                    spot_findings = check_spot_naming(pdf_bytes)
-                    spot_findings.extend(suggest_processing_steps(pdf_bytes))
-                    spot_findings.extend(suggest_position_tagging(pdf_bytes))
-                    spot_findings.extend(check_white_subtype_specificity(pdf_bytes))
-                    spot_findings.extend(check_deprecated_pantone_names(pdf_bytes))
-                    for sf in spot_findings:
-                        db.add(
-                            JobFinding(
-                                job_id=job.id,
-                                inspection_id=sf.inspection_id,
-                                severity=sf.severity.value,
-                                message=sf.message,
-                                page_num=sf.page_num,
-                                details=sf.details,
-                                source="engine",
-                                category="spot_color",
-                                object_id=sf.object_id,
-                                object_type=sf.object_type,
-                            )
-                        )
-                except Exception:
-                    logger.exception("Job %s spot_name persistence raised", job_id)
-
-            if (
-                job.dieline
-                and job.dieline.get("multi_color")
-                and finding.source == "ai"
-                and finding.category
-            ):
-                ai_features_used.add(
-                    (
-                        finding.category,
-                        finding.inspection_id.split(".")[1]
-                        if "." in finding.inspection_id
-                        else finding.category,
-                    )
-                )
-
-            # Deduct AI credits for features used
-            if ai_features_used and ai_config:
-                try:
-                    from lintpdf.ai.credits import deduct_credits
-
-                    for category, feature in ai_features_used:
-                        deduct_credits(
-                            tenant_id=job.tenant_id,
-                            job_id=job.id,
-                            category=category,
-                            feature=feature,
-                            credit_amount=1,
-                            processing_time_ms=duration_ms,
-                            result_summary={
-                                "findings_count": len(
-                                    [
-                                        f
-                                        for f in result.findings
-                                        if f.source == "ai" and f.category == category
-                                    ]
-                                )
-                            },
-                            db=db,
-                        )
-                except Exception:
-                    logger.exception("Failed to deduct AI credits for job %s", job_id)
+            # Big-bang codex cutover: lint-side raw-byte dieline and spot
+            # post-processing has been removed; only orchestrator findings
+            # are persisted here.
 
             db.commit()
 

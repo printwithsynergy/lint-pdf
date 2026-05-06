@@ -23,10 +23,10 @@ Check ID:
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer
-from lintpdf.analyzers.dieline import _name_matches as _is_dieline_name
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
@@ -164,3 +164,35 @@ class CuttingOverprintAnalyzer(BaseAnalyzer):
                 )
             )
         return findings
+
+
+_CUTTING_NAME_TOKENS: tuple[str, ...] = (
+    "cutcontour",
+    "cut_contour",
+    "dieline",
+    "die-line",
+    "die line",
+    "die",
+    "cut",
+    "cutter",
+    "crease",
+    "perf",
+    "perforation",
+    "bleed",
+    "score",
+    "kiss",
+    "fold",
+    "through-cut",
+    "through_cut",
+)
+_TOKEN_RE = re.compile(r"[a-z0-9_\-]+", re.IGNORECASE)
+
+
+def _is_dieline_name(name: str | None) -> bool:
+    if not name:
+        return False
+    lowered = name.lower()
+    if any(tok in lowered for tok in _CUTTING_NAME_TOKENS):
+        return True
+    tokens = {t.lower() for t in _TOKEN_RE.findall(lowered)}
+    return any(tok in tokens for tok in _CUTTING_NAME_TOKENS)
