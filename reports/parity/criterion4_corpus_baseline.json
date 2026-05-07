@@ -1,0 +1,1793 @@
+{
+  "clusters": [
+    "document",
+    "page-geometry",
+    "metadata"
+  ],
+  "fixture_count": 17,
+  "fixtures": [
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/AN-Energy_StickPack_CA_Pink-Slush_P2_OL.pdf",
+      "sha256": "d619973b5addc4b1649c552fb4af18dcf63f833a5dc6c283ce91e3d8098b9c25"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/AN_Energy_StickPack_CA_HSI_ADM_P1_OL.pdf",
+      "sha256": "439bd9beb2e1caf3eebd7d04d55a302639a381b8c0b86bc3d982ccb6ed515f61"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/Amalgam_Catalyst_9_5x3_5.pdf",
+      "sha256": "4cabea12bbcec10fe581fb8840a94278baedf88dc18bfc3e582e1618b9af539e"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/Cherry-Twist_OUTLINED.pdf",
+      "sha256": "c73e5499be8ccc0ceaf15c4e958eddc5130f56cb4a26c855a1ce00ddaeb7737b"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/DailyFiber_10up.pdf",
+      "sha256": "1612fe9528c8c594f5fff5abce181d088e42e4bbe668b4f30713eb58977c3f21"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/HSI_OUTLINED.pdf",
+      "sha256": "451632cb0e615eae3b953e895dc41c5814d9c3cd91fc10d5ad6b4de1a1eaa32f"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/Nutrops_LS_Dieline.pdf",
+      "sha256": "517c323a5d52e957694ff5f85f21d9d9ad106f6389495f6988773fd620ced316"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/Nutrops_SF_Dieline.pdf",
+      "sha256": "a85e529c8de51971d6b351e05aad93435521f6a75c207b84573e6dec4ddaacc6"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/OrangeKiss_OUTLINED.pdf",
+      "sha256": "fd1da13aeb450e83fd50f8604bac45e7eb55d30954b90c5e58b166461e32c4bb"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/Pavette_Pride_v99.pdf",
+      "sha256": "b700c712fad8a8cbe25ff06ecc1f7b8cc9429ef3a688dfb1e57d034277ca147c"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "accuracy/Pink-Slush_OUTLINED.pdf",
+      "sha256": "21219e40a54072ac98b01f226976e8556fb3cebca4c52af91c00fe2858f36f45"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "pdfx4/conforming/minimal.pdf",
+      "sha256": "58e870657946ea4251c22f0640ca9df12104e5e96e0f4c28911b8c6147d1b4ac"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "pdfx4/violating/no_output_intent.pdf",
+      "sha256": "f6aeff44e581334fb36b290ba8cb1a92f816b3b07b54700d0ced040a5eb11ef9"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "pdfx4/violating/no_trim_box.pdf",
+      "sha256": "0dfab7cab7db644cf382f240776ccc15ee9e28d2e87889d63a696cc25c88ae12"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 2,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_001",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "XMP metadata stream is missing",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "pdfx4/violating/no_xmp.pdf",
+      "sha256": "a79742cdc7c4e83ffc4722ac662832a64a2ae03291453c1a37eaa7e75ccf3f09"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 0,
+          "findings": []
+        },
+        "metadata": {
+          "finding_count": 4,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_GRAIN_MISSING",
+              "iso_clause": "GWG packaging supplements / ISO 16763 (XMP folding-carton)",
+              "message": "XMP metadata carries no grain-direction key; downstream press / finishing operations may not get the substrate orientation from this PDF",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_003",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "Trapped key is missing in XMP metadata",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_XMP_GWG_TRAIL",
+              "iso_clause": "GWG XMP audit-trail (Application Settings 2022)",
+              "message": "No GWG audit-trail namespace found in XMP metadata; the PDF has not been through a GWG-aware preflight",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "pdfx4/violating/pdf_1_4.pdf",
+      "sha256": "06972a5497a7cf9fd0cdf85fcad1d1a6e4677c6ad367f12c16d93e6e72851c98"
+    },
+    {
+      "clusters": {
+        "document": {
+          "finding_count": 1,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_DOC_003",
+              "iso_clause": "ISO 32000-2:2020 14.3.3",
+              "message": "Document has no title in Info dictionary",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "metadata": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "metadata",
+              "inspection_id": "LPDF_DOC_PDF_VERSION_DATED",
+              "iso_clause": "",
+              "message": "PDF header version 1.3 is dated. Many modern prepress workflows assume 1.4+ for transparency and 1.6+ for PDF/X-4 conformance. Re-export from the design tool with a current version target.",
+              "object_id": null,
+              "object_type": "document",
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_META_001",
+              "iso_clause": "ISO 15930-7:2010 6.2.2",
+              "message": "XMP metadata stream is missing",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+              "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+              "message": "/Catalog /ViewerPreferences dictionary is missing \u2014 add it with /DisplayDocTitle true so readers show the document title rather than the filename",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 0,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        },
+        "page-geometry": {
+          "finding_count": 3,
+          "findings": [
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_003",
+              "iso_clause": "GWG 2022 6.1",
+              "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "warning",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "",
+              "inspection_id": "LPDF_BOX_004",
+              "iso_clause": "",
+              "message": "Page 1 has no content stream (empty page)",
+              "object_id": null,
+              "object_type": null,
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            },
+            {
+              "bbox": null,
+              "category": "page",
+              "inspection_id": "LPDF_BOX_TRIMBOX_DEFAULTED",
+              "iso_clause": "ISO 15930-7:2010 6.2.1",
+              "message": "Page 1 has no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area.",
+              "object_id": null,
+              "object_type": "page",
+              "page_num": 1,
+              "severity": "advisory",
+              "source": "engine"
+            }
+          ]
+        }
+      },
+      "codex_schema_version": "1.0.0",
+      "page_count": 1,
+      "path": "test-sample.pdf",
+      "sha256": "3b4a7da0e60061ed5493659598e34fec6619875c21aa9eb91bf8e503ab6412be"
+    }
+  ],
+  "report_kind": "lint-pdf.parity-corpus",
+  "root": "<root>",
+  "schema_version": "1.0.0",
+  "total_finding_count": 117
+}

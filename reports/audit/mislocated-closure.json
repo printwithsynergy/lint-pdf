@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "report_kind": "lint-pdf.mislocated-closure",
+  "repo": "lint-pdf",
+  "audit_date": "2026-05-07",
+  "owner": "LINT maintainer",
+  "items": [
+    {
+      "id": "lintpdf-viewer-routes",
+      "description": "Interactive viewer routes (`src/lintpdf/api/routes/viewer.py`) — discovery flagged ownership drift between lint-pdf engine vs lint-pdf-ui plugin layer.",
+      "originally_flagged_in": "MIGRATION-DISCOVERY.md §1 + §3 + §7-Q1",
+      "status": "closed-in-place",
+      "rationale": "Viewer routes remain in lint-pdf engine surface; lint-pdf-ui plugin layer proxies through to them. Quincy ownership decision (Phase 0 alignment gate) deferred to future cycle; current cutover stays additive with the engine retaining authority.",
+      "evidence": ["src/lintpdf/api/routes/viewer.py", "QUESTIONABLE-DECISIONS.md 2026-05-06 lint-pdf legacy analyzer/API surface restoration"]
+    },
+    {
+      "id": "lintpdf-legacy-analyzers-restored",
+      "description": "Legacy analyzers (`dieline`, `dieline_quality`, `art_size`, legacy spot normaliser helpers) flagged as removed during initial migration but required by full test suite.",
+      "originally_flagged_in": "QUESTIONABLE-DECISIONS.md 2026-05-06 lint-pdf legacy analyzer/API surface restoration",
+      "status": "closed-in-place",
+      "rationale": "Restored from commit 87353f7ff and re-mounted; full test suite green (3786 passed) as recorded in tests/criterion4_parity_validation.json. Replaces ad-hoc shims with the legacy analyzer surface; future cleanup tracked in future-moves.md (`Candidate lint-pdf stabilization move`).",
+      "evidence": ["tests/criterion4_parity_validation.json", "src/lintpdf/analyzers/dieline.py", "src/lintpdf/analyzers/dieline_quality.py", "src/lintpdf/analyzers/spot_name_normaliser.py"]
+    },
+    {
+      "id": "lintpdf-codex-migrated-analyzers",
+      "description": "Three analyzers (dieline / dieline_quality / spot_name_normaliser) had to be flagged for direct PDF parser usage; cutover required them to consume codex output exclusively.",
+      "originally_flagged_in": "Cutover criterion 4 (zero in-house parse logic in migrated analyzers)",
+      "status": "closed-in-place",
+      "rationale": "All three analyzers now reach PDF facts only through `lintpdf.codex_adapter`; verified by `scripts/parser_surface_audit.py` with reports/parity/parser_surface_audit.json status=PASS, and by the deterministic parity-corpus harness reports/parity/criterion4_corpus_report.json with diff_count=0 across two reruns.",
+      "evidence": ["reports/parity/parser_surface_audit.json", "reports/parity/criterion4_corpus_report.json", "reports/parity/criterion4_corpus_report.diff.json", "scripts/parser_surface_audit.py"]
+    },
+    {
+      "id": "lintpdf-cli-parity-corpus-harness",
+      "description": "Cutover required a deterministic, repeatable corpus parity harness exposed as a `lint-pdf` CLI subcommand.",
+      "originally_flagged_in": "Cutover criterion 4 (deterministic parity harness)",
+      "status": "closed-in-place",
+      "rationale": "Added `lint-pdf parity-corpus --root --output --baseline` in src/lintpdf/cli.py; baseline at reports/parity/criterion4_corpus_baseline.json. Two deterministic reruns produced byte-identical reports (sha256 match) with diff_count=0.",
+      "evidence": ["src/lintpdf/cli.py", "reports/parity/criterion4_corpus_baseline.json", "reports/parity/criterion4_corpus_report.json"]
+    }
+  ],
+  "deferred_to_future_moves": [
+    "scribe — `local-orchestration` timeout/error taxonomy operator runbook",
+    "lint-pdf stabilization — legacy analyzer compatibility cleanup once codex migration fully stabilizes"
+  ]
+}

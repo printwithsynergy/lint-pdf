@@ -28,6 +28,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from lintpdf.codex_adapter import extract_codex_document_via_codex
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,137 +106,28 @@ class DielineResult:
     multi_color: bool = False
 
 
-def _collect_spot_names(pdf: Any) -> list[str]:
-    """Collect every Separation / DeviceN spot name in the PDF.
-
-    Walks the **entire** indirect-object graph, not just direct page
-    ``/Resources/ColorSpace`` entries. Press-ready packaging PDFs
-    routinely declare spot colors inside Form XObjects, patterns,
-    or nested resource dictionaries, and the old direct-page walk
-    missed all of them — so a PDF containing a ``Dieline`` spot
-    color would still report ``source='missing'``.
-    """
-    try:
-        import pikepdf
-    except ImportError:
-        return []
-
+def _collect_spot_names(payload: dict[str, Any]) -> list[str]:
+    analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
     names: list[str] = []
-    seen_ids: set[int] = set()
-
-    def _is_array(obj: Any) -> bool:
-        # Treat Python lists and pikepdf.Array as arrays. Strings,
-        # Names, and Dictionaries must NOT land here (pikepdf.Array
-        # exposes both ``__iter__`` and ``items``, which made the
-        # earlier hasattr check ambiguous).
-        return isinstance(obj, (list, pikepdf.Array))
-
-    def _is_dictlike(obj: Any) -> bool:
-        return isinstance(obj, (pikepdf.Dictionary, pikepdf.Stream)) or (
-            hasattr(obj, "items") and not _is_array(obj)
-        )
-
-    def _collect(obj: Any, depth: int) -> None:
-        if depth > 10:
-            return
-        try:
-            obj_id = id(obj)
-        except Exception:
-            obj_id = 0
-        if obj_id in seen_ids:
-            return
-        seen_ids.add(obj_id)
-
-        # Separation / DeviceN arrays:
-        #   [/Separation  <name>  <alternate>  <tintTransform>]
-        #   [/DeviceN    [<name> <name> ...]  <alternate>  <tintTransform>]
-        if _is_array(obj):
-            try:
-                arr = [obj[i] for i in range(len(obj))]
-            except Exception:
-                arr = list(obj)
-            if len(arr) >= 2:
-                subtype = str(arr[0])
-                if subtype in ("/Separation", "Separation"):
-                    with contextlib.suppress(Exception):
-                        names.append(str(arr[1]).lstrip("/"))
-                elif subtype in ("/DeviceN", "DeviceN"):
-                    comp = arr[1]
-                    if _is_array(comp):
-                        for n in comp:
-                            try:
-                                names.append(str(n).lstrip("/"))
-                            except Exception:
-                                continue
-            for item in arr:
-                _collect(item, depth + 1)
-            return
-
-        if _is_dictlike(obj):
-            try:
-                for _k, v in obj.items():
-                    _collect(v, depth + 1)
-            except Exception:
-                pass
-            return
-
-    def _walk_resources(res: Any, depth: int) -> None:
-        """Walk a /Resources dict: its /ColorSpace, then recurse into
-        /XObject /Form and /Pattern entries (which each have their
-        own /Resources where a spot color can live)."""
-        if res is None or not _is_dictlike(res):
-            return
-        try:
-            cs = res.get("/ColorSpace")
-        except Exception:
-            cs = None
-        if cs is not None:
-            _collect(cs, depth)
-
-        for child_key in ("/XObject", "/Pattern"):
-            try:
-                child = res.get(child_key)
-            except Exception:
+    if isinstance(analysis.get("spot_names"), list):
+        for raw in analysis["spot_names"]:
+            if raw is None:
                 continue
-            if child is None or not _is_dictlike(child):
+            val = str(raw).lstrip("/")
+            if val and val not in ("All", "None"):
+                names.append(val)
+    color_spaces = payload.get("color_spaces")
+    if isinstance(color_spaces, list):
+        for cs in color_spaces:
+            if not isinstance(cs, dict):
                 continue
-            try:
-                for _k, ref in child.items():
-                    if not _is_dictlike(ref):
-                        continue
-                    try:
-                        inner = ref.get("/Resources")
-                    except Exception:
-                        inner = None
-                    if inner is not None and depth < 10:
-                        _walk_resources(inner, depth + 1)
-            except Exception:
+            if cs.get("family") not in {"Separation", "DeviceN"}:
                 continue
-
-    try:
-        # Every page's /Resources, recursively through Form XObjects
-        # and Patterns. This is the path that matters in real PDFs —
-        # a spot color defined once inside a shared Form XObject is
-        # reachable from the page via /Resources/XObject/<name>.
-        for page in pdf.pages:
-            try:
-                _walk_resources(page.get("/Resources"), 0)
-            except Exception:
-                continue
-
-        # Belt + braces: iterate every indirect object in the xref so
-        # we also catch spot colors that live in orphaned or
-        # unusual object graphs (patterns referenced from resource
-        # dictionaries we haven't traversed yet, etc.).
-        try:
-            for obj in pdf.objects:
-                _collect(obj, 0)
-        except Exception:
-            logger.debug("dieline: pdf.objects iteration unavailable")
-    except Exception:
-        logger.exception("dieline: spot-name walk failed")
-
-    # Dedupe case-insensitively, preserve first-seen casing for display.
+            for colorant in cs.get("spot_colorants") or []:
+                if isinstance(colorant, dict) and colorant.get("name"):
+                    val = str(colorant["name"]).lstrip("/")
+                    if val and val not in ("All", "None"):
+                        names.append(val)
     seen: set[str] = set()
     out: list[str] = []
     for n in names:
@@ -243,30 +136,33 @@ def _collect_spot_names(pdf: Any) -> list[str]:
             continue
         seen.add(key)
         out.append(n)
-    if out:
-        logger.info("dieline: collected %d spot name(s): %s", len(out), out)
     return out
 
 
-def _collect_layer_names(pdf: Any) -> list[str]:
-    """Collect OCG (optional content group) names from the catalog."""
+def _collect_layer_names(payload: dict[str, Any]) -> list[str]:
+    analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
     out: list[str] = []
-    try:
-        root = pdf.Root
-        ocprops = root.get("/OCProperties")
-        if ocprops is None:
-            return out
-        ocgs = ocprops.get("/OCGs") or []
-        for ocg in ocgs:
-            try:
-                name = ocg.get("/Name")
-                if name is not None:
-                    out.append(str(name))
-            except Exception:
+    if isinstance(analysis.get("layer_names"), list):
+        for raw in analysis["layer_names"]:
+            if raw is None:
                 continue
-    except Exception:
-        logger.exception("dieline: OCG walk failed")
-    return out
+            text = str(raw)
+            if text:
+                out.append(text)
+    ocgs = payload.get("ocgs")
+    if isinstance(ocgs, list):
+        for ocg in ocgs:
+            if isinstance(ocg, dict) and ocg.get("name"):
+                out.append(str(ocg["name"]))
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for name in out:
+        key = name.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(name)
+    return deduped
 
 
 # WS-19 geometry fallback — tuning constants.
@@ -290,7 +186,7 @@ _RECT_AREA_RATIO_MIN = 0.60
 _MIN_CORNERS_FOR_MATCH = 3
 
 
-def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
+def _detect_by_geometry(page_signals: dict[str, Any]) -> tuple[int, float] | None:
     """Return ``(corners_hit, rect_area_ratio)`` when page 1 shows
     the textbook "4 corner trim marks + bounding rectangle" pattern,
     or ``None`` when the heuristic doesn't fire.
@@ -313,19 +209,11 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
     artwork is handled correctly, rotated or heavily transformed
     dielines will miss and fall through to Sonnet.
     """
-    try:
-        import pikepdf
-    except ImportError:
+    media = page_signals.get("media_box")
+    if not isinstance(media, list) or len(media) != 4:
         return None
-
     try:
-        page = pdf.pages[0]
-    except (IndexError, Exception):
-        return None
-
-    try:
-        mb = page.mediabox
-        mb_x0, mb_y0, mb_x1, mb_y1 = (float(mb[0]), float(mb[1]), float(mb[2]), float(mb[3]))
+        mb_x0, mb_y0, mb_x1, mb_y1 = (float(media[0]), float(media[1]), float(media[2]), float(media[3]))
     except Exception:
         return None
     mb_w = mb_x1 - mb_x0
@@ -334,9 +222,8 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
         return None
     mb_area = mb_w * mb_h
 
-    try:
-        instructions = pikepdf.parse_content_stream(page)
-    except Exception:
+    instructions = page_signals.get("content_ops")
+    if not isinstance(instructions, list):
         return None
 
     # Per-path point accumulator — reset on m/re operators that
@@ -353,8 +240,10 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
         stroked_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
 
     for inst in instructions:
-        op = str(getattr(inst, "operator", inst[1] if isinstance(inst, tuple) else ""))
-        operands = getattr(inst, "operands", inst[0] if isinstance(inst, tuple) else [])
+        if not isinstance(inst, dict):
+            continue
+        op = str(inst.get("op") or "")
+        operands = inst.get("operands") if isinstance(inst.get("operands"), list) else []
 
         # New subpath — m x y
         if op == "m":
@@ -502,10 +391,8 @@ def _merge_overlapping(
 
 
 def _extract_dieline_paths(
-    pdf: Any,
+    page_signals: dict[str, Any],
     spot_name: str | None,
-    *,
-    page_num: int = 0,
 ) -> tuple[list[tuple[float, float, float, float]], int]:
     """Walk page-``page_num`` content stream and return the dieline
     sub-path bboxes plus the count of distinct stroke colors seen
@@ -529,52 +416,21 @@ def _extract_dieline_paths(
     heavily-transformed art may miss. That's a known scope limit
     called out in the WS-19 geometry fallback.
     """
-    try:
-        import pikepdf
-    except ImportError:
+    cs_to_spot_raw = page_signals.get("cs_to_spot")
+    mc_to_ocg_raw = page_signals.get("prop_to_ocg_name")
+    instrs = page_signals.get("content_ops")
+    if not isinstance(instrs, list):
         return [], 0
-
-    try:
-        page = pdf.pages[page_num]
-    except Exception:
-        return [], 0
-
-    resources = page.get("/Resources") if hasattr(page, "get") else None
-    cs_dict = resources.get("/ColorSpace") if resources and hasattr(resources, "get") else None
-    props_dict = resources.get("/Properties") if resources and hasattr(resources, "get") else None
-
-    # Resource-name → spot name for Separation color spaces only.
-    cs_to_spot: dict[str, str] = {}
-    if cs_dict is not None:
-        try:
-            for res_name, cs_obj in cs_dict.items():
-                try:
-                    arr = list(cs_obj)
-                except Exception:
-                    continue
-                if len(arr) >= 2 and str(arr[0]).lstrip("/").lower() == "separation":
-                    cs_to_spot[str(res_name).lstrip("/")] = str(arr[1]).lstrip("/")
-        except Exception:
-            pass
-
-    # Resource-name → OCG name for marked-content references.
-    mc_to_ocg: dict[str, str] = {}
-    if props_dict is not None:
-        try:
-            for prop_name, prop_ref in props_dict.items():
-                try:
-                    name = prop_ref.get("/Name") if hasattr(prop_ref, "get") else None
-                except Exception:
-                    name = None
-                if name:
-                    mc_to_ocg[str(prop_name).lstrip("/")] = str(name)
-        except Exception:
-            pass
-
-    try:
-        instrs = pikepdf.parse_content_stream(page)
-    except Exception:
-        return [], 0
+    cs_to_spot = (
+        {str(k): str(v) for k, v in cs_to_spot_raw.items()}
+        if isinstance(cs_to_spot_raw, dict)
+        else {}
+    )
+    mc_to_ocg = (
+        {str(k): str(v) for k, v in mc_to_ocg_raw.items()}
+        if isinstance(mc_to_ocg_raw, dict)
+        else {}
+    )
 
     current_stroke_cs: str | None = None
     current_stroke_color: tuple[float, ...] = ()
@@ -660,11 +516,12 @@ def _extract_dieline_paths(
         subpath_bboxes = []
 
     for inst in instrs:
-        try:
-            op = str(inst.operator)
-            operands = list(getattr(inst, "operands", []))
-        except Exception:
+        if not isinstance(inst, dict):
             continue
+        op = str(inst.get("op") or "")
+        operands = inst.get("operands")
+        if not isinstance(operands, list):
+            operands = []
 
         if op == "q":
             ctm_stack.append(ctm)
@@ -766,19 +623,15 @@ def detect_dieline(
     ``llm_client`` is ``None`` so existing callers don't break.
     """
     try:
-        import pikepdf
-    except ImportError:
-        logger.warning("dieline: pikepdf unavailable; skipping detection")
-        return DielineResult(source="missing")
-
-    try:
-        pdf = pikepdf.open(_as_bytes_stream(pdf_bytes))
+        payload = extract_codex_document_via_codex(pdf_bytes)
     except Exception:
-        logger.exception("dieline: pikepdf.open failed")
+        logger.exception("dieline: codex extraction failed")
         return DielineResult(source="missing")
 
-    spot_names = _collect_spot_names(pdf)
-    layer_names = _collect_layer_names(pdf)
+    analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
+    page_signals = analysis.get("page_1") if isinstance(analysis.get("page_1"), dict) else {}
+    spot_names = _collect_spot_names(payload)
+    layer_names = _collect_layer_names(payload)
 
     for name in (*spot_names, *layer_names):
         if _name_matches(name):
@@ -791,7 +644,7 @@ def detect_dieline(
             # behaviour so a single corrupt content stream can't
             # wipe a valid name-match detection.
             try:
-                bboxes, distinct_color_count = _extract_dieline_paths(pdf, spot_name=name)
+                bboxes, distinct_color_count = _extract_dieline_paths(page_signals, spot_name=name)
                 region_bboxes = _merge_overlapping(bboxes)
                 polylines: list[list[list[float]]] = [
                     [
@@ -842,7 +695,7 @@ def detect_dieline(
     # Sonnet still takes over on stylised / broken-frame layouts
     # because geometry returns None there.
     try:
-        geometry = _detect_by_geometry(pdf)
+        geometry = _detect_by_geometry(page_signals)
     except Exception:
         logger.exception("dieline: geometry fallback crashed")
         geometry = None
@@ -882,12 +735,6 @@ def detect_dieline(
         logger.info("dieline: name + geometry missed and sonnet_fallback not granted")
 
     return DielineResult(source="missing")
-
-
-def _as_bytes_stream(data: bytes) -> Any:
-    import io
-
-    return io.BytesIO(data)
 
 
 def result_to_json(result: DielineResult) -> dict[str, Any]:

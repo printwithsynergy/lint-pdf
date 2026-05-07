@@ -34,6 +34,7 @@ import logging
 from typing import Any
 
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.codex_adapter import extract_analysis_signals_via_codex
 from lintpdf.primitives import object_class
 
 __all__ = ["check_dieline_quality"]
@@ -1175,28 +1176,23 @@ def _touches_braille_spot(
 
 
 def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
-    import io
-
-    import pikepdf
-
     signals = _QualitySignals()
+    analysis = extract_analysis_signals_via_codex(pdf_bytes)
+    page_signals = analysis.get("page_1") if isinstance(analysis.get("page_1"), dict) else {}
+    cs_dict = page_signals.get("cs_to_spot")
+    extgstate_dict = page_signals.get("extgstate")
+    props_dict = page_signals.get("prop_to_ocg_name")
+    instrs = page_signals.get("content_ops")
+    if not isinstance(instrs, list):
+        return signals
+    if True:
 
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        try:
-            page = pdf.pages[0]
-        except Exception:
-            return signals
-        resources = page.get("/Resources") if hasattr(page, "get") else None
-        cs_dict = resources.get("/ColorSpace") if resources and hasattr(resources, "get") else None
-        extgstate_dict = (
-            resources.get("/ExtGState") if resources and hasattr(resources, "get") else None
+        # resource name -> spot name for Separation color spaces.
+        cs_to_spot = (
+            {str(k): str(v) for k, v in cs_dict.items()}
+            if isinstance(cs_dict, dict)
+            else {}
         )
-        props_dict = (
-            resources.get("/Properties") if resources and hasattr(resources, "get") else None
-        )
-
-        # resource name → spot name for Separation color spaces.
-        cs_to_spot = _build_cs_to_spot(cs_dict)
         # T3-D10 — record which resource names resolve to varnish /
         # VarnishFree spots so we can tally their paint bboxes.
         for spot in cs_to_spot.values():
@@ -1213,7 +1209,11 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
         # T3-D01 — build resource-name → OCG-name map so BDC /OC
         # /Resource blocks resolve to the actual optional-content
         # group label.
-        prop_to_ocg_name = _build_prop_to_ocg_name(props_dict)
+        prop_to_ocg_name = (
+            {str(k): str(v) for k, v in props_dict.items()}
+            if isinstance(props_dict, dict)
+            else {}
+        )
 
         # Current graphics-state tracking.
         current_stroke_cs: str | None = None
@@ -1280,17 +1280,13 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
             current_subpath_points_history.append((min(xs), min(ys), max(xs), max(ys)))
             current_subpath_points.clear()
 
-        try:
-            instrs = pikepdf.parse_content_stream(page)
-        except Exception:
-            return signals
-
         for op_idx, inst in enumerate(instrs):
-            try:
-                op = str(inst.operator)
-                operands = list(getattr(inst, "operands", []))
-            except Exception:
+            if not isinstance(inst, dict):
                 continue
+            op = str(inst.get("op") or "")
+            operands = inst.get("operands")
+            if not isinstance(operands, list):
+                operands = []
 
             # Color-space setters.
             if op == "CS" and operands:
@@ -1301,33 +1297,28 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
             # Graphics-state parameter dict reference: `gs /GSName` looks
             # up the ExtGState entry and applies its fields. We pull OP
             # from the referenced dict when present.
-            elif op == "gs" and operands and extgstate_dict is not None:
+            elif op == "gs" and operands and isinstance(extgstate_dict, dict):
                 try:
                     gs_name = str(operands[0]).lstrip("/")
-                    gs_entry = extgstate_dict.get("/" + gs_name)
-                    if gs_entry is not None and hasattr(gs_entry, "get"):
-                        op_value = gs_entry.get("/OP")
+                    gs_entry = extgstate_dict.get(gs_name)
+                    if isinstance(gs_entry, dict):
+                        op_value = gs_entry.get("OP")
                         if op_value is not None:
                             op_stroke = bool(op_value)
-                        bm_value = gs_entry.get("/BM")
+                        bm_value = gs_entry.get("BM")
                         if bm_value is not None:
-                            # /BM may be a Name (single mode) or an Array
-                            # of names (first applicable per §11.6.4.4).
-                            # pikepdf.Name reports __iter__ but raises on
-                            # actual iteration, so isinstance against
-                            # pikepdf.Array is the safe discriminator.
-                            if isinstance(bm_value, pikepdf.Array):
+                            if isinstance(bm_value, list):
                                 with contextlib.suppress(Exception):
                                     first = next(iter(bm_value), None)
                                     if first is not None:
                                         current_blend_mode = str(first).lstrip("/")
                             else:
                                 current_blend_mode = str(bm_value).lstrip("/")
-                        ca_value = gs_entry.get("/CA")
+                        ca_value = gs_entry.get("CA")
                         if ca_value is not None:
                             with contextlib.suppress(ValueError, TypeError):
                                 current_stroke_alpha = float(ca_value)
-                        ca_lower = gs_entry.get("/ca")
+                        ca_lower = gs_entry.get("ca")
                         if ca_lower is not None:
                             with contextlib.suppress(ValueError, TypeError):
                                 current_fill_alpha = float(ca_lower)

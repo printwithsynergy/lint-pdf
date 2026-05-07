@@ -83,6 +83,12 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
     annotations_by_page = _group_annotations_by_page(annotations_payload)
 
     pages: list[SemanticPage] = []
+    analysis_payload = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
+    page_analysis = (
+        analysis_payload.get("page_1")
+        if isinstance(analysis_payload.get("page_1"), dict)
+        else {}
+    )
     for page in pages_payload:
         boxes = page.get("boxes") if isinstance(page, dict) else {}
         media = _box_or_fallback(boxes, "media")
@@ -114,7 +120,7 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
                 fonts=fonts_by_page.get(page_num, {}),
                 images=images_by_page.get(page_num, []),
                 color_spaces=page_color_spaces,
-                resources={},
+                resources={"codex_analysis": page_analysis},
                 content_stream=b"",
                 annotations=annotations_by_page.get(page_num, []),
                 transparency_group=None,
@@ -159,7 +165,7 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
         page_count=len(pages),
         is_encrypted=bool(payload.get("is_encrypted", False)),
         info_dict=info_dict,
-        catalog={},
+        catalog={"codex_analysis": analysis_payload},
         output_intents=[oi for oi in output_intents if oi.get("/S") or oi.get("/DestOutputProfile")],
         metadata_stream=metadata_stream,
         trailer={},
@@ -171,6 +177,15 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
 def extract_codex_document_via_codex(pdf_bytes: bytes) -> dict[str, Any]:
     """Return the raw codex document payload as a dict."""
     return _extract_codex_payload(pdf_bytes)
+
+
+def extract_analysis_signals_via_codex(pdf_bytes: bytes) -> dict[str, Any]:
+    """Return codex additive analysis signals used by lint analyzers."""
+    payload = _extract_codex_payload(pdf_bytes)
+    analysis = payload.get("analysis")
+    if isinstance(analysis, dict):
+        return analysis
+    return {}
 
 
 def _extract_codex_payload(pdf_bytes: bytes) -> dict[str, Any]:

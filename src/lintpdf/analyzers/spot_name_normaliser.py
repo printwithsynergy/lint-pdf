@@ -15,11 +15,10 @@ for citation; this module is the runtime implementation.
 
 from __future__ import annotations
 
-import contextlib
 import logging
-from typing import Any
 
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.codex_adapter import extract_codex_document_via_codex
 
 logger = logging.getLogger(__name__)
 
@@ -513,75 +512,39 @@ def suggest_processing_steps(pdf_bytes: bytes) -> list[Finding]:
 
 
 def _collect_spot_names(pdf_bytes: bytes) -> list[str]:
-    """Walk pikepdf's Separation / DeviceN color-spaces and return
-    every spot colorant name discovered."""
-    import io
-
-    import pikepdf
-
+    """Collect Separation / DeviceN spot names from codex payload."""
+    payload = extract_codex_document_via_codex(pdf_bytes)
+    analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
     names: list[str] = []
-    seen: set[int] = set()
 
-    def walk(obj: Any, depth: int) -> None:
-        if depth > 12:
-            return
-        try:
-            obj_id = id(obj)
-        except Exception:
-            obj_id = 0
-        if obj_id in seen:
-            return
-        seen.add(obj_id)
-
-        # Separation / DeviceN color-space arrays:
-        #   [/Separation /Name /Alternate <tintXform>]
-        #   [/DeviceN [/N1 /N2 ...] /Alternate <tintXform>]
-        if isinstance(obj, (list, pikepdf.Array)):
-            try:
-                if len(obj) >= 2:
-                    first = str(obj[0]).lstrip("/")
-                    if first == "Separation":
-                        try:
-                            spot = str(obj[1]).lstrip("/")
-                            if spot and spot not in ("All", "None"):
-                                names.append(spot)
-                        except Exception:
-                            pass
-                    elif first == "DeviceN":
-                        try:
-                            comp_array = obj[1]
-                            for comp in iter(comp_array):
-                                spot = str(comp).lstrip("/")
-                                if spot and spot not in ("All", "None"):
-                                    names.append(spot)
-                        except Exception:
-                            pass
-            except Exception:
-                pass
-
-            for item in iter(obj):
-                walk(item, depth + 1)
-        elif isinstance(obj, (pikepdf.Dictionary, pikepdf.Stream)) or (
-            hasattr(obj, "items") and not isinstance(obj, (list, str, bytes))
-        ):
-            try:
-                for v in obj.values():
-                    walk(v, depth + 1)
-            except Exception:
-                pass
-
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        # Walk each page's resource graph.
-        for page in pdf.pages:
-            try:
-                resources = page.obj.get("/Resources")
-                if resources is not None:
-                    walk(resources, 0)
-            except Exception:
+    analysis_names = analysis.get("spot_names")
+    if isinstance(analysis_names, list):
+        for raw in analysis_names:
+            if raw is None:
                 continue
-        # Also walk the catalog for global spot defs.
-        with contextlib.suppress(Exception):
-            walk(pdf.Root, 0)
+            spot = str(raw).lstrip("/")
+            if spot and spot not in ("All", "None"):
+                names.append(spot)
+
+    color_spaces = payload.get("color_spaces")
+    if isinstance(color_spaces, list):
+        for cs in color_spaces:
+            if not isinstance(cs, dict):
+                continue
+            if cs.get("family") not in {"Separation", "DeviceN"}:
+                continue
+            colorants = cs.get("spot_colorants")
+            if not isinstance(colorants, list):
+                continue
+            for colorant in colorants:
+                if not isinstance(colorant, dict):
+                    continue
+                raw_name = colorant.get("name")
+                if raw_name is None:
+                    continue
+                spot = str(raw_name).lstrip("/")
+                if spot and spot not in ("All", "None"):
+                    names.append(spot)
 
     # Dedupe preserving first-seen order.
     out: list[str] = []

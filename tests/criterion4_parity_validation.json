@@ -1,0 +1,25 @@
+{
+  "criterion": "4",
+  "scope": [
+    "lintpdf.analyzers.dieline",
+    "lintpdf.analyzers.dieline_quality",
+    "lintpdf.analyzers.spot_name_normaliser"
+  ],
+  "parser_calls_removed": [
+    "pikepdf.open",
+    "pikepdf.parse_content_stream",
+    "pikepdf.Array / Dictionary / Stream graph walks"
+  ],
+  "validation_commands": [
+    {
+      "command": "uv run pytest -q tests/analyzers/test_spot_name_normaliser.py tests/analyzers/test_dieline_quality.py tests/analyzers/test_dieline_quality_batch5.py tests/analyzers/test_dieline_quality_batch8.py tests/analyzers/test_dieline_geometry_fallback.py tests/analyzers/test_dieline_art_legend.py tests/test_codex_adapter_analysis.py",
+      "status": "passed",
+      "result": "73 passed"
+    },
+    {
+      "command": "uv run pytest -q",
+      "status": "passed",
+      "result": "3786 passed, 3 skipped"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "banned_module_prefixes": [
+    "pikepdf",
+    "pdfminer",
+    "pdfplumber",
+    "fitz",
+    "pymupdf",
+    "pypdf",
+    "reportlab",
+    "lintpdf.parser"
+  ],
+  "files": [
+    {
+      "banned_imports": [],
+      "path": "src/lintpdf/analyzers/dieline.py",
+      "status": "PASS",
+      "uses_codex_adapter": true
+    },
+    {
+      "banned_imports": [],
+      "path": "src/lintpdf/analyzers/dieline_quality.py",
+      "status": "PASS",
+      "uses_codex_adapter": true
+    },
+    {
+      "banned_imports": [],
+      "path": "src/lintpdf/analyzers/spot_name_normaliser.py",
+      "status": "PASS",
+      "uses_codex_adapter": true
+    }
+  ],
+  "migrated_analyzers": [
+    "dieline.py",
+    "dieline_quality.py",
+    "spot_name_normaliser.py"
+  ],
+  "report_kind": "lint-pdf.parser-surface-audit",
+  "required_codex_import": "lintpdf.codex_adapter",
+  "schema_version": "1.0.0",
+  "status": "PASS"
+}
