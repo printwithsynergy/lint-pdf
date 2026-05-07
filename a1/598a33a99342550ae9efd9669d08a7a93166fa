@@ -1,0 +1,54 @@
+src/lintpdf/analyzers/spot_name_normaliser.py
+  s_33df83c5bacfa2::t_0fdee2f6ab571c 21,515-517,519-537,539-547
+scripts/parser_surface_audit.py
+  s_4d925a565f4237::t_ba2902e9019d26 1-138
+reports/audit/mislocated-closure.json
+  s_4d925a565f4237::t_b99831b3b71e4b 1-45
+src/lintpdf/cli.py
+  s_4d925a565f4237::t_95ba169edfb90b 6,8
+  s_4d925a565f4237::t_bf591cf477f1db 85-312,329-361
+src/lintpdf/analyzers/dieline.py
+  s_33df83c5bacfa2::t_7492cdb55e7fe7 31-32,109-110,112-114,116-122,124,126-130,142-143,145-147,149-165
+  s_33df83c5bacfa2::t_762d1f7f0bea16 189,212-213,216,225-226,243-246
+  s_33df83c5bacfa2::t_1b59a6ee59fc07 394,419-422,424-433
+  s_33df83c5bacfa2::t_9f68e20db2300f 519,521-524
+  s_33df83c5bacfa2::t_ea6627886896da 626,628,631-634,647,698
+src/lintpdf/codex_adapter.py
+  s_33df83c5bacfa2::t_358ccaef2c2064 86-91,123,168,182-188
+tests/test_codex_adapter_analysis.py
+  s_33df83c5bacfa2::t_f3c3c5e1301e95 1-38
+APPROVALS.md
+  s_4d925a565f4237::t_03dc2c0f799a7e 1-20
+src/lintpdf/analyzers/dieline_quality.py
+  s_33df83c5bacfa2::t_32242c4be80639 37
+  s_33df83c5bacfa2::t_2e4b3caf4d4027 1300,1303-1305,1308,1310,1317,1321
+  s_33df83c5bacfa2::t_d7f0fb823dacc5 1284,1286-1289
+  s_33df83c5bacfa2::t_365afe867a0c96 1180-1188
+  s_33df83c5bacfa2::t_4adac467ba472d 1190-1194,1212-1216
+tests/criterion4_parity_validation.json
+  s_33df83c5bacfa2::t_1622a7a3aca51f 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "a1598a33a99342550ae9efd9669d08a7a93166fa",
+  "prompts": {},
+  "sessions": {
+    "s_33df83c5bacfa2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8efcdc0d-aa62-483d-8511-281885792553",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    },
+    "s_4d925a565f4237": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a4e4c49c-f417-4e57-8dfc-7c733b76d7c0",
+        "model": "claude-opus-4-7-thinking-xhigh"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
