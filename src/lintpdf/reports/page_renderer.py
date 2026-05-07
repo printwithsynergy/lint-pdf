@@ -1,9 +1,10 @@
 """Page annotation renderer — render PDF pages with finding overlays.
 
-Renders PDF pages to images using pdf2image/Poppler, then draws
-severity-colored bounding boxes and numbered callout markers using
-Pillow.  Output is used by the HTML/PDF report generators to embed
-annotated page screenshots.
+Codex renders the underlying page raster (see
+:mod:`lintpdf.codex_render`); this module composites severity-colored
+bounding boxes and numbered callout markers on top via Pillow. Output
+feeds the HTML/PDF report generators (export path) so it stays in
+lint-pdf.
 """
 
 from __future__ import annotations
@@ -15,28 +16,32 @@ import shutil
 from dataclasses import dataclass, field
 from typing import Any
 
-import pikepdf
 from PIL import Image, ImageDraw, ImageFont
+
+from lintpdf.codex_render import (
+    get_page_count as _codex_get_page_count,
+    get_page_media_box as _codex_get_page_media_box,
+)
 
 logger = logging.getLogger(__name__)
 
-_poppler_checked = False
-_poppler_available = False
-
-
 def _check_poppler() -> bool:
-    """Verify that Poppler's pdftoppm is installed (required by pdf2image)."""
-    global _poppler_checked, _poppler_available
-    if _poppler_checked:
-        return _poppler_available
-    _poppler_checked = True
-    _poppler_available = shutil.which("pdftoppm") is not None
-    if not _poppler_available:
-        logger.error(
-            "poppler-utils is not installed (pdftoppm not found on PATH). "
-            "Page screenshots will NOT be rendered. Install poppler-utils."
-        )
-    return _poppler_available
+    """Legacy availability gate — now always True.
+
+    Codex owns the page raster path. The choice of backend (Ghostscript
+    vs pdftoppm) is made server-side, so the local poppler-utils check
+    that used to live here no longer reflects readiness. Kept as a
+    function so existing callsites remain stable; logged at module
+    import for operators who relied on the historical warning.
+    """
+    return True
+
+
+if shutil.which("pdftoppm") is None:
+    logger.info(
+        "poppler-utils not on PATH locally; codex backend will pick its own "
+        "renderer. Set CODEX_API_BASE to route raster through a remote codex.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -107,14 +112,13 @@ class AnnotatedPageResult:
 
 
 def _get_page_media_box(pdf_bytes: bytes, page_num: int) -> tuple[float, float, float, float]:
-    """Read the MediaBox for *page_num* (1-indexed)."""
-    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-        page = pdf.pages[page_num - 1]
-        mb = page.get("/MediaBox")
-        if mb is None:
-            mb = [0, 0, 612, 792]  # fallback US Letter
-        vals = [float(v) for v in mb]
-        return (vals[0], vals[1], vals[2], vals[3])
+    """Read the MediaBox for *page_num* (1-indexed) via codex.
+
+    Codex owns every pikepdf access in the non-export path; this
+    helper proxies through :func:`lintpdf.codex_render.get_page_media_box`
+    so the parser-surface audit stays clean.
+    """
+    return _codex_get_page_media_box(pdf_bytes, page_num)
 
 
 def _pdf_bbox_to_pixels(
@@ -394,12 +398,9 @@ def render_annotated_pages(
     if not _check_poppler():
         return results
 
-    # Get total page count for validation
-    try:
-        with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-            total_pages = len(pdf.pages)
-    except Exception:
-        logger.warning("Failed to open PDF for page count — skipping annotation rendering")
+    total_pages = _codex_get_page_count(pdf_bytes)
+    if total_pages == 0:
+        logger.warning("Failed to read page count via codex — skipping annotation rendering")
         return results
 
     for page_num in sorted(findings_by_page.keys()):
@@ -455,9 +456,8 @@ def render_page_thumbnail_grid(
 
     Returns a list of base64-encoded PNGs (one per page, up to max_pages).
     """
-    try:
-        page_count = len(pikepdf.Pdf.open(io.BytesIO(pdf_bytes)).pages)
-    except Exception:
+    page_count = _codex_get_page_count(pdf_bytes)
+    if page_count == 0:
         return []
 
     result: list[str] = []

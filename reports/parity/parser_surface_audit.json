@@ -1,41 +1,86 @@
 {
-  "banned_module_prefixes": [
-    "pikepdf",
-    "pdfminer",
-    "pdfplumber",
-    "fitz",
-    "pymupdf",
-    "pypdf",
-    "reportlab",
-    "lintpdf.parser"
-  ],
-  "files": [
-    {
-      "banned_imports": [],
-      "path": "src/lintpdf/analyzers/dieline.py",
-      "status": "PASS",
-      "uses_codex_adapter": true
+  "migrated_analyzers": {
+    "banned_module_prefixes": [
+      "pikepdf",
+      "pdfminer",
+      "pdfplumber",
+      "fitz",
+      "pymupdf",
+      "pypdf",
+      "reportlab",
+      "lintpdf.parser"
+    ],
+    "files": [
+      {
+        "banned_imports": [],
+        "path": "src/lintpdf/analyzers/dieline.py",
+        "status": "PASS",
+        "uses_codex_adapter": true
+      },
+      {
+        "banned_imports": [],
+        "path": "src/lintpdf/analyzers/dieline_quality.py",
+        "status": "PASS",
+        "uses_codex_adapter": true
+      },
+      {
+        "banned_imports": [],
+        "path": "src/lintpdf/analyzers/spot_name_normaliser.py",
+        "status": "PASS",
+        "uses_codex_adapter": true
+      }
+    ],
+    "migrated_analyzers": [
+      "dieline.py",
+      "dieline_quality.py",
+      "spot_name_normaliser.py"
+    ],
+    "report_kind": "lint-pdf.parser-surface-audit.migrated-analyzers",
+    "required_codex_import": "lintpdf.codex_adapter",
+    "schema_version": "1.0.0",
+    "status": "PASS"
+  },
+  "renderer_surface": {
+    "banned_patterns": [
+      "pikepdf.open",
+      "pikepdf.parse_content_stream",
+      "pdfminer",
+      "fitz/pymupdf",
+      "subprocess gs"
+    ],
+    "export_allowlist": [
+      "primitives/_ps_type4.py",
+      "reports/annotated_pdf_report.py",
+      "reports/markup_pdf_report.py",
+      "reports/service.py"
+    ],
+    "export_function_allowlist": {
+      "reports/service.py": [
+        "sanitize_pdf_metadata_for_anonymous"
+      ]
     },
-    {
-      "banned_imports": [],
-      "path": "src/lintpdf/analyzers/dieline_quality.py",
-      "status": "PASS",
-      "uses_codex_adapter": true
-    },
-    {
-      "banned_imports": [],
-      "path": "src/lintpdf/analyzers/spot_name_normaliser.py",
-      "status": "PASS",
-      "uses_codex_adapter": true
-    }
-  ],
-  "migrated_analyzers": [
-    "dieline.py",
-    "dieline_quality.py",
-    "spot_name_normaliser.py"
-  ],
+    "files": [
+      {
+        "path": "src/lintpdf/primitives/_ps_type4.py",
+        "status": "EXEMPT",
+        "violations": []
+      },
+      {
+        "path": "src/lintpdf/reports/annotated_pdf_report.py",
+        "status": "EXEMPT",
+        "violations": []
+      },
+      {
+        "path": "src/lintpdf/reports/markup_pdf_report.py",
+        "status": "EXEMPT",
+        "violations": []
+      }
+    ],
+    "report_kind": "lint-pdf.parser-surface-audit.renderer-surface",
+    "schema_version": "1.0.0",
+    "status": "PASS"
+  },
   "report_kind": "lint-pdf.parser-surface-audit",
-  "required_codex_import": "lintpdf.codex_adapter",
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "status": "PASS"
 }

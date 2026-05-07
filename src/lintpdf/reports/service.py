@@ -290,21 +290,23 @@ def sanitize_pdf_metadata_for_anonymous(pdf_bytes: bytes) -> bytes:
     """Rewrite a PDF's identifying metadata so nothing points back to the
     generator.
 
-    Called after WeasyPrint renders the report PDF when ``branding.anonymous``
-    is true. Falls back to returning the input bytes unchanged if pikepdf
-    isn't importable at runtime — broken metadata is preferable to a 500.
+    EXPORT PATH — runs **after** WeasyPrint produces the report PDF when
+    ``branding.anonymous`` is true. The pikepdf access here mutates
+    bytes lint-pdf itself just produced (a one-off export asset), so it
+    is intentionally exempt from the codex-only parser-surface audit.
+    Falls back to the original bytes when pikepdf is unimportable.
     """
     try:
-        import pikepdf  # type: ignore
+        import pikepdf  # type: ignore  # noqa: PLC0415 — export-only usage
     except ImportError:  # pragma: no cover — pikepdf is a hard dep in prod
         logger.warning("pikepdf missing — skipping anonymous metadata sanitation")
         return pdf_bytes
 
     try:
         with (
-            pikepdf.open(pikepdf.util.io.BytesIO(pdf_bytes))
+            pikepdf.open(pikepdf.util.io.BytesIO(pdf_bytes))  # noqa: LINTPDF_EXPORT_PIKEPDF
             if hasattr(pikepdf, "util")
-            else pikepdf.open(_bytes_stream(pdf_bytes)) as pdf
+            else pikepdf.open(_bytes_stream(pdf_bytes)) as pdf  # noqa: LINTPDF_EXPORT_PIKEPDF
         ):
             info = pdf.docinfo
             info["/Author"] = ""

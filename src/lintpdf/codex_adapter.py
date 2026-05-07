@@ -189,12 +189,30 @@ def extract_analysis_signals_via_codex(pdf_bytes: bytes) -> dict[str, Any]:
 
 
 def _extract_codex_payload(pdf_bytes: bytes) -> dict[str, Any]:
+    """Extract a CodexDocument JSON for ``pdf_bytes``.
+
+    Prefers the in-process :class:`codex_pdf.client.HttpClient` (which
+    falls back to direct calls into :mod:`codex_pdf.render` when no
+    HTTP base is configured). The legacy subprocess path is retained
+    as a fallback when the codex package isn't importable from the
+    current process — that situation only arises during transition
+    from a pre-1.2.0 lint-pdf install.
+    """
+    try:
+        from codex_pdf.client import HttpClient
+
+        payload = HttpClient().extract(pdf_bytes)
+        if not isinstance(payload, dict):
+            raise RuntimeError("codex extract returned non-object JSON payload")
+        return payload
+    except ImportError:
+        pass
+
     codex_project = os.getenv("CODEX_PDF_PROJECT")
     cmd = ["codex-pdf", "extract"]
     if codex_project:
         cmd = ["uv", "run", "--project", codex_project, "codex-pdf", "extract"]
     else:
-        # Workspace default: sibling codex-pdf checkout.
         sibling = Path(__file__).resolve().parents[3] / "codex-pdf"
         if sibling.exists():
             cmd = ["uv", "run", "--project", str(sibling), "codex-pdf", "extract"]
@@ -207,7 +225,7 @@ def _extract_codex_payload(pdf_bytes: bytes) -> dict[str, Any]:
             capture_output=True,
             text=True,
             check=False,
-            timeout=60,
+            timeout=180,
         )
     if proc.returncode != 0:
         raise RuntimeError(f"codex-pdf extract failed: {proc.stderr.strip()}")

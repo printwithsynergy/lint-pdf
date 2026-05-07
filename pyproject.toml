@@ -7,7 +7,7 @@ name = "lint-pdf"
 version = "0.1.0b3"
 description = "Detection-only PDF preflight engine"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "AGPL-3.0-or-later"
 authors = [
     { name = "Think Neverland", email = "dev@thinkneverland.com" },
@@ -70,6 +70,10 @@ dependencies = [
     # the base deps so the audit path works without the heavy ``ai``
     # extra being installed.
     "anthropic>=0.30.0",
+    # Canonical PDF facts + render engine. lint-pdf consumes codex
+    # for parse + raster surfaces; exports remain in lint as one-off
+    # assets (see codex_render.py + reports/markup_pdf_report.py).
+    "codex-pdf>=1.2.0",
 ]
 
 [project.scripts]
@@ -101,6 +105,12 @@ Homepage = "https://lintpdf.com"
 Repository = "https://github.com/printwithsynergy/lint-pdf"
 Issues = "https://github.com/printwithsynergy/lint-pdf/issues"
 Changelog = "https://github.com/printwithsynergy/lint-pdf/releases"
+
+[tool.uv.sources]
+# Workspace-relative path so `uv sync` picks up the in-tree codex-pdf
+# during development. Production wheels resolve `codex-pdf` from PyPI
+# at the version pinned in `dependencies` above.
+codex-pdf = { path = "../codex-pdf", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lintpdf"]
