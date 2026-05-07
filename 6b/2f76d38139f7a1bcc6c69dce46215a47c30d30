@@ -1,0 +1,26 @@
+src/lintpdf/codex_render.py
+  s_9b5cc9427311dc::t_03a8ce0f8f9683 190-206
+  s_9b5cc9427311dc::t_d70c6e5827676a 245
+src/lintpdf/primitives/color_space.py
+  s_9b5cc9427311dc::t_ad6992203c635f 258-260
+  s_9b5cc9427311dc::t_5659e52d98ae8f 267
+  s_9b5cc9427311dc::t_fef5ff79a2001c 25-26
+pyproject.toml
+  s_9b5cc9427311dc::t_dd4b29f53ac495 76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "6b2f76d38139f7a1bcc6c69dce46215a47c30d30",
+  "prompts": {},
+  "sessions": {
+    "s_9b5cc9427311dc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0dfc135d-672d-426a-9d16-83de130473b9",
+        "model": "claude-opus-4-7-thinking-xhigh"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
