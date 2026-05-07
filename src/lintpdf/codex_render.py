@@ -187,6 +187,23 @@ def walk_content_stream(
     return get_client().walk_content_stream(pdf_bytes, page=page_num)
 
 
+def eval_type4(program: str, *, inputs: list[float] | None = None) -> list[float] | None:
+    """Evaluate a PDF Type-4 PostScript function via codex.
+
+    Codex owns the PostScript byte-level evaluation surface. This
+    helper exists so analyzers (e.g. ``lintpdf.primitives.color_space``)
+    have a clean import target — the parser-surface audit forbids
+    direct ``subprocess gs`` invocations elsewhere in lint.
+
+    Returns the post-execution stack as a list of floats, or ``None``
+    if codex couldn't verify (Ghostscript missing, timeout, parse
+    error). Fast-path constant programs are resolved synchronously
+    without a subprocess.
+    """
+    out = get_client().eval_type4(program, list(inputs or []))
+    return out.get("result")
+
+
 # ---------------------------------------------------------------------------
 # Read-only PDF facts that lint-pdf reaches through codex too.
 #
@@ -225,6 +242,7 @@ def _bytes_io(data: bytes) -> io.BytesIO:  # legacy helper retained for callers
 
 __all__ = [
     "OCGError",
+    "eval_type4",
     "get_client",
     "get_page_count",
     "get_page_media_box",

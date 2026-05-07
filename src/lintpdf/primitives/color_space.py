@@ -22,7 +22,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from lintpdf.primitives import _ps_type4, register
+from lintpdf.codex_render import eval_type4 as _codex_eval_type4
+from lintpdf.primitives import register
 
 # Canonical names — bare (no leading slash) for matching after normalization.
 _DEVICE_CMYK = "DeviceCMYK"
@@ -254,14 +255,16 @@ def _function_is_zero(func: Any) -> bool:
             return False
         return all(_function_is_zero(s) for s in subs)
     if ftype == 4:
-        # PostScript — evaluate at sample points
+        # PostScript — evaluate at sample points via the codex client.
+        # The codex engine owns PDF byte-level Type-4 evaluation; lint
+        # never shells out to ``gs -dNODISPLAY`` directly any more.
         program = func.get("_Program") or func.get("Program")
         if program is None:
             return False
         if isinstance(program, bytes):
             program = program.decode("latin-1", errors="replace")
         for x in (0.0, 0.5, 1.0):
-            result = _ps_type4.evaluate(program, inputs=[x])
+            result = _codex_eval_type4(program, inputs=[x])
             if result is None:
                 return False
             if not all(abs(v) < 1e-9 for v in result):

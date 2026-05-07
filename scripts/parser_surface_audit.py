@@ -80,9 +80,6 @@ EXPORT_ALLOWLIST: frozenset[str] = frozenset(
         # sanitiser (`sanitize_pdf_metadata_for_anonymous`); the audit narrows
         # the check to that function below.
         "reports/service.py",
-        # Type-4 PostScript function evaluator. Pre-existing tint-transform
-        # subprocess; tracked under future-moves for migration to codex.
-        "primitives/_ps_type4.py",
     }
 )
 
