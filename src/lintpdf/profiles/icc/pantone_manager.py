@@ -1,34 +1,37 @@
-"""Pantone reference database manager — lookup and Delta-E validation.
+"""Pantone reference manager — thin adapter on top of codex_pdf.color.
 
-Provides Pantone Lab/CMYK reference data for spot color fallback validation.
-Ships enriched reference data (PANTONE_PUBLISHED Lab values + Color Bridge CMYK)
-covering 23,000+ colors across 16 Pantone libraries. Customers can upload
-official Pantone Color Bridge data to override.
+As of codex-pdf 1.4.0 the Pantone reference catalogue and ΔE2000
+implementation moved into :mod:`codex_pdf.color`. This module is now
+a deprecation-friendly façade that adapts the codex API back into the
+``PantoneManager`` / ``PantoneReference`` / ``DeltaEResult`` shapes
+used by the LPDF_SPOT_002 / LPDF_SPOT_006 analyzers. New consumers
+should call :func:`codex_pdf.color.lookup_pantone_spot` directly; the
+class form is preserved only because the analyzer still wires in
+custom tenant overrides via the manager constructor.
+
+The bundled ``pantone_reference.json`` was deleted in this same
+release — codex owns the source-of-truth file.
 """
 
 from __future__ import annotations
 
-import json
 import logging
-import re
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
+from codex_pdf.color import (
+    PantoneEntry,
+    delta_e_2000,
+    lookup_pantone_spot,
+    normalize_pantone_name,
+)
+
 logger = logging.getLogger(__name__)
-
-_REFERENCE_PATH = Path(__file__).parent / "pantone_reference.json"
-
-# Cached reference data
-_reference_cache: dict[str, dict[str, Any]] | None = None
-
-# Normalize Pantone name variants
-_SPACE_COLLAPSE = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
 class PantoneReference:
-    """Reference data for a single Pantone color."""
+    """Reference data for a single Pantone color (lint-side adapter shape)."""
 
     name: str
     lab: tuple[float, float, float]
@@ -36,6 +39,19 @@ class PantoneReference:
     library: str | None = None
     lab_source: str | None = None
     cmyk_source: str | None = None
+
+    @classmethod
+    def from_codex(cls, entry: PantoneEntry, *, name_override: str | None = None) -> "PantoneReference":
+        if entry.lab is None:
+            raise ValueError(f"Pantone entry {entry.name!r} has no Lab value")
+        return cls(
+            name=name_override or entry.name,
+            lab=entry.lab,
+            cmyk_bridge=entry.cmyk_bridge,
+            library=entry.library,
+            lab_source=entry.lab_source,
+            cmyk_source=entry.cmyk_source,
+        )
 
 
 @dataclass(frozen=True)
@@ -49,121 +65,31 @@ class DeltaEResult:
     acceptable: bool
 
 
-def _normalize_pantone_name(name: str) -> str:
-    """Normalize a Pantone name for matching.
-
-    Handles variations like:
-    - "PANTONE 485 C" vs "PANTONE 485C"
-    - "Pantone 485 C" (case)
-    - Extra whitespace
-    """
-    s = name.strip().upper()
-    s = _SPACE_COLLAPSE.sub(" ", s)
-    return s
-
-
-def _load_reference() -> dict[str, dict[str, Any]]:
-    """Load the built-in Pantone reference database (lazy, cached)."""
-    global _reference_cache
-    if _reference_cache is not None:
-        return _reference_cache
-
-    if not _REFERENCE_PATH.exists():
-        logger.debug("Pantone reference database not found: %s", _REFERENCE_PATH)
-        _reference_cache = {}
-        return _reference_cache
-
-    try:
-        data = json.loads(_REFERENCE_PATH.read_text(encoding="utf-8"))
-        colors = data.get("colors", {})
-        # Build normalized lookup index
-        _reference_cache = {_normalize_pantone_name(k): v for k, v in colors.items()}
-        logger.debug("Loaded %d Pantone reference colors", len(_reference_cache))
-    except Exception:
-        logger.exception("Failed to load Pantone reference database")
-        _reference_cache = {}
-
-    return _reference_cache
-
-
 class PantoneManager:
-    """Manages Pantone color reference data and performs Delta-E validation.
+    """Tenant-aware Pantone lookup + ΔE validation.
 
-    Args:
-        custom_overrides: Customer-uploaded Pantone data to merge on top
-            of the built-in reference. Format: ``{"PANTONE 485 C": {"lab": [...]}}``.
+    Wraps the codex authority so analyzer call sites keep their
+    historical method signatures. ``custom_overrides`` works the same
+    as before — a tenant-specific dict that beats the bundled codex
+    catalogue.
     """
 
     def __init__(self, custom_overrides: dict[str, dict[str, Any]] | None = None) -> None:
-        self._reference = _load_reference()
-        self._overrides: dict[str, dict[str, Any]] = {}
         if custom_overrides:
-            self._overrides = {_normalize_pantone_name(k): v for k, v in custom_overrides.items()}
+            self._overrides: dict[str, dict[str, Any]] = {
+                normalize_pantone_name(k): v for k, v in custom_overrides.items()
+            }
+        else:
+            self._overrides = {}
 
     def lookup(self, name: str) -> PantoneReference | None:
-        """Look up a Pantone color by name.
-
-        Returns None if the color is not in the reference database.
-        """
-        key = _normalize_pantone_name(name)
-
-        # Customer overrides take precedence
-        data = self._overrides.get(key) or self._reference.get(key)
-        if data is None:
-            # Try without space before suffix: "PANTONE 485C" → "PANTONE 485 C"
-            alt_key = self._try_alternate_key(key)
-            if alt_key:
-                data = self._overrides.get(alt_key) or self._reference.get(alt_key)
-        if data is None:
+        entry = lookup_pantone_spot(name, extra_overrides=self._overrides or None)
+        if entry is None or entry.lab is None:
             return None
-
-        lab_raw = data.get("lab")
-        if not lab_raw or len(lab_raw) != 3:
-            return None
-
-        lab = (float(lab_raw[0]), float(lab_raw[1]), float(lab_raw[2]))
-
-        cmyk_raw = data.get("cmyk_bridge")
-        cmyk = None
-        if cmyk_raw and len(cmyk_raw) == 4:
-            cmyk = (
-                float(cmyk_raw[0]),
-                float(cmyk_raw[1]),
-                float(cmyk_raw[2]),
-                float(cmyk_raw[3]),
-            )
-
-        return PantoneReference(
-            name=name,
-            lab=lab,
-            cmyk_bridge=cmyk,
-            library=data.get("library"),
-            lab_source=data.get("lab_source"),
-            cmyk_source=data.get("cmyk_source"),
-        )
+        return PantoneReference.from_codex(entry, name_override=name)
 
     def has_color(self, name: str) -> bool:
-        """Check if a color exists in the reference database."""
-        key = _normalize_pantone_name(name)
-        if key in self._overrides or key in self._reference:
-            return True
-        alt_key = self._try_alternate_key(key)
-        return alt_key is not None and (alt_key in self._overrides or alt_key in self._reference)
-
-    @staticmethod
-    def _try_alternate_key(key: str) -> str | None:
-        """Try alternate normalized forms for Pantone name matching."""
-        # "PANTONE 485C" → "PANTONE 485 C"
-        m = re.match(r"^(PANTONE\s+.+?)([CUMV])$", key)
-        if m:
-            return f"{m.group(1)} {m.group(2)}"
-
-        # "PANTONE 485 C" → "PANTONE 485C"
-        m = re.match(r"^(PANTONE\s+.+?)\s+([CUMV])$", key)
-        if m:
-            return f"{m.group(1)}{m.group(2)}"
-
-        return None
+        return self.lookup(name) is not None
 
     def validate_cmyk_fallback(
         self,
@@ -171,37 +97,19 @@ class PantoneManager:
         cmyk_values: tuple[float, float, float, float],
         icc_profile_bytes: bytes | None = None,
         warning_threshold: float = 5.0,
-        advisory_threshold: float = 2.0,
+        advisory_threshold: float = 2.0,  # noqa: ARG002 — kept for API stability
     ) -> DeltaEResult | None:
-        """Validate CMYK fallback values against the Pantone reference.
-
-        Args:
-            pantone_name: Pantone color name (e.g., "PANTONE 485 C").
-            cmyk_values: CMYK alternate values (0-1 range).
-            icc_profile_bytes: Optional ICC profile for accurate CMYK→Lab.
-            warning_threshold: Delta-E threshold for WARNING severity.
-            advisory_threshold: Delta-E threshold for ADVISORY severity.
-
-        Returns:
-            DeltaEResult with Delta-E and Lab values, or None if reference
-            not found.
-        """
         ref = self.lookup(pantone_name)
         if ref is None:
             return None
-
-        # Convert CMYK fallback to Lab
         fallback_lab = self._cmyk_to_lab(cmyk_values, icc_profile_bytes)
-
-        # Compute Delta-E (CIEDE2000)
-        delta_e = self._delta_e_2000(ref.lab, fallback_lab)
-
+        de = delta_e_2000(ref.lab, fallback_lab)
         return DeltaEResult(
-            delta_e=round(delta_e, 2),
+            delta_e=round(de, 2),
             reference_lab=ref.lab,
             fallback_lab=fallback_lab,
             pantone_name=pantone_name,
-            acceptable=delta_e <= warning_threshold,
+            acceptable=de <= warning_threshold,
         )
 
     @staticmethod
@@ -209,7 +117,6 @@ class PantoneManager:
         cmyk: tuple[float, float, float, float],
         icc_profile_bytes: bytes | None,
     ) -> tuple[float, float, float]:
-        """Convert CMYK to Lab using gamut_analyzer's conversion."""
         from lintpdf.analyzers.gamut_analyzer import cmyk_to_lab
 
         return cmyk_to_lab(
@@ -219,28 +126,3 @@ class PantoneManager:
             cmyk[3],
             icc_profile_bytes=icc_profile_bytes,
         )
-
-    @staticmethod
-    def _delta_e_2000(
-        lab1: tuple[float, float, float],
-        lab2: tuple[float, float, float],
-    ) -> float:
-        """Compute CIEDE2000 Delta-E.
-
-        Uses color-science if available, otherwise falls back to CIE76.
-        """
-        try:
-            import color as color_science
-            import numpy as np
-
-            a1 = np.array(lab1)
-            a2 = np.array(lab2)
-            return float(color_science.delta_E(a1, a2, method="CIE 2000"))
-        except ImportError:
-            pass
-
-        # Fallback: CIE76 (simple Euclidean distance in Lab)
-        dl = lab1[0] - lab2[0]
-        da = lab1[1] - lab2[1]
-        db = lab1[2] - lab2[2]
-        return (dl**2 + da**2 + db**2) ** 0.5

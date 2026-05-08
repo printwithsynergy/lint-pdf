@@ -1,4 +1,16 @@
 {
+  "color_authority": {
+    "allowlist": [
+      "lintpdf/profiles/icc/pantone_manager.py",
+      "tests/conftest.py",
+      "tests/fixtures"
+    ],
+    "color_authority_facade": "lintpdf/profiles/icc/pantone_manager.py",
+    "files": [],
+    "report_kind": "lint-pdf.parser-surface-audit.color-authority",
+    "schema_version": "1.0.0",
+    "status": "PASS"
+  },
   "migrated_analyzers": {
     "banned_module_prefixes": [
       "pikepdf",
@@ -75,6 +87,6 @@
     "status": "PASS"
   },
   "report_kind": "lint-pdf.parser-surface-audit",
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "status": "PASS"
 }

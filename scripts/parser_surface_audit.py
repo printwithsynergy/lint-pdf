@@ -302,15 +302,176 @@ def build_renderer_report() -> dict[str, object]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Layer 3 — codex-color authority (post-1.4.0).
+#
+# codex-pdf 1.4.0 absorbed the Pantone reference catalogue + colour
+# math + curated semantic spot map. lint-pdf consumes that surface in
+# process via :mod:`codex_pdf.color`. The ONLY module allowed to ship
+# Pantone string literals or colour-math constants is the thin façade
+# that adapts codex back into the analyzer's historical types
+# (``lintpdf/profiles/icc/pantone_manager.py``). Anything else
+# carrying a hand-rolled Pantone table or colour-math conversion is a
+# regression and must be flagged.
+# ---------------------------------------------------------------------------
+
+CODEX_COLOR_FACADE = "lintpdf/profiles/icc/pantone_manager.py"
+COLOR_AUTHORITY_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        CODEX_COLOR_FACADE,
+        # Test fixtures may reference Pantone names verbatim — they
+        # exercise the codex-bridge code path, they don't ship a
+        # parallel reference catalogue.
+        "tests/fixtures",
+        "tests/conftest.py",
+    }
+)
+PANTONE_LITERAL_RE = re.compile(r"['\"]PANTONE\s+[^'\"]+['\"]")
+COLOR_MATH_CONSTANT_NAMES: tuple[str, ...] = (
+    "PANTONE_REFERENCE",
+    "PANTONE_FORMULA_GUIDE",
+    "_PANTONE_REFERENCE",
+)
+
+
+def _walk_dict_keys_and_data_values(tree: ast.AST) -> list[tuple[str, int]]:
+    """Yield ``(name, line)`` pantone literals appearing in catalogue-shaped data.
+
+    A "catalogue-shaped" usage is:
+
+    * the literal is a key in a ``dict`` literal whose value is itself
+      a numeric list/tuple or dict mapping (``"lab"``, ``"cmyk"`` etc.),
+      OR
+    * the literal is the first element of a tuple whose remaining
+      elements are numeric — the legacy ``("PANTONE 485 C", [50, 70, 30])``
+      list-of-rows shape.
+
+    Pantone literals that show up in docstrings, error messages,
+    ``Field(description=...)`` examples, and other documentation
+    contexts are intentionally ignored — they don't act as a parallel
+    catalogue, they describe the real one.
+    """
+    out: list[tuple[str, int]] = []
+
+    def is_pantone_literal(node: ast.AST) -> str | None:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            if node.value.upper().startswith("PANTONE "):
+                return node.value
+        return None
+
+    def has_data_shape(value: ast.AST) -> bool:
+        if isinstance(value, ast.Dict):
+            for k in value.keys:
+                if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                    if k.value.lower() in {"lab", "cmyk", "cmyk_bridge", "rgb", "library"}:
+                        return True
+            return False
+        if isinstance(value, (ast.List, ast.Tuple)):
+            numeric = sum(
+                1
+                for item in value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, (int, float))
+            )
+            return numeric >= 2
+        return False
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if key is None:
+                    continue
+                literal = is_pantone_literal(key)
+                if literal and has_data_shape(value):
+                    out.append((literal, key.lineno))
+        if isinstance(node, ast.Tuple) and len(node.elts) >= 2:
+            head = node.elts[0]
+            literal = is_pantone_literal(head)
+            if literal and any(has_data_shape(elt) for elt in node.elts[1:]):
+                out.append((literal, head.lineno))
+    return out
+
+
+def audit_color_authority(path: Path) -> dict[str, object]:
+    rel = path.relative_to(ROOT).as_posix()
+    if any(rel == entry or rel.startswith(entry + "/") for entry in COLOR_AUTHORITY_ALLOWLIST):
+        return {"path": rel, "violations": [], "status": "EXEMPT"}
+    source = path.read_text(encoding="utf-8")
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        return {
+            "path": rel,
+            "violations": [{"kind": "parse-error", "detail": str(exc)}],
+            "status": "FAIL",
+        }
+    raw_lines = source.splitlines()
+    violations: list[dict[str, object]] = []
+
+    for literal, line in _walk_dict_keys_and_data_values(tree):
+        snippet = raw_lines[line - 1] if line - 1 < len(raw_lines) else ""
+        violations.append(
+            {
+                "kind": "pantone-catalogue-outside-authority",
+                "line": line,
+                "snippet": snippet.strip(),
+                "match": literal,
+            }
+        )
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in COLOR_MATH_CONSTANT_NAMES:
+                    snippet = (
+                        raw_lines[target.lineno - 1].strip()
+                        if target.lineno - 1 < len(raw_lines)
+                        else ""
+                    )
+                    violations.append(
+                        {
+                            "kind": "pantone-constant-outside-authority",
+                            "line": target.lineno,
+                            "snippet": snippet,
+                            "constant": target.id,
+                        }
+                    )
+    return {
+        "path": rel,
+        "violations": violations,
+        "status": "PASS" if not violations else "FAIL",
+    }
+
+
+def build_color_authority_report() -> dict[str, object]:
+    files: list[dict[str, object]] = []
+    for path in sorted(SRC_ROOT.rglob("*.py")):
+        result = audit_color_authority(path)
+        if result["status"] == "FAIL" or result["status"] == "EXEMPT":
+            files.append(result)
+    overall = "PASS" if all(item["status"] != "FAIL" for item in files) else "FAIL"
+    return {
+        "schema_version": "1.0.0",
+        "report_kind": "lint-pdf.parser-surface-audit.color-authority",
+        "color_authority_facade": CODEX_COLOR_FACADE,
+        "allowlist": sorted(COLOR_AUTHORITY_ALLOWLIST),
+        "files": files,
+        "status": overall,
+    }
+
+
 def build_combined_report() -> dict[str, object]:
     migrated = build_migrated_report()
     renderer = build_renderer_report()
-    overall = "PASS" if migrated["status"] == "PASS" and renderer["status"] == "PASS" else "FAIL"
+    color = build_color_authority_report()
+    overall = "PASS" if all(
+        section["status"] == "PASS" for section in (migrated, renderer, color)
+    ) else "FAIL"
     return {
-        "schema_version": "1.1.0",
+        "schema_version": "1.2.0",
         "report_kind": "lint-pdf.parser-surface-audit",
         "migrated_analyzers": migrated,
         "renderer_surface": renderer,
+        "color_authority": color,
         "status": overall,
     }
 

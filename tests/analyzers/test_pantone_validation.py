@@ -236,13 +236,17 @@ class TestEnrichedPantoneReference:
     """Tests for the enriched Pantone reference with library metadata."""
 
     def test_reference_has_minimum_count(self):
-        """Reference database never shrinks below original 2,162 colors."""
-        import json
-        from pathlib import Path
+        """Reference database never shrinks below original 2,162 colors.
 
-        ref_path = Path(__file__).parent / "../../src/lintpdf/profiles/icc/pantone_reference.json"
-        data = json.loads(ref_path.read_text(encoding="utf-8"))
-        assert data["_meta"]["count"] >= 2162
+        As of codex-pdf 1.4.0 the reference catalogue lives in
+        :mod:`codex_pdf.color`; we still verify the count meets the
+        floor through the codex authority API.
+        """
+        from codex_pdf.color import load_pantone_reference
+
+        ref = load_pantone_reference()
+        count = int(ref.meta.get("count") or len(ref.entries))
+        assert count >= 2162
 
     def test_lookup_returns_library_metadata(self):
         """PantoneReference includes library, lab_source, cmyk_source fields."""
@@ -288,18 +292,20 @@ class TestEnrichedPantoneReference:
 
     def test_formula_guide_colors_have_cmyk_bridge(self):
         """All Formula Guide C/U colors should have cmyk_bridge values."""
-        import json
-        from pathlib import Path
+        from codex_pdf.color import iter_pantone_entries, load_pantone_reference
 
-        ref_path = Path(__file__).parent / "../../src/lintpdf/profiles/icc/pantone_reference.json"
-        data = json.loads(ref_path.read_text(encoding="utf-8"))
-        fg_colors = {
-            k: v
-            for k, v in data["colors"].items()
-            if v.get("library", "").startswith("Pantone Formula Guide")
-        }
-        assert len(fg_colors) > 4000  # Should be ~4,646
-        missing_bridge = [k for k, v in fg_colors.items() if not v.get("cmyk_bridge")]
-        assert len(missing_bridge) == 0, (
+        ref = load_pantone_reference()
+        fg_entries = list(
+            iter_pantone_entries(
+                ref,
+                libraries=[
+                    "Pantone Formula Guide Coated",
+                    "Pantone Formula Guide Uncoated",
+                ],
+            )
+        )
+        assert len(fg_entries) > 4000  # Should be ~4,646
+        missing_bridge = [e.name for e in fg_entries if e.cmyk_bridge is None]
+        assert not missing_bridge, (
             f"Formula Guide colors missing cmyk_bridge: {missing_bridge[:5]}"
         )

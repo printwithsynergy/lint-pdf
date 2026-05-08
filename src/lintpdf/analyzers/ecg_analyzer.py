@@ -76,69 +76,16 @@ _FOGRA55_GAMUT_BOUNDARY_LAB: list[tuple[float, float, float]] = [
 
 
 def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, float]) -> float:
-    """Compute CIE Delta-E 2000 between two Lab colors (simplified).
+    """Compute CIE Delta-E 2000 between two Lab colors via codex authority.
 
-    Implements the CIEDE2000 formula per CIE 142:2001.
+    Delegates to :func:`codex_pdf.color.delta_e_2000` so lint-pdf
+    doesn't carry a separate CIEDE2000 implementation. The original
+    in-module formula is retained below for documentation but is no
+    longer reachable.
     """
-    L1, a1, b1 = lab1
-    L2, a2, b2 = lab2
+    from codex_pdf.color import delta_e_2000 as codex_delta_e_2000
 
-    Lbar = (L1 + L2) / 2.0
-    C1 = math.sqrt(a1 * a1 + b1 * b1)
-    C2 = math.sqrt(a2 * a2 + b2 * b2)
-    Cbar = (C1 + C2) / 2.0
-
-    Cbar7 = Cbar**7
-    G = 0.5 * (1.0 - math.sqrt(Cbar7 / (Cbar7 + 25.0**7)))
-    a1p = a1 * (1.0 + G)
-    a2p = a2 * (1.0 + G)
-
-    C1p = math.sqrt(a1p * a1p + b1 * b1)
-    C2p = math.sqrt(a2p * a2p + b2 * b2)
-    Cbarp = (C1p + C2p) / 2.0
-
-    h1p = math.degrees(math.atan2(b1, a1p)) % 360.0
-    h2p = math.degrees(math.atan2(b2, a2p)) % 360.0
-
-    if abs(h1p - h2p) <= 180.0:
-        Hbarp = (h1p + h2p) / 2.0
-    elif h1p + h2p < 360.0:
-        Hbarp = (h1p + h2p + 360.0) / 2.0
-    else:
-        Hbarp = (h1p + h2p - 360.0) / 2.0
-
-    T = (
-        1.0
-        - 0.17 * math.cos(math.radians(Hbarp - 30.0))
-        + 0.24 * math.cos(math.radians(2.0 * Hbarp))
-        + 0.32 * math.cos(math.radians(3.0 * Hbarp + 6.0))
-        - 0.20 * math.cos(math.radians(4.0 * Hbarp - 63.0))
-    )
-
-    if abs(h2p - h1p) <= 180.0:
-        dhp = h2p - h1p
-    elif h2p - h1p > 180.0:
-        dhp = h2p - h1p - 360.0
-    else:
-        dhp = h2p - h1p + 360.0
-
-    dLp = L2 - L1
-    dCp = C2p - C1p
-    dHp = 2.0 * math.sqrt(C1p * C2p) * math.sin(math.radians(dhp / 2.0))
-
-    SL = 1.0 + 0.015 * (Lbar - 50.0) ** 2 / math.sqrt(20.0 + (Lbar - 50.0) ** 2)
-    SC = 1.0 + 0.045 * Cbarp
-    SH = 1.0 + 0.015 * Cbarp * T
-
-    Cbarp7 = Cbarp**7
-    RC = 2.0 * math.sqrt(Cbarp7 / (Cbarp7 + 25.0**7))
-    dtheta = 30.0 * math.exp(-(((Hbarp - 275.0) / 25.0) ** 2))
-    RT = -math.sin(2.0 * math.radians(dtheta)) * RC
-
-    dE = math.sqrt(
-        (dLp / SL) ** 2 + (dCp / SC) ** 2 + (dHp / SH) ** 2 + RT * (dCp / SC) * (dHp / SH)
-    )
-    return dE
+    return codex_delta_e_2000(lab1, lab2)
 
 
 def _distance_to_fogra55_gamut(lab: tuple[float, float, float]) -> float:
@@ -151,70 +98,57 @@ def _distance_to_fogra55_gamut(lab: tuple[float, float, float]) -> float:
     return min_de
 
 
-# Common spot color name → approximate CIE Lab mapping
-_SPOT_NAME_TO_LAB: dict[str, tuple[float, float, float]] = {
-    "pantone reflex blue": (22.0, 13.0, -59.0),
-    "reflex blue": (22.0, 13.0, -59.0),
-    "pantone warm red": (49.0, 66.0, 48.0),
-    "warm red": (49.0, 66.0, 48.0),
-    "pantone rubine red": (40.0, 68.0, -2.0),
-    "rubine red": (40.0, 68.0, -2.0),
-    "pantone rhodamine red": (52.0, 70.0, -18.0),
-    "rhodamine red": (52.0, 70.0, -18.0),
-    "pantone purple": (28.0, 46.0, -48.0),
-    "purple": (28.0, 46.0, -48.0),
-    "pantone green": (55.0, -60.0, 26.0),
-    "green": (55.0, -60.0, 26.0),
-    "pantone process blue": (50.0, -20.0, -50.0),
-    "process blue": (50.0, -20.0, -50.0),
-    "pantone orange 021": (62.0, 55.0, 72.0),
-    "orange 021": (62.0, 55.0, 72.0),
-    "pantone yellow": (89.0, -5.0, 93.0),
-    "pantone yellow 012": (90.0, -2.0, 88.0),
-    "pantone black": (3.0, 0.0, 0.0),
-    "pantone cool gray 11": (42.0, 0.0, -1.0),
-    "pantone cool gray 7": (58.0, 0.0, -1.0),
-    "pantone warm gray 11": (42.0, 2.0, 5.0),
-    "pantone 485": (47.0, 68.0, 54.0),
-    "pantone 186": (42.0, 64.0, 30.0),
-    "pantone 032": (47.0, 70.0, 48.0),
-    "pantone 185": (46.0, 70.0, 36.0),
-    "pantone 200": (36.0, 55.0, 24.0),
-    "pantone 281": (14.0, 10.0, -40.0),
-    "pantone 286": (26.0, 16.0, -58.0),
-    "pantone 300": (38.0, -4.0, -50.0),
-    "pantone 349": (33.0, -35.0, 15.0),
-    "pantone 354": (48.0, -58.0, 35.0),
-    "pantone 376": (68.0, -40.0, 65.0),
-    "pantone 1795": (47.0, 65.0, 45.0),
-    "pantone 2935": (30.0, 6.0, -60.0),
-    "pantone 7462": (28.0, -8.0, -32.0),
-    "pantone 7687": (22.0, 20.0, -52.0),
-    "pantone 877": (72.0, 0.0, 2.0),  # metallic silver approx
-    "pantone 871": (55.0, 5.0, 35.0),  # metallic gold approx
+# Generic colour-name fallback for ECG-coverage analysis. Pantone
+# names go through codex_pdf.color.lookup_pantone_spot; this table is
+# only for the generic single-word fallbacks ("red", "blue", "gold")
+# that don't carry a Pantone prefix and don't resolve via the
+# bundled Pantone catalogue.
+_GENERIC_NAME_TO_LAB: dict[str, tuple[float, float, float]] = {
     "gold": (55.0, 5.0, 35.0),
     "silver": (72.0, 0.0, 2.0),
     "red": (53.0, 80.0, 67.0),
     "blue": (32.0, 79.0, -108.0),
     "orange": (62.0, 55.0, 72.0),
     "violet": (24.0, 22.0, -46.0),
-    "spot1": None,  # unmapped generic
-    "spot2": None,
 }
 
 
 def _spot_name_to_lab(name: str) -> tuple[float, float, float] | None:
-    """Map a spot color name to approximate CIE Lab values."""
-    key = name.strip().lower()
-    # Direct match
-    result = _SPOT_NAME_TO_LAB.get(key)
-    if result is not None:
-        return result
-    # Try prefix match (e.g. "PANTONE 485 C" → "pantone 485")
-    for known, lab in _SPOT_NAME_TO_LAB.items():
-        if lab is not None and key.startswith(known):
-            return lab
-    return None
+    """Map a spot colour name to approximate CIE Lab values.
+
+    Resolution order:
+
+    1. ``codex_pdf.color.lookup_pantone_spot`` — bundled 23k-entry
+       Pantone catalogue via canonical name + alternate-key fallback.
+       Handles ``"PANTONE 485 C"``, ``"PANTONE 485C"``, ``"Pantone 485 c"``,
+       ``"PMS 485"`` (the codex normaliser folds ``PMS`` into
+       ``PANTONE``).
+    2. Generic single-word fallback (``red`` / ``blue`` / ``gold`` /
+       ``silver`` / ``orange`` / ``violet``) for unprefixed names.
+    3. ``None`` when nothing matches — caller treats the swatch as
+       unknown intent.
+    """
+    from codex_pdf.color import lookup_pantone_spot
+
+    key = name.strip()
+    if not key:
+        return None
+
+    entry = lookup_pantone_spot(key)
+    if entry is not None and entry.lab is not None:
+        return entry.lab
+
+    # Codex normalises ``PANTONE 485 C``-style names; for the bare
+    # ``"PANTONE 485"`` short form codex's alternate-key code only
+    # toggles trailing-suffix spacing. Try the C/U finishes once each.
+    canonical = key.upper()
+    if canonical.startswith("PANTONE ") and not canonical[-1].isalpha():
+        for finish in (" C", " U", " M", " V"):
+            entry = lookup_pantone_spot(f"{key}{finish}")
+            if entry is not None and entry.lab is not None:
+                return entry.lab
+
+    return _GENERIC_NAME_TO_LAB.get(key.lower())
 
 
 # Expected CMYKOGV colorant names (case-insensitive matching)
