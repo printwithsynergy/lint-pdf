@@ -237,8 +237,9 @@ class JobResponse(BaseModel):
         default=None,
         description=(
             "Dieline detection outcome. ``source`` is `name` (spot/OCG heuristic "
-            "hit), `vision` (Sonnet fallback confirmed), or `missing`. "
-            "Includes ``polylines``, ``spot_name`` and ``confidence``."
+            "hit), `vision` (Sonnet fallback confirmed), `geometry`, or `missing`. "
+            "Includes ``polylines``, ``spot_name``, ``confidence`` and canonical "
+            "Codex ``evidence`` candidates when available."
         ),
     )
     art_size_mm: dict[str, float] | None = Field(

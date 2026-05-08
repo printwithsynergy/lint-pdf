@@ -154,6 +154,13 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
             below_300 += 1
 
     spot_by_name: dict[str, dict[str, Any]] = {}
+    color_space_by_id: dict[str, dict[str, Any]] = {}
+    for cs in color_spaces:
+        if not isinstance(cs, dict):
+            continue
+        cs_id = str(cs.get("id") or "").strip()
+        if cs_id:
+            color_space_by_id[cs_id] = cs
     for cs in color_spaces:
         if not isinstance(cs, dict):
             continue
@@ -166,26 +173,72 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
                 continue
             swatch_hex = _fallback_hex(name)
             swatch_source = "fallback"
+            swatch_note = "Fallback hash"
             rgb = spot.get("rgb") if isinstance(spot.get("rgb"), list) else []
             cmyk = spot.get("cmyk") if isinstance(spot.get("cmyk"), list) else []
+            lab = spot.get("lab") if isinstance(spot.get("lab"), list) else []
+            alt_id = (
+                str(spot.get("alternate_space_id") or cs.get("alternate_space_id") or "").strip()
+            )
+            alt_cs = color_space_by_id.get(alt_id) if alt_id else None
             rgb_hex = _rgb_hex(rgb)
-            if rgb_hex:
+            cmyk_hex = _cmyk_hex(cmyk)
+            if (cs.get("family") == "ICCBased" or (alt_cs and alt_cs.get("family") == "ICCBased")) and (
+                rgb_hex or cmyk_hex
+            ):
+                swatch_hex = rgb_hex or cmyk_hex or swatch_hex
+                swatch_source = "icc_alternate"
+                swatch_note = f"ICCBased alternate via {alt_id or 'unknown'}"
+            elif rgb_hex:
                 swatch_hex = rgb_hex
                 swatch_source = "rgb"
-            else:
-                cmyk_hex = _cmyk_hex(cmyk)
-                if cmyk_hex:
-                    swatch_hex = cmyk_hex
-                    swatch_source = "cmyk"
+                swatch_note = "RGB from extractor"
+            elif cmyk_hex:
+                swatch_hex = cmyk_hex
+                swatch_source = "cmyk"
+                swatch_note = "Projected from CMYK"
+            elif len(lab) >= 3 and all(_as_float(v) is not None for v in lab[:3]):
+                swatch_source = "lab"
+                swatch_note = "LAB from extractor"
             spot_by_name[name] = {
                 "name": name,
                 "swatch_hex": swatch_hex,
                 "swatch_source": swatch_source,
+                "swatch_note": swatch_note,
                 "rgb": rgb[:3] if rgb else None,
                 "cmyk": cmyk[:4] if cmyk else None,
-                "lab": spot.get("lab"),
+                "lab": lab[:3] if lab else None,
                 "pantone_name": spot.get("pantone_name"),
             }
+
+    analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
+    analysis_names: set[str] = set()
+    top_spots = analysis.get("spot_names")
+    if isinstance(top_spots, list):
+        for raw in top_spots:
+            if isinstance(raw, str) and raw.strip():
+                analysis_names.add(raw.strip())
+    for key, page_signal in analysis.items():
+        if not key.startswith("page_") or not isinstance(page_signal, dict):
+            continue
+        cs_to_spot = page_signal.get("cs_to_spot")
+        if isinstance(cs_to_spot, dict):
+            for raw in cs_to_spot.values():
+                if isinstance(raw, str) and raw.strip():
+                    analysis_names.add(raw.strip())
+    for name in sorted(analysis_names, key=lambda value: value.lower()):
+        if name in spot_by_name:
+            continue
+        spot_by_name[name] = {
+            "name": name,
+            "swatch_hex": _fallback_hex(name),
+            "swatch_source": "hash",
+            "swatch_note": "Analysis-only deterministic fallback",
+            "rgb": None,
+            "cmyk": None,
+            "lab": None,
+            "pantone_name": None,
+        }
 
     candidates: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str | None]] = set()

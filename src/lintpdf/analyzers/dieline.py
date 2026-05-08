@@ -104,6 +104,57 @@ class DielineResult:
     confidence: float = 0.0
     regions: list[dict[str, float]] = field(default_factory=list)
     multi_color: bool = False
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _canonical_result_from_codex(payload: dict[str, Any]) -> DielineResult | None:
+    summary = payload.get("summary")
+    if not isinstance(summary, dict):
+        return None
+    dieline = summary.get("dieline")
+    if not isinstance(dieline, dict):
+        return None
+    candidates = dieline.get("candidates")
+    if not isinstance(candidates, list) or not candidates:
+        return None
+
+    canonical_candidates: list[dict[str, Any]] = []
+    for entry in candidates:
+        if isinstance(entry, dict):
+            canonical_candidates.append(entry)
+    if not canonical_candidates:
+        return None
+
+    best = max(
+        canonical_candidates,
+        key=lambda c: float(c.get("confidence", 0.0))
+        if isinstance(c.get("confidence"), (int, float))
+        else 0.0,
+    )
+    best_name = str(best.get("name") or "").strip() or None
+    confidence = best.get("confidence")
+    overall = dieline.get("overall_confidence")
+    parsed_confidence = 0.0
+    if isinstance(overall, (int, float)):
+        parsed_confidence = float(overall)
+    elif isinstance(confidence, (int, float)):
+        parsed_confidence = float(confidence)
+
+    # Preserve existing downstream source semantics where possible.
+    candidate_source = str(best.get("source") or "")
+    source = (
+        "name"
+        if candidate_source in {"ocg_name", "ocg_processing_step", "trap_layer"}
+        else "geometry"
+        if candidate_source == "analysis_signal"
+        else "name"
+    )
+    return DielineResult(
+        source=source,
+        spot_name=best_name,
+        confidence=max(0.0, min(1.0, parsed_confidence)),
+        evidence=canonical_candidates,
+    )
 
 
 def _collect_spot_names(payload: dict[str, Any]) -> list[str]:
@@ -630,6 +681,17 @@ def detect_dieline(
 
     analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
     page_signals = analysis.get("page_1") if isinstance(analysis.get("page_1"), dict) else {}
+
+    canonical_result = _canonical_result_from_codex(payload)
+    if canonical_result is not None:
+        logger.info(
+            "dieline: canonical codex summary hit source=%s confidence=%.2f candidates=%d",
+            canonical_result.source,
+            canonical_result.confidence,
+            len(canonical_result.evidence),
+        )
+        return canonical_result
+
     spot_names = _collect_spot_names(payload)
     layer_names = _collect_layer_names(payload)
 
@@ -684,6 +746,7 @@ def detect_dieline(
                 confidence=1.0,
                 regions=regions,
                 multi_color=multi,
+                evidence=[],
             )
 
     # WS-19 geometry fallback — detect the textbook
@@ -710,6 +773,7 @@ def detect_dieline(
             spot_name=None,
             polylines=[],
             confidence=0.9,
+            evidence=[],
         )
 
     # Sonnet fallback — only when the operator has granted it.
@@ -746,4 +810,5 @@ def result_to_json(result: DielineResult) -> dict[str, Any]:
         "confidence": result.confidence,
         "regions": result.regions,
         "multi_color": result.multi_color,
+        "evidence": result.evidence,
     }
