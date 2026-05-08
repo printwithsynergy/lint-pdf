@@ -202,7 +202,11 @@ def _extract_codex_payload(pdf_bytes: bytes) -> dict[str, Any]:
     try:
         from codex_pdf.client import HttpClient
 
-        payload = HttpClient().extract(pdf_bytes)
+        payload = HttpClient(
+            route_mode=os.getenv("CODEX_ROUTE_MODE"),
+            plant=os.getenv("CODEX_PLANT"),
+            affinity_key=os.getenv("CODEX_AFFINITY_KEY"),
+        ).extract(pdf_bytes)
         if not isinstance(payload, dict):
             raise RuntimeError("codex extract returned non-object JSON payload")
         return ensure_codex_summary(payload)

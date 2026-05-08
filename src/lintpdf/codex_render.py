@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 from functools import lru_cache
 from typing import Any
 
@@ -27,7 +28,11 @@ logger = logging.getLogger(__name__)
 @lru_cache(maxsize=1)
 def get_client() -> HttpClient:
     """Process-wide codex client singleton."""
-    return HttpClient()
+    return HttpClient(
+        route_mode=os.getenv("CODEX_ROUTE_MODE"),
+        plant=os.getenv("CODEX_PLANT"),
+        affinity_key=os.getenv("CODEX_AFFINITY_KEY"),
+    )
 
 
 # ---------------------------------------------------------------------------
