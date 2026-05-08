@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from lintpdf.codex_summary import ensure_codex_summary
 from lintpdf.semantic.model import (
     PdfAnnotation,
     PdfBox,
@@ -204,7 +205,7 @@ def _extract_codex_payload(pdf_bytes: bytes) -> dict[str, Any]:
         payload = HttpClient().extract(pdf_bytes)
         if not isinstance(payload, dict):
             raise RuntimeError("codex extract returned non-object JSON payload")
-        return payload
+        return ensure_codex_summary(payload)
     except ImportError:
         pass
 
@@ -233,7 +234,7 @@ def _extract_codex_payload(pdf_bytes: bytes) -> dict[str, Any]:
     payload = json.loads(proc.stdout)
     if not isinstance(payload, dict):
         raise RuntimeError("codex-pdf extract returned non-object JSON payload")
-    return payload
+    return ensure_codex_summary(payload)
 
 
 def _box_to_pdfbox(box: Any) -> PdfBox | None:

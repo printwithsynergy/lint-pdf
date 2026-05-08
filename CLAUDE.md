@@ -62,6 +62,24 @@ with the script's hint after a clean migration commit. The hook in
 `.githooks/pre-commit` runs this guard automatically whenever any
 `packages/engine/*.py` file is staged.
 
+---
+
+## Service ownership boundary
+
+Keep ownership explicit across core repos:
+
+- `loupe-pdf` owns display + visual inspection UX.
+- `lint-pdf` owns reporting, rules, and preflight workflow semantics.
+- `codex-pdf` owns extraction + normalized reusable intelligence payloads.
+
+Rules for this repo:
+
+- Prefer consuming Codex signals/summaries instead of re-implementing extraction primitives.
+- Keep policy decisions and report semantics here.
+- Avoid viewer/UI behavior in engine logic.
+
+Future offshoots (Forge, Trap, Impose, Marks, etc.) must map each capability to one owner layer and integrate through stable contracts.
+
 **Capability rule**: if two plugins read the same shared work
 (rendered page image, OCR text regions), wrap it as a `Capabilities`
 provider in `lintpdf/plugin/capabilities/` and have the orchestrator
