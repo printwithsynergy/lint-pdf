@@ -1,0 +1,37 @@
+src/lintpdf/codex_summary.py
+  s_e050fe1c81546f::t_66e9cc66eae11d 1-334
+CLAUDE.md
+  s_1cf4e1656d4052::t_a5adef860e7271 65-82
+src/lintpdf/codex_adapter.py
+  s_e050fe1c81546f::t_c9f1ac6de9bc0b 17,208,237
+docs/service-ownership-contract.md
+  s_1cf4e1656d4052::t_7d009c7ad3a6c5 1-37
+.cursor/rules/service-ownership.mdc
+  s_1cf4e1656d4052::t_15a2e359a4de15 1-12
+.windsurf/rules/service-ownership.md
+  s_1cf4e1656d4052::t_aa58017d7456ef 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "e4471f351003ddd3da9b68dd3dcd213a64bb0467",
+  "prompts": {},
+  "sessions": {
+    "s_1cf4e1656d4052": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6b6dd342-df77-4bf1-bb1c-2b72518f42db",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    },
+    "s_e050fe1c81546f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "33a83195-ae8f-4929-b9b1-b35d90976625",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
