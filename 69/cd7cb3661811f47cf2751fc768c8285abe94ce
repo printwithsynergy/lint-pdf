@@ -1,0 +1,28 @@
+tests/test_codex_summary.py
+  s_c3fafa1663725b::t_5a9ce766eb6469 1-16
+src/lintpdf/api/schemas.py
+  s_c3fafa1663725b::t_498968dc468402 240-242
+src/lintpdf/analyzers/dieline.py
+  s_c3fafa1663725b::t_629f342dfd93f1 107-157,684-694,749,776,813
+src/lintpdf/codex_summary.py
+  s_c3fafa1663725b::t_a9cf2ccb36bdd4 214-242
+  s_c3fafa1663725b::t_25809cc0ed3ed0 157-163,176,179-183,185-192,195-202,207,210
+pyproject.toml
+  s_c3fafa1663725b::t_9695765c1ddbf6 7,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "69cd7cb3661811f47cf2751fc768c8285abe94ce",
+  "prompts": {},
+  "sessions": {
+    "s_c3fafa1663725b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8fffbee6-afc7-46e8-b040-87b38849be01",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
