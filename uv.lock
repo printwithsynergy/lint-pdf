@@ -418,7 +418,7 @@ wheels = [
 
 [[package]]
 name = "codex-pdf"
-version = "1.4.0"
+version = "1.4.2"
 source = { editable = "../codex-pdf" }
 dependencies = [
     { name = "fastapi" },
@@ -1094,7 +1094,7 @@ wheels = [
 
 [[package]]
 name = "lint-pdf"
-version = "0.1.0b4"
+version = "0.1.0b5"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
