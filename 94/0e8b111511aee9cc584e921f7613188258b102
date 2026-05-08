@@ -1,0 +1,31 @@
+scripts/parser_surface_audit.py
+  s_f2a9cf6cf331fd::t_9c0b0ca5b2d885 305-336,394-398,407-408,438-461,465-468,470,474
+  s_f2a9cf6cf331fd::t_868326f2f49412 337-393,399-406,409-437
+src/lintpdf/analyzers/ecg_analyzer.py
+  s_f2a9cf6cf331fd::t_bc62fc6886538b 79,81-84,86-88
+  s_f2a9cf6cf331fd::t_d7737e2cd330c3 101-106,117-151
+tests/analyzers/test_pantone_validation.py
+  s_f2a9cf6cf331fd::t_a07e27439342b0 295-309
+  s_f2a9cf6cf331fd::t_b9aa3bc3b210cb 239,241-249
+src/lintpdf/profiles/icc/pantone_manager.py
+  s_f2a9cf6cf331fd::t_9df0d9df5770ab 1-13,22-27,29,34,43-55,69,71-74,79-83,86-87,89,92,100,106,108,112
+pyproject.toml
+  s_f2a9cf6cf331fd::t_c5e6e99a90950d 76
+  s_f2a9cf6cf331fd::t_936abf7c323b78 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "940e8b111511aee9cc584e921f7613188258b102",
+  "prompts": {},
+  "sessions": {
+    "s_f2a9cf6cf331fd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d3d46a94-285b-4b65-a130-25e630f5d99d",
+        "model": "claude-opus-4-7-thinking-xhigh"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
