@@ -1,0 +1,34 @@
+tests/test_codex_client_routing.py
+  s_6e4d42fd38b763::t_0df03d6ebbf49d 1-43,45-49
+  s_6e4d42fd38b763::t_e33c0cefe0ffca 44
+pyproject.toml
+  s_8d898e9cb8f286::t_bea2c6257cab05 7,76
+src/lintpdf/codex_adapter.py
+  s_6e4d42fd38b763::t_40ef9074887f48 205-209
+src/lintpdf/codex_render.py
+  s_6e4d42fd38b763::t_00b90b6b24da5f 19,31-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "e7532c727d9983f78657c69f04044b8b53296a84",
+  "prompts": {},
+  "sessions": {
+    "s_6e4d42fd38b763": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7eb5473d-50d2-4208-a046-f760cf93bf2c",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    },
+    "s_8d898e9cb8f286": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b4090aa5-ff59-4cf9-90d6-2451d0d6108f",
+        "model": "premium"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
