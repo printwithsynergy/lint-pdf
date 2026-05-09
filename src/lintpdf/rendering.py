@@ -21,8 +21,14 @@ import logging
 
 from lintpdf.codex_render import (
     OCGError,  # re-exported for legacy callers
+)
+from lintpdf.codex_render import (
     get_page_count as _codex_get_page_count,
+)
+from lintpdf.codex_render import (
     render_layer as _codex_render_layer,
+)
+from lintpdf.codex_render import (
     render_page as _codex_render_page,
 )
 
@@ -74,10 +80,7 @@ def render_all_pages(
     """Render every page (up to ``max_pages``) to PNG bytes via codex."""
     n = _codex_get_page_count(pdf_bytes)
     upper = min(n, max_pages)
-    return [
-        _codex_render_page(pdf_bytes, page_num, dpi=dpi)
-        for page_num in range(1, upper + 1)
-    ]
+    return [_codex_render_page(pdf_bytes, page_num, dpi=dpi) for page_num in range(1, upper + 1)]
 
 
 def get_page_count(pdf_bytes: bytes) -> int:

@@ -41,7 +41,9 @@ class PantoneReference:
     cmyk_source: str | None = None
 
     @classmethod
-    def from_codex(cls, entry: PantoneEntry, *, name_override: str | None = None) -> "PantoneReference":
+    def from_codex(
+        cls, entry: PantoneEntry, *, name_override: str | None = None
+    ) -> PantoneReference:
         if entry.lab is None:
             raise ValueError(f"Pantone entry {entry.name!r} has no Lab value")
         return cls(
@@ -97,7 +99,7 @@ class PantoneManager:
         cmyk_values: tuple[float, float, float, float],
         icc_profile_bytes: bytes | None = None,
         warning_threshold: float = 5.0,
-        advisory_threshold: float = 2.0,  # noqa: ARG002 — kept for API stability
+        advisory_threshold: float = 2.0,
     ) -> DeltaEResult | None:
         ref = self.lookup(pantone_name)
         if ref is None:

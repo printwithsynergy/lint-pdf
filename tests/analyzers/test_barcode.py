@@ -308,6 +308,12 @@ def test_2d_barcode_suppressed_when_region_covers_trim_excessively() -> None:
         f
         for f in findings
         if f.inspection_id
-        in ("LPDF_BARCODE_014", "LPDF_BARCODE_015", "LPDF_BARCODE_016", "LPDF_BARCODE_017", "LPDF_BARCODE_018")
+        in (
+            "LPDF_BARCODE_014",
+            "LPDF_BARCODE_015",
+            "LPDF_BARCODE_016",
+            "LPDF_BARCODE_017",
+            "LPDF_BARCODE_018",
+        )
     ]
     assert two_d == []

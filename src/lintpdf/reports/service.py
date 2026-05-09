@@ -297,7 +297,7 @@ def sanitize_pdf_metadata_for_anonymous(pdf_bytes: bytes) -> bytes:
     Falls back to the original bytes when pikepdf is unimportable.
     """
     try:
-        import pikepdf  # type: ignore  # noqa: PLC0415 — export-only usage
+        import pikepdf  # type: ignore
     except ImportError:  # pragma: no cover — pikepdf is a hard dep in prod
         logger.warning("pikepdf missing — skipping anonymous metadata sanitation")
         return pdf_bytes
@@ -581,9 +581,7 @@ class ReportService:
 
         if "html" in tokens:
             branding.report_url = f"{report_base_url}/r/{tokens['html']}"
-            branding.viewer_url = build_viewer_handoff_url(
-                viewer_base, tokens["html"]
-            )
+            branding.viewer_url = build_viewer_handoff_url(viewer_base, tokens["html"])
 
         # Fetch original PDF bytes for page screenshot rendering (lazy, once).
         # Executive reports skip screenshots entirely — no PDF fetch needed.
@@ -651,9 +649,7 @@ class ReportService:
                 # Pure URL reuse — no body work.
                 url = f"{report_base_url}/r/{existing.token}{_suffix_by_format.get(fmt, '')}"
                 viewer_url = (
-                    build_viewer_handoff_url(viewer_base, existing.token)
-                    if fmt == "html"
-                    else None
+                    build_viewer_handoff_url(viewer_base, existing.token) if fmt == "html" else None
                 )
                 report_result.reports.append(
                     {

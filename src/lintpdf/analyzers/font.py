@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import PdfFont, SemanticDocument
 
+
 class FontAnalyzer(BaseAnalyzer):
     """Analyzer for font embedding, subsetting, and encoding issues."""
 
@@ -515,9 +516,7 @@ class FontAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="LPDF_FONT_016",
                     severity=Severity.WARNING,
-                    message=(
-                        f"Font '{font.base_font}' is subsetted but fsType forbids subsetting"
-                    ),
+                    message=(f"Font '{font.base_font}' is subsetted but fsType forbids subsetting"),
                     page_num=page_num,
                     details={
                         "font_name": font.name,

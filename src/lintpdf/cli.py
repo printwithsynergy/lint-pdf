@@ -7,15 +7,20 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lintpdf.analyzers.document import DocumentAnalyzer
-from lintpdf.analyzers.finding import Finding
 from lintpdf.analyzers.metadata import MetadataAnalyzer
 from lintpdf.analyzers.metadata_audit import MetadataAuditAnalyzer
 from lintpdf.analyzers.page_geometry import PageGeometryAnalyzer
 from lintpdf.analyzers.page_geometry_extra import PageGeometryExtraAnalyzer
-from lintpdf.codex_adapter import extract_codex_document_via_codex, extract_semantic_document_via_codex
+from lintpdf.codex_adapter import (
+    extract_codex_document_via_codex,
+    extract_semantic_document_via_codex,
+)
+
+if TYPE_CHECKING:
+    from lintpdf.analyzers.finding import Finding
 
 
 def _serialize_finding(finding: Finding) -> dict[str, Any]:
@@ -187,9 +192,7 @@ def _build_corpus_report(root: Path) -> dict[str, Any]:
     }
 
 
-def _diff_payloads(
-    baseline: dict[str, Any], current: dict[str, Any]
-) -> list[dict[str, Any]]:
+def _diff_payloads(baseline: dict[str, Any], current: dict[str, Any]) -> list[dict[str, Any]]:
     diffs: list[dict[str, Any]] = []
     base_fixtures = {f["path"]: f for f in baseline.get("fixtures", [])}
     curr_fixtures = {f["path"]: f for f in current.get("fixtures", [])}

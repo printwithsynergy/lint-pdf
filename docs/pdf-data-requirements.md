@@ -60,16 +60,18 @@ CPU analyzers  GPU analyzers   EXTERNAL_AI analyzers
 
 ## Data layer summary
 
-| Layer | Contents | Required by tier |
-|---|---|---|
-| **Codex JSON payload** | Primary extraction source — page boxes, fonts, images, color spaces, annotations, output intents, XMP flag, analysis signals | All tiers (upstream of SemanticDocument) |
-| `SemanticDocument` | Normalised document structure hydrated from Codex JSON | CPU · GPU · EXTERNAL_AI |
-| `ContentStreamEvents` | **Always `[]` in current path.** Event schema documented in §8 as legacy contract; no longer populated at runtime | — |
-| `pdf_bytes` | Raw file bytes (set on `document._pdf_bytes`) | CPU (file size, barcode heuristics) · GPU (zxing decode) |
-| `page_images` capability | Rasterized PNG/JPEG per page at configurable DPI | GPU · EXTERNAL_AI |
-| `text_regions` capability | OCR-detected text bounding boxes | GPU · EXTERNAL_AI |
-| External reference PDFs | Prior-version files pulled from tenant storage | EXTERNAL_AI (version diff, color consistency) |
-| Tenant config | Brand palette, regulatory region, AI config, entitlements, historical quality data | CPU (configurable thresholds) · EXTERNAL_AI |
+| Layer | Contents | Lint tiers | Compile phases |
+|---|---|---|---|
+| **Codex JSON payload** | Primary extraction source — page boxes, fonts, images, color spaces, annotations, output intents, XMP flag, analysis signals | All tiers (upstream of SemanticDocument) | All phases (rewrite, impose, trap, marks) |
+| `SemanticDocument` | Normalised document structure hydrated from Codex JSON | CPU · GPU · EXTERNAL_AI | Rewrite (faithfulness verify) |
+| `ContentStreamEvents` | **Always `[]` in current path.** Event schema documented in §8 as legacy contract; no longer populated at runtime | — | — |
+| `pdf_bytes` | Raw file bytes (set on `document._pdf_bytes`) | CPU (file size, barcode heuristics) · GPU (zxing decode) | Rewrite (input to write path) |
+| `page_images` capability | Rasterized PNG/JPEG per page at configurable DPI | GPU · EXTERNAL_AI | Marks (visual verify), Rewrite (output verify) |
+| `text_regions` capability | OCR-detected text bounding boxes | GPU · EXTERNAL_AI | — |
+| **Codex geom module** | `polygon_offset()`, `tile_grid()` with Codex 1.5 extensions | — | Trap (spread/choke), Impose (sheet layout) |
+| **Codex color module** | Pantone lookup, ND lookup, `/v1/color/neutral-density` | `SpotColorAnalyzer`, `EcgAnalyzer` | Trap (ink ND lookup) |
+| External reference PDFs | Prior-version files pulled from tenant storage | EXTERNAL_AI (version diff, color consistency) | — |
+| Tenant config | Brand palette, regulatory region, AI config, entitlements, historical quality data | CPU (configurable thresholds) · EXTERNAL_AI | — |
 
 ---
 
@@ -949,6 +951,106 @@ The Codex agent MUST respect these throughout the 1.5 work:
 3. **Section bumps reflect inline on responses**. Every endpoint that includes `schema_version` in its response must report the bumped value: `/v1/color/*` → `1.1.0`, `/v1/geom/*` → `1.1.0`, `/v1/extract` → `1.1.0`.
 4. **Multi-instance contract guard auto-routes** during rollout. With APPR-34's 2-replica staging, a partial rollout has one replica at 1.5.0 and one at 1.4.2. Compile (and Lint) clients pin `CODEX_REQUIRED_SECTION_VERSIONS = {"color": "1.1.0", "geom": "1.1.0"}`; the client guard auto-routes to the 1.5.0 replica until both replicas are upgraded. Document this in the deploy runbook so operators know mid-rollout traffic shifts are mechanical, not a bug.
 5. **Cache-key invalidation is automatic**. Compile's cache key (per `compile_pdf.cache.compute_cache_key`) includes `color_schema_version`, `geom_schema_version`, and `codex_document_schema_version`. The bumps invalidate Compile's cached outputs cleanly; expect a recompute storm proportional to the cached-job population for affected producers.
+
+---
+
+## 17. Compile (CompilePDF) data requirements from Codex
+
+CompilePDF is the prepress layout and production engine built on top of Codex. It is a **write-side consumer** — it reads PDF structure via Codex, applies transformations (impose, trap, marks, rewrite), and produces new PDF output. This section maps each Compile phase to the Codex data it depends on.
+
+> **Source truth**: the canonical Compile-side spec lives in `compile-pdf/docs/COMPILE-DESIGN-SPEC.md`. This section is the Codex-facing view only — what Codex must expose for each phase to work.
+
+### 17.1 Data layer summary — Compile
+
+| Compile phase | Codex data required | Covered in |
+|---|---|---|
+| **Rewrite** (Phase 1 core) | Full document + page structure; `is_linearized`; `info_dict.custom` | §1–§2, §16.3 |
+| **Impose** | Page boxes (trim, bleed, media); `tile_grid()` with rotation/flip/bleed extensions; `CellPlacement` | §2, §16.2.3–16.2.7 |
+| **Trap** | Spot color names; neutral density (`neutral_density`, `neutral_density_source`); `polygon_offset()`; `/v1/color/neutral-density` endpoint | §6, §16.1, §16.2.1–16.2.2 |
+| **Marks** | Page boxes; color space info for marks coloring | §2, §6 |
+| **All phases** | `instance_id` on `/healthz`; `X-Codex-Request-Id` correlation | §16.4 |
+
+### 17.2 Rewrite engine (Phase 1)
+
+The rewrite engine reads an input PDF, rebuilds it through Codex's extraction layer, optionally re-linearizes, and writes the output. It needs:
+
+**From §1 (document-level):**
+- `version`, `is_encrypted`, `page_count`, `file_size` — baseline document properties
+- `info_dict` + `info_dict.custom` — preserved verbatim in output; custom keys carry lineage breadcrumbs (`CustomCompileLineageID`, `CustomCompileProducer`, `CustomCompileVersion`, `CustomCompilePlanSHA`)
+- `output_intents` — reproduced in output PDF for standards conformance
+- `catalog[/Lang]`, `catalog[/MarkInfo]`, `catalog[/StructTreeRoot]` — reproduced for accessibility conformance
+
+**From §2 (per-page):**
+- All page boxes (media, crop, bleed, trim, art) — reproduced exactly
+- `rotate`, `user_unit` — reproduced exactly
+- `fonts`, `images`, `color_spaces`, `annotations` — full resource fidelity
+
+**Post-condition verify (Codex 1.5):**
+- `is_linearized` — Compile calls `/v1/extract` on the output PDF and asserts `is_linearized = true` when the rewrite spec includes linearization (CompilePDF spec §2.3)
+- `info_dict.custom` — round-trip verify that lineage keys survive the rewrite
+
+### 17.3 Impose producer
+
+The impose producer tiles multiple page instances onto a press sheet. It needs:
+
+**From §2 (per-page):**
+- `trim_box` — the artwork boundary for each tile
+- `bleed_box` — the bleed envelope that extends past trim
+- `media_box` — the sheet boundary
+
+**From Codex geom module (Codex 1.5, §16.2):**
+- `tile_grid(grid: TileGrid) → TileResult` — computes sheet layout; returns `cells: list[CellPlacement]`
+- `TileGrid` knobs used by Compile impose: `rows`, `cols`, `sheet_width`, `sheet_height`, `gutter`, `cell_rotation`, `cell_rotation_pattern`, `flip_per_row`, `flip_pattern`, `bleed_handling`, `bleed`
+- `CellPlacement` fields: `x0`, `y0`, `x1`, `y1` (position on sheet), `rotation`, `flip_h`, `flip_v`, `row`, `col`
+- `POST /v1/geom/tile` — HTTP surface for the impose producer when Compile calls Codex over the network
+
+### 17.4 Trap engine
+
+The trap engine computes ink spread/choke paths at color boundaries to compensate for press mis-registration. It needs:
+
+**From §6 (color space data — enriched by Codex):**
+- `colorant_names` — spot ink names for every `Separation` and `DeviceN` color space
+- `spot_colorants[i].neutral_density` — ND value (0.0–3.0+) per spot ink; drives which ink traps into which
+- `spot_colorants[i].neutral_density_source` — `"inkbook"` | `"lab_derived"` | `"estimated"` — indicates reliability of the ND measurement
+- Process inks (CMYK) neutral density: derived from standard CMYK ND curves; Codex does not need to provide these, but must expose the spot values
+
+**From Codex geom module (Codex 1.5, §16.2):**
+- `polygon_offset(path, distance_pt, join_type) → Path` — core primitive for spread/choke; Clipper2 InflatePaths via pyclipr
+- `POST /v1/geom/offset` — HTTP surface for the trap engine
+- Join types used by trap: `"round"` (ink spread), `"miter"` (corner join at right-angle boundaries)
+
+**From Codex color module (Codex 1.5, §16.1):**
+- `GET /v1/color/neutral-density?name=<ink>` — fallback lookup when spot_colorants[] ND is absent or `neutral_density_source = "estimated"`; takes `name`, `lab`, or `cmyk` as input
+
+### 17.5 Marks producer
+
+The marks producer places registration targets, color bars (CMYK + spot patches), and fold/cut marks in the sheet bleed beyond the trim box. It needs:
+
+**From §2 (per-page):**
+- `media_box` — sheet boundary; marks are placed between trim edge and sheet edge
+- `bleed_box` — inner boundary that marks must not enter
+- `trim_box` — reference for mark inset calculation
+
+**From §6 (color space data):**
+- Spot color names present in the job — marks producer renders one spot patch per ink
+- `spot_colorants[i]` Lab/CMYK values — used to produce accurate color bar swatches
+
+### 17.6 Codex server requirements (all Compile phases)
+
+All Compile phases share these server-level Codex requirements (Codex 1.5, §16.4):
+
+- **`instance_id`** on `GET /healthz` — Compile's load-balancer client drains old replicas using instance identity before version upgrades
+- **`X-Codex-Request-Id`** in request and response headers — Compile sends its own request-id; Codex echoes it in the response and binds it to structured logs so a single Compile job trace spans Lint, Compile, and Codex log entries
+- **Contract guard**: Compile client pins `CODEX_REQUIRED_SECTION_VERSIONS = {"color": "1.1.0", "geom": "1.1.0", "codex-document": "1.1.0"}`; the guard auto-routes to 1.5.0 replicas during rolling upgrades
+
+### 17.7 What Compile does NOT need from Codex
+
+The following are Compile responsibilities, not Codex data requirements:
+
+- **PDF write path**: Compile generates PDF bytes using its own writer (pikepdf or similar). Codex is read-only — it never writes PDF bytes (enforcement: `produce_surface_audit.py` in Codex CI).
+- **Approval workflow**: job approval, version history, and annotation storage live in the Compile API, not in Codex.
+- **Render caching**: Compile's S3 cache stores render artifacts. Codex provides the on-demand render; Compile owns the cache key and TTL policy.
+- **Linearization rewriting**: Compile rewrites the PDF bytes itself; Codex only _verifies_ the result via `is_linearized` on a subsequent extract call.
 
 ---
 

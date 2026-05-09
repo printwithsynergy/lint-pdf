@@ -1186,12 +1186,9 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
     if not isinstance(instrs, list):
         return signals
     if True:
-
         # resource name -> spot name for Separation color spaces.
         cs_to_spot = (
-            {str(k): str(v) for k, v in cs_dict.items()}
-            if isinstance(cs_dict, dict)
-            else {}
+            {str(k): str(v) for k, v in cs_dict.items()} if isinstance(cs_dict, dict) else {}
         )
         # T3-D10 — record which resource names resolve to varnish /
         # VarnishFree spots so we can tally their paint bboxes.
@@ -1210,9 +1207,7 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
         # /Resource blocks resolve to the actual optional-content
         # group label.
         prop_to_ocg_name = (
-            {str(k): str(v) for k, v in props_dict.items()}
-            if isinstance(props_dict, dict)
-            else {}
+            {str(k): str(v) for k, v in props_dict.items()} if isinstance(props_dict, dict) else {}
         )
 
         # Current graphics-state tracking.
