@@ -16,8 +16,6 @@ from __future__ import annotations
 from lintpdf.rendering import (  # noqa: F401
     OCGError,
     _apply_ocg_overrides,
-    _has_ghostscript,
-    _render_page_via_ghostscript,
     get_page_count,
     render_all_pages,
     render_isolated_layer_tile,

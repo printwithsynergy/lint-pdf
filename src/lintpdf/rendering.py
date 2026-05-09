@@ -17,7 +17,10 @@ exactly the same bytes as the legacy implementation it replaced.
 
 from __future__ import annotations
 
+import io
 import logging
+
+import pikepdf
 
 from lintpdf.codex_render import (
     OCGError,  # re-exported for legacy callers
@@ -33,6 +36,69 @@ from lintpdf.codex_render import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_ocg_overrides(
+    pdf_bytes: bytes,
+    ocg_on: list[int] | None,
+    ocg_off: list[int] | None,
+) -> bytes:
+    """Rewrite /OCProperties/D/OFF in-place so specific layers are forced on or off.
+
+    Returns ``pdf_bytes`` unchanged when both lists are empty/None.
+    Raises ``OCGError`` for conflicts, out-of-range indices, or a
+    PDF with no /OCProperties.
+    """
+    on_set = set(ocg_on or [])
+    off_set = set(ocg_off or [])
+    if not on_set and not off_set:
+        return pdf_bytes
+
+    conflicts = on_set & off_set
+    if conflicts:
+        raise OCGError(f"conflict: index {min(conflicts)} appears in both ocg_on and ocg_off")
+
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        oc_props = pdf.Root.get("/OCProperties")
+        if oc_props is None:
+            raise OCGError("no /OCProperties — PDF has no layers")
+
+        ocgs = oc_props.get("/OCGs")
+        if ocgs is None or len(ocgs) == 0:
+            raise OCGError("no /OCProperties — PDF has no layers")
+
+        n = len(ocgs)
+        for idx in sorted(on_set | off_set):
+            if idx < 0 or idx >= n:
+                raise OCGError(f"OCG index {idx} out of range (PDF has {n} layers)")
+
+        d = oc_props.get("/D")
+        if d is None:
+            oc_props["/D"] = pikepdf.Dictionary({"/OFF": pikepdf.Array([])})
+            d = oc_props["/D"]
+
+        current_off = d.get("/OFF")
+        ocg_list = [ocgs[i] for i in range(n)]
+
+        if current_off is None:
+            current_off_indices: set[int] = set()
+        else:
+            current_off_indices = set()
+            for ref in current_off:
+                for i, ocg in enumerate(ocg_list):
+                    try:
+                        if ref.objgen == ocg.objgen:
+                            current_off_indices.add(i)
+                            break
+                    except AttributeError:
+                        pass
+
+        new_off_indices = (current_off_indices - on_set) | off_set
+        d["/OFF"] = pikepdf.Array([ocg_list[i] for i in sorted(new_off_indices)])
+
+        buf = io.BytesIO()
+        pdf.save(buf)
+        return buf.getvalue()
 
 
 def render_page_to_image(
@@ -94,6 +160,7 @@ def get_page_count(pdf_bytes: bytes) -> int:
 
 __all__ = [
     "OCGError",
+    "_apply_ocg_overrides",
     "get_page_count",
     "render_all_pages",
     "render_isolated_layer_tile",
