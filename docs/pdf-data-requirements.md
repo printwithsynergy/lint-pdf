@@ -476,6 +476,440 @@ Conformance checks (`LPDF_PDFX_*`, `LPDF_PDFA_*`, `LPDF_UA_*`) consume a subset 
 
 ---
 
+## 16. Producer-suite contract additions (Codex 1.5)
+
+Codex 1.5 lands a coordinated minor bump aggregating three additive section bumps and the server-side polish required to support the **CompilePDF** writer suite (`compile-pdf`, `compile-pdf-marketing`).
+
+The deliverables in this section are **purely additive** — Lint's analyzers continue to operate against Codex without code changes when the bump rolls out. The new fields, functions, and endpoints below are consumed by Compile's rewrite / marks / impose / trap producers; Lint sees them in extract output and on `/v1/contract.section_schema_versions` but doesn't require them.
+
+**Authority**: APPR-2026-05-09-32 / 33 / 34 in `~/synergy-agents/approvals.md` (full 14-deliverable scope, endpoint shapes proposed-as-shipped, 2-replica staging in 1 Railway plant).
+
+**Companion docs**: full design rationale lives in `compile-pdf`'s
+`COMPILE-DESIGN-SPEC.md` (1955 lines) and `COMPILE-CODEX-PREREQUISITES.md`
+(comprehensive engineering brief). This section integrates the Compile
+deliverables into the Lint reference so the Codex 1.5 work session has
+a single document to drive against.
+
+### 16.1 Color section (`COLOR_SCHEMA_VERSION` 1.0.0 → 1.1.0)
+
+#### 16.1.1 `CodexSpotColorant` neutral-density fields
+
+**File**: `src/codex_pdf/models/v1.py`
+
+Two new fields on the existing dataclass:
+
+```python
+neutral_density: float | None = None
+"""CIE-derived ND value. None when unknown.
+Range: typically [0.05, 2.50]. Process black ~1.70; cyan ~0.55;
+pastel spots ~0.10–0.30."""
+
+neutral_density_source: Literal["measured", "computed_from_lab", "estimated", None] = None
+"""How `neutral_density` was derived:
+- "measured"          — published Pantone Color Manager export or
+                         authoritative measurement
+- "computed_from_lab" — derived via -log10(Y/100) where Y is the
+                         CIE-XYZ luminance from the entry's Lab.
+                         Accuracy ±20%.
+- "estimated"         — heuristic when neither Pantone nor Lab
+                         is reliable (rare)
+- None                — `neutral_density` is None; consumer falls
+                         back to its own table or computed math."""
+```
+
+**Consumed by**: Compile's **trap** producer for spread/choke decisions per CompilePDF design spec §5.2. Lint analyzers ignore the new fields.
+
+#### 16.1.2 `load_inkbook()` payload extension
+
+**File**: `src/codex_pdf/color/__init__.py` (verify path during implementation)
+
+Every entry in the returned `pantone[]` and `curated[]` arrays gains the two ND fields above. Existing keys (`name`, `lab`, `cmyk`, `rgb`, `pantone_name`) are preserved verbatim.
+
+```json
+{
+  "schema_version": "1.1.0",
+  "manifest": { /* unchanged */ },
+  "pantone": [
+    {
+      "name": "PANTONE 485 C",
+      "lab": [...], "cmyk": [...], "rgb": [...],
+      "pantone_name": "PANTONE 485 C",
+      "neutral_density": 1.18,
+      "neutral_density_source": "measured"
+    }
+  ],
+  "curated": [
+    {
+      "name": "DeviceCMYK Black",
+      "lab": [...], "cmyk": [0.0, 0.0, 0.0, 1.0], "rgb": [...],
+      "pantone_name": null,
+      "neutral_density": 1.70,
+      "neutral_density_source": "measured"
+    }
+  ]
+}
+```
+
+#### 16.1.3 New endpoint: `POST /v1/color/neutral-density`
+
+**File**: `src/codex_pdf/api/main.py`
+
+Request body — exactly one of these three forms (mutually exclusive):
+
+```json
+{ "name": "PANTONE 485 C" }
+```
+```json
+{ "lab": [55, 80, 70] }
+```
+```json
+{ "cmyk": [0.05, 0.95, 0.95, 0.0] }
+```
+
+Response body:
+
+```json
+{
+  "schema_version": "1.1.0",
+  "neutral_density": 1.18,
+  "source": "measured"
+}
+```
+
+**Resolution order** (server-side):
+
+1. If `name` provided → look up in `load_pantone_reference()` → curated catalogue → return measured/published ND if available.
+2. If `lab` provided → compute ND via `-log10(Y/100)` from Lab→XYZ. Return `source: "computed_from_lab"`.
+3. If `cmyk` provided → derive Lab via the curated CMYK→Lab transform (already in `codex_pdf.color`), then compute ND from Lab. Return `source: "computed_from_lab"`.
+
+**Errors**:
+- 400 if more than one of `{name, lab, cmyk}` present
+- 400 if `name` is unrecognized AND no Lab fallback derivable
+- 422 if Lab values are out of valid range
+
+#### 16.1.4 Pantone catalog ND population
+
+**File**: `codex_pdf/color/data/pantone_reference.json`
+
+Enrich entries with `neutral_density` values where Pantone Color Manager publishes them. Where not published, leave `neutral_density: null` so consumers fall back to computed-from-Lab or to their own tenant ND tables.
+
+Acceptable to ship Codex 1.5.0 with partial population (e.g., Formula Guide Coated only) provided the schema is in place; subsequent point releases enrich.
+
+#### 16.1.5 Color tests
+
+- Unit: `CodexSpotColorant` accepts both legacy (no ND) and new (with ND) shapes; serialization round-trips both
+- Unit: `POST /v1/color/neutral-density` for each of the three input forms, including resolution-order edge cases
+- Contract: `GET /v1/color/inkbook` returns bumped `schema_version: "1.1.0"` and includes the new fields where data is available
+- Backward-compat: existing `POST /v1/color/{resolve,match-pantone}` endpoints continue to behave identically; bumped `schema_version` shows on their responses too
+
+### 16.2 Geom section (`GEOM_SCHEMA_VERSION` 1.0.0 → 1.1.0)
+
+#### 16.2.1 `polygon_offset()` function
+
+**File**: `src/codex_pdf/geom/path.py`
+
+```python
+def polygon_offset(
+    path: Path,
+    distance: float,
+    *,
+    join_type: Literal["round", "miter", "bevel"] = "round",
+    end_type: Literal["closed-polygon", "open-square", "open-round", "open-butt"] = "closed-polygon",
+    miter_limit: float = 4.0,
+) -> Path:
+    """Inflate (positive distance) or deflate (negative distance) a
+    closed polygon path.
+
+    Backed by Clipper2 ``InflatePaths`` via pyclipr. Requires the
+    ``[geom]`` extra; raises ``NotImplementedError`` if pyclipr is
+    not available — there is **no axis-aligned fallback** because
+    offset on rectangles is not the common case for trap.
+
+    Distance in PDF user space units (typically points)."""
+```
+
+**Consumed by**: Compile's **trap** producer for spread/choke geometry per CompilePDF spec §5.5. `polygon_intersect/union/difference` (already in 1.4.x) are insufficient — they don't grow/shrink by a distance.
+
+#### 16.2.2 New endpoint: `POST /v1/geom/offset`
+
+**File**: `src/codex_pdf/api/main.py`
+
+Request body:
+
+```json
+{
+  "path": { /* existing Path.to_json() shape */ },
+  "distance_pt": 0.144,
+  "join_type": "round",
+  "miter_limit": 4.0,
+  "end_type": "closed-polygon"
+}
+```
+
+Response body:
+
+```json
+{
+  "schema_version": "1.1.0",
+  "path": { /* offset Path.to_json() shape */ }
+}
+```
+
+**Errors**:
+- 400 if `path` cannot be parsed
+- 422 if `distance_pt` is not finite or exceeds `±100` pt
+- 501 with `Code: pyclipr_not_installed` if the `[geom]` extra is missing on the server
+
+#### 16.2.3 `TileGrid` extensions
+
+**File**: `src/codex_pdf/geom/tile.py`
+
+Six additive fields on the existing dataclass:
+
+```python
+cell_rotation: float = 0.0
+"""Uniform per-cell rotation in degrees (0/90/180/270). Default 0.
+Applied around the cell's center."""
+
+cell_rotation_pattern: list[float] | None = None
+"""Per-cell cyclic rotation list. Cycles if shorter than total
+cell count. Takes precedence over `cell_rotation` when set."""
+
+flip_per_row: Literal["none", "horizontal", "vertical", "alternating-h", "alternating-v"] = "none"
+"""- "none"          — no flipping
+- "horizontal"      — every row h-flipped
+- "vertical"        — every row v-flipped
+- "alternating-h"   — rows 1, 3, 5, … h-flipped (work-and-turn)
+- "alternating-v"   — rows 1, 3, 5, … v-flipped (work-and-tumble)
+The row-numbering convention (rows 1, 3, 5, … as the flipped set)
+is press-floor-validated; CompilePDF gate 3-B locks the convention
+before scaffolding."""
+
+flip_pattern: list[Literal["none", "h", "v"]] | None = None
+"""Per-row cyclic flip list. Takes precedence over `flip_per_row`."""
+
+bleed_handling: Literal["overlap", "added-per-cell"] = "added-per-cell"
+"""- "added-per-cell" (default) — each cell carries its own bleed
+                                    envelope; cells positioned
+                                    `gutter + 2*bleed` apart between
+                                    trim-box edges
+- "overlap"                    — cells share bleed; positioned
+                                    `cell_width + gutter` apart
+                                    (continuous patterns)"""
+
+bleed: float = 0.0
+"""Uniform bleed distance in PDF user space units (points)."""
+```
+
+#### 16.2.4 `CellPlacement` dataclass
+
+**File**: `src/codex_pdf/geom/tile.py`
+
+```python
+@dataclass
+class CellPlacement:
+    box: Box
+    """Cell position on the sheet."""
+
+    rotation: float
+    """Applied rotation 0/90/180/270."""
+
+    flip_h: bool
+    flip_v: bool
+
+    row: int
+    col: int
+
+    # Box-compatibility forwarding (so existing consumers reading
+    # `result.cells[i].x0` etc. keep working):
+    @property
+    def x0(self) -> float: return self.box.x0
+    @property
+    def y0(self) -> float: return self.box.y0
+    @property
+    def x1(self) -> float: return self.box.x1
+    @property
+    def y1(self) -> float: return self.box.y1
+```
+
+#### 16.2.5 `TileResult.cells` shape change
+
+**Before** (1.0.0): `cells: list[Box]`
+**After** (1.1.0): `cells: list[CellPlacement]`
+
+`CellPlacement` MUST forward `.x0/.y0/.x1/.y1` plus `.area()` / `.contains()` etc. to its inner `box` so existing consumers reading `result.cells[i]` as a Box continue to work without edits. This is a true additive change — existing code paths see no behavioral difference; new code accesses `.rotation` / `.flip_h` / `.flip_v` / `.row` / `.col` for the new fields.
+
+#### 16.2.6 `tile_grid()` honors the new knobs
+
+**File**: `src/codex_pdf/geom/tile.py`
+
+`tile_grid(grid: TileGrid)` MUST:
+- Compute cell positions honoring `bleed_handling` (`added-per-cell` = trim-edge gap of `gutter + 2*bleed`; `overlap` = trim-edge gap of `gutter`)
+- Apply per-cell rotation from `cell_rotation` (uniform) or `cell_rotation_pattern` (cyclic; takes precedence)
+- Apply per-row flips from `flip_per_row` or `flip_pattern` (cyclic; takes precedence)
+- Populate `CellPlacement.{rotation, flip_h, flip_v, row, col}` for every emitted cell
+
+#### 16.2.7 `POST /v1/geom/tile` response shape change
+
+Additive fields on each cell:
+
+```json
+{
+  "schema_version": "1.1.0",
+  "rows": 4, "cols": 2, "used": 0.78, "waste": 0.22,
+  "cells": [
+    {
+      "x0": 36, "y0": 36, "x1": 296, "y1": 432,
+      "rotation": 0, "flip_h": false, "flip_v": false,
+      "row": 0, "col": 0
+    }
+  ]
+}
+```
+
+Existing consumers that destructure `cells[i]` as a Box continue working (the `x0/y0/x1/y1` keys are still present at the top level of each cell entry).
+
+#### 16.2.8 Geom tests
+
+- Unit: `polygon_offset` round/miter/bevel join types on a known rectangular fixture; verify monotonicity (positive distance grows, negative shrinks)
+- Unit: `polygon_offset` raises `NotImplementedError` when pyclipr unavailable
+- Unit: `tile_grid` with `cell_rotation = 90`, with `flip_per_row = "alternating-h"`, with `bleed_handling = "overlap"` — one fixture per knob
+- Unit: `CellPlacement.x0` / `.y0` / `.x1` / `.y1` forward correctly
+- Contract: existing `TileResult.cells[i].x0` access pattern keeps working; new `.rotation` / `.flip_h` / `.flip_v` are populated
+- HTTP: `POST /v1/geom/offset` for each join type; 501 path when `[geom]` extra missing
+- HTTP: `POST /v1/geom/tile` returns the additive fields
+
+### 16.3 Top-level `codex-document` schema (1.0.0 → 1.1.0)
+
+Both fields are already documented in §1 (`Document-level data`) of this reference:
+
+- `is_linearized` — see §1 row "is_linearized"; consumed by Compile **rewrite** verifier per CompilePDF spec §2.3
+- `info_dict.custom` — see §1 row "info_dict.custom"; consumed by Compile **rewrite** for lineage breadcrumb round-trip per CompilePDF spec §1.7b
+
+This sub-section exists only to anchor the codex-document section bump alongside its sibling color and geom bumps; the actual data-shape requirements for both fields are listed once, in §1.
+
+### 16.4 Server-side cross-cutting (no schema bump)
+
+These two land independent of the section bumps; they support multi-instance operation and cross-service tracing.
+
+#### 16.4.1 `instance_id` field on `HealthResponse`
+
+**File**: `src/codex_pdf/api/main.py`
+
+```python
+class HealthResponse(BaseModel):
+    status: str
+    version: str
+    ghostscript: bool
+    cache_backend: str
+    instance_id: str    # ← new
+```
+
+Resolution:
+
+```python
+def _resolve_instance_id() -> str:
+    explicit = os.environ.get("CODEX_INSTANCE_ID", "").strip()
+    if explicit:
+        return explicit
+    return socket.gethostname() or "unknown"
+
+INSTANCE_ID = _resolve_instance_id()
+```
+
+Wire into the `/healthz` and `/v1/healthz` handlers.
+
+**Consumed by**: all consumers (Lint, Compile, marketing sites) for multi-instance rollout visibility — the codex client SDK already supports plant affinity routing, but operators need per-replica identity on healthchecks to drain stragglers cleanly.
+
+#### 16.4.2 FastAPI request-id middleware
+
+**File**: `src/codex_pdf/api/middleware.py` (NEW — currently absent)
+
+```python
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        request_id = request.headers.get("X-Codex-Request-Id") or secrets.token_hex(8)
+        request.state.request_id = request_id
+        # bind to structlog context vars for correlated logging
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=request_id,
+            instance_id=INSTANCE_ID,
+            method=request.method,
+            path=request.url.path,
+        )
+        response = await call_next(request)
+        response.headers["X-Codex-Request-Id"] = request_id
+        response.headers["X-Codex-Instance-Id"] = INSTANCE_ID
+        return response
+```
+
+Mount via `app.add_middleware(RequestIdMiddleware)` in `main.py`.
+
+**Rationale**: the client SDK already generates / sends `X-Codex-Request-Id` per request (`http_client.py:213`). Today the server ignores it; lint→codex chains lose the ID at the server boundary. This closes the loop so a single `request_id` queries from upstream (lint, compile, marketing) all the way through to Codex's logs and metrics.
+
+#### 16.4.3 Cross-cutting tests
+
+- Unit: `/healthz` returns `instance_id` populated from env or hostname
+- Unit: middleware echoes `X-Codex-Request-Id` from the incoming request when supplied
+- Unit: middleware generates a fresh request_id when none supplied
+- Unit: `X-Codex-Instance-Id` always present in response headers
+- Integration: deploy 2 replicas behind a load balancer; verify `instance_id` differs across replicas; verify request_id flows end-to-end through structured log capture
+
+### 16.5 Section bumps and version coordination
+
+| Section | From | To | Source of bump |
+|---|---|---|---|
+| `COLOR_SCHEMA_VERSION` | `1.0.0` | `1.1.0` | §16.1 ND fields + endpoint |
+| `GEOM_SCHEMA_VERSION` | `1.0.0` | `1.1.0` | §16.2 polygon_offset + TileGrid extensions + CellPlacement |
+| top-level `codex-document` | `1.0.0` | `1.1.0` | §1 (is_linearized + info_dict.custom) anchored here as §16.3 |
+| `codex_pdf.version.VERSION` | `1.4.2` | `1.5.0` | Coordinated minor bump |
+| npm `@printwithsynergy/codex-client` | `1.4.2` | `1.5.0` | Mirrors Python wheel version; adds `geomOffset` and `colorNeutralDensity` methods |
+
+`/v1/contract.section_schema_versions` MUST report the bumped versions verbatim. Existing client-side contract guards (`http_client.py:435-476`) consume this map to auto-route traffic during partial rollouts.
+
+### 16.6 Optimal PR sequence
+
+For the executing Codex agent — each PR runs the existing CI (ruff + mypy + pytest + `scripts/produce_surface_audit.py`); all must pass before merge.
+
+| PR | Scope | Unblocks |
+|---|---|---|
+| 1 | §16.4.1 + §16.4.2 — `instance_id` + request-id middleware (no schema bump) | Compile chassis /healthz parity; multi-instance Codex operation for Lint and all consumers |
+| 2 | §16.3 — top-level `codex-document` 1.1.0 (`is_linearized` + `info_dict.custom`) | Compile **rewrite** post-condition verify (§2.3 of CompilePDF spec) |
+| 3 | §16.2.3–16.2.7 — geom 1.1.0 TileGrid extensions + CellPlacement | Compile **impose** producer (§4.1) |
+| 4 | §16.2.1 + §16.2.2 — `polygon_offset` + `POST /v1/geom/offset` (still geom 1.1.0; can fold into PR 3) | Compile **trap** pure_python engine (§5.5) |
+| 5 | §16.1.1 + §16.1.2 + §16.1.3 — color 1.1.0 ND fields + inkbook ND + endpoint | Compile **trap** ND lookup (§5.2) |
+| 6 | §16.1.4 — Pantone catalog ND data population | Production-grade trap measurements (can lag schema landing) |
+| 7 | Bump `codex_pdf.version.VERSION = "1.5.0"`; publish to PyPI; bump `@printwithsynergy/codex-client@1.5.0`; publish to npm; tag `codex-pdf v1.5.0` | Final 1.5.0 release |
+
+### 16.7 Acceptance criteria
+
+Codex 1.5.0 is "done" when:
+
+- [ ] All deliverables in §16.1, §16.2, §16.3, §16.4 land and pass CI on `main`
+- [ ] `codex_pdf.version.VERSION = "1.5.0"` published to PyPI
+- [ ] `@printwithsynergy/codex-client@1.5.0` published to npm with new methods (`geomOffset`, `colorNeutralDensity`)
+- [ ] `GET /v1/contract.section_schema_versions` reports `{"color": "1.1.0", "geom": "1.1.0", "codex-document": "1.1.0"}` on every live instance
+- [ ] `GET /healthz` includes `instance_id` populated from env or hostname
+- [ ] `X-Codex-Request-Id` flows end-to-end (incoming request → server log → response header)
+- [ ] Two-replica staging deploy in one Railway plant (per APPR-2026-05-09-34) shows: distinct `instance_id` per replica; cache hits across replicas via shared Redis; client contract guard routes correctly during simulated rolling upgrade
+- [ ] CHANGELOG entry for `codex-pdf v1.5.0` lists the additive bumps, new endpoints, and operator-visible behavior
+- [ ] `scripts/produce_surface_audit.py` green throughout
+
+After all of the above, **Compile** Phase 1 (rewrite engine) can begin its implementation against Codex 1.5.0.
+
+### 16.8 Operating constraints
+
+The Codex agent MUST respect these throughout the 1.5 work:
+
+1. **Read-only invariant**. `produce_surface_audit.py` fails CI on any banned writer signal. None of the deliverables above introduce a write path. The `polygon_offset` function is pure geometry math; it does not write PDF bytes. The single allowlisted save site stays `codex_pdf.render._common.apply_ocg_overrides`.
+2. **Additive only** within current major. Every field, method, and endpoint above is *added*. Nothing existing is renamed, removed, or has its semantics changed. Lint analyzers and Loupe viewers continue working without code changes after the bump rolls out.
+3. **Section bumps reflect inline on responses**. Every endpoint that includes `schema_version` in its response must report the bumped value: `/v1/color/*` → `1.1.0`, `/v1/geom/*` → `1.1.0`, `/v1/extract` → `1.1.0`.
+4. **Multi-instance contract guard auto-routes** during rollout. With APPR-34's 2-replica staging, a partial rollout has one replica at 1.5.0 and one at 1.4.2. Compile (and Lint) clients pin `CODEX_REQUIRED_SECTION_VERSIONS = {"color": "1.1.0", "geom": "1.1.0"}`; the client guard auto-routes to the 1.5.0 replica until both replicas are upgraded. Document this in the deploy runbook so operators know mid-rollout traffic shifts are mechanical, not a bug.
+5. **Cache-key invalidation is automatic**. Compile's cache key (per `compile_pdf.cache.compute_cache_key`) includes `color_schema_version`, `geom_schema_version`, and `codex_document_schema_version`. The bumps invalidate Compile's cached outputs cleanly; expect a recompute storm proportional to the cached-job population for affected producers.
+
+---
+
 ## Out of scope
 
 The following are explicitly not PDF data requirements — they are handled by separate systems:
