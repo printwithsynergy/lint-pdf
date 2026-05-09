@@ -73,9 +73,11 @@ Populated once at ingest into `SemanticDocument`. All CPU, GPU, and AI analyzers
 |---|---|---|
 | `version` | File header (`%PDF-1.x` / `2.0`) | `DocumentAnalyzer`, `StandardsComplianceAnalyzer` |
 | `is_encrypted` | Trailer `/Encrypt` dictionary | `DocumentAnalyzer`, `StructureAnalyzer` |
+| `is_linearized` | First ≤1 024 bytes — presence of `/Linearized` hint stream in the first cross-reference section; `pikepdf.Pdf.is_linearized` exposes this natively | `DocumentAnalyzer`; Compile **rewrite** producer (verifies linearization mutation landed — Codex 1.5 §4.1) |
 | `page_count` | Page tree root `/Count` | `DocumentAnalyzer` |
 | `file_size` | Byte length of raw file | `DocumentAnalyzer` (via `ctx.pdf_bytes`) |
-| `info_dict` | Trailer `/Info` — Title, Author, Subject, Keywords, Creator, Producer, CreationDate, ModDate, Trapped | `MetadataAnalyzer`, `MetadataAuditAnalyzer` |
+| `info_dict` | Trailer `/Info` — standard keys: Title, Author, Subject, Keywords, Creator, Producer, CreationDate, ModDate, Trapped | `MetadataAnalyzer`, `MetadataAuditAnalyzer` |
+| `info_dict.custom` | Trailer `/Info` — all non-standard keys not in the set above; each emitted as `(name, str(value))` | `MetadataAnalyzer`; Compile **rewrite** producer round-trips lineage breadcrumbs here (e.g. `CustomCompileLineageID`, `CustomCompileProducer`, `CustomCompileVersion`, `CustomCompilePlanSHA`) — Codex 1.5 §4.2 |
 | `metadata_stream` | Catalog `/Metadata` — raw XMP bytes | `MetadataAnalyzer`, `MetadataAuditAnalyzer` |
 | `catalog` | Document catalog dictionary | `MetadataAnalyzer`, `StructureAnalyzer`, `AccessibilityAnalyzer` |
 | `catalog[/ViewerPreferences]` | Viewer preference dictionary | `MetadataAnalyzer` |
