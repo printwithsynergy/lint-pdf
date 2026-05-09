@@ -18,26 +18,33 @@ Companion documents:
 
 ## Data flow overview
 
+> **Architecture note (codex-authoritative ingestion, landed 2026-05):**
+> The engine migrated from direct pikepdf parsing to a Codex-backed extraction path.
+> `semantic/builder.py` and `semantic/interpreter.py` have been removed.
+> `SemanticDocument` and `SemanticPage` are now populated from the Codex JSON payload
+> via `codex_adapter.extract_semantic_document_via_codex()`.
+> **Content stream events are always an empty list `[]` in the current path.**
+> Section 8 documents the event schema as the legacy analyzer contract; the fields
+> are no longer populated at runtime.
+
 ```
 PDF file bytes
     │
     ▼
-pikepdf parser
-    │   extracts raw dictionaries, streams, page tree
+codex-pdf HTTP service  (or in-process codex_pdf.render fallback)
+    │   extracts: page boxes, fonts, images, color spaces,
+    │   annotations, output intents, XMP presence, analysis signals
     ▼
-SemanticModel builder          ContentStream interpreter
-    │   resolves inheritance,      │   walks operators, emits
-    │   normalises fonts/images/   │   typed events per operator
-    │   color spaces, page boxes   │
-    ▼                              ▼
-SemanticDocument            list[ContentStreamEvent]
-    │                              │
-    └──────────┬────────────────────┘
-               ▼
+Codex JSON payload  (dict)
+    │
+    ▼  codex_adapter.extract_semantic_document_via_codex()
+SemanticDocument + [] (empty events)
+    │
+    ▼
         AnalyzerContext
-        ├── document       (SemanticDocument)
-        ├── events         (list[ContentStreamEvent])
-        ├── pdf_bytes      (raw bytes, lazy-loaded)
+        ├── document       (SemanticDocument — from Codex JSON)
+        ├── events         (always [] — content stream not re-interpreted)
+        ├── pdf_bytes      (raw bytes, set on document._pdf_bytes)
         ├── capabilities   (page_images, text_regions — pull-based, cached)
         ├── services       (GPU client, LLM, renderer, metering, cost_cap, …)
         └── config         (per-plugin config + tenant ai_config)
@@ -55,9 +62,10 @@ CPU analyzers  GPU analyzers   EXTERNAL_AI analyzers
 
 | Layer | Contents | Required by tier |
 |---|---|---|
-| `SemanticDocument` | Document structure, pages, fonts, images, color spaces | CPU · GPU · EXTERNAL_AI |
-| `ContentStreamEvents` | Interpreted rendering operations (text, path, image, color, overprint, …) | CPU |
-| `pdf_bytes` | Raw file bytes | CPU (file size, barcode heuristics) · GPU (zxing decode) |
+| **Codex JSON payload** | Primary extraction source — page boxes, fonts, images, color spaces, annotations, output intents, XMP flag, analysis signals | All tiers (upstream of SemanticDocument) |
+| `SemanticDocument` | Normalised document structure hydrated from Codex JSON | CPU · GPU · EXTERNAL_AI |
+| `ContentStreamEvents` | **Always `[]` in current path.** Event schema documented in §8 as legacy contract; no longer populated at runtime | — |
+| `pdf_bytes` | Raw file bytes (set on `document._pdf_bytes`) | CPU (file size, barcode heuristics) · GPU (zxing decode) |
 | `page_images` capability | Rasterized PNG/JPEG per page at configurable DPI | GPU · EXTERNAL_AI |
 | `text_regions` capability | OCR-detected text bounding boxes | GPU · EXTERNAL_AI |
 | External reference PDFs | Prior-version files pulled from tenant storage | EXTERNAL_AI (version diff, color consistency) |
@@ -78,19 +86,20 @@ Populated once at ingest into `SemanticDocument`. All CPU, GPU, and AI analyzers
 | `file_size` | Byte length of raw file | `DocumentAnalyzer` (via `ctx.pdf_bytes`) |
 | `info_dict` | Trailer `/Info` — standard keys: Title, Author, Subject, Keywords, Creator, Producer, CreationDate, ModDate, Trapped | `MetadataAnalyzer`, `MetadataAuditAnalyzer` |
 | `info_dict.custom` | Trailer `/Info` — all non-standard keys not in the set above; each emitted as `(name, str(value))` | `MetadataAnalyzer`; Compile **rewrite** producer round-trips lineage breadcrumbs here (e.g. `CustomCompileLineageID`, `CustomCompileProducer`, `CustomCompileVersion`, `CustomCompilePlanSHA`) — Codex 1.5 §4.2 |
-| `metadata_stream` | Catalog `/Metadata` — raw XMP bytes | `MetadataAnalyzer`, `MetadataAuditAnalyzer` |
-| `catalog` | Document catalog dictionary | `MetadataAnalyzer`, `StructureAnalyzer`, `AccessibilityAnalyzer` |
-| `catalog[/ViewerPreferences]` | Viewer preference dictionary | `MetadataAnalyzer` |
-| `catalog[/Lang]` | Document language string | `MetadataAnalyzer` |
-| `catalog[/MarkInfo]` | Marked PDF flags (Marked, UserProperties, Suspects) | `AccessibilityAnalyzer` |
-| `catalog[/StructTreeRoot]` | Tagged-PDF structure tree root | `AccessibilityAnalyzer`, `StructureAnalyzer` |
-| `catalog[/AcroForm]` | Interactive form root dictionary | `StructureAnalyzer`, `DocumentAnalyzer` |
-| `catalog[/OCProperties]` | Optional content layer configuration | `StructureAnalyzer` |
-| `catalog[/Outlines]` | Bookmark/outline tree root | `StructureAnalyzer` |
-| `catalog[/NeedsRendering]` | XFA form render flag | `DocumentAnalyzer` |
-| `output_intents` | Catalog `/OutputIntents` array — each entry: OutputCondition, OutputConditionIdentifier, RegistryName, DestOutputProfile (ICC stream) | `IccProfileAnalyzer`, `ColorAnalyzer`, `GamutAnalyzer` |
-| `trailer` | Raw PDF trailer dictionary | `DocumentAnalyzer` |
-| `dieline_result` | Pre-computed dieline detection result (attached at ingest time) | `DielineIso19593Analyzer`, `DielinePerfIndicatorAnalyzer`, `PackagingAnalyzer` |
+| `metadata_stream` | Codex `xmp.present` flag — populated as `b"<xmp-present/>"` sentinel when XMP is present, `None` otherwise. Raw XMP bytes are no longer surfaced. | `MetadataAnalyzer`, `MetadataAuditAnalyzer` |
+| `catalog` | Now `{"codex_analysis": <analysis_dict>}` — Codex per-document analysis signals. Raw PDF catalog dictionary entries (`/ViewerPreferences`, `/Lang`, `/MarkInfo`, etc.) are no longer directly accessible; analyzers that need them must read from `codex_analysis`. | `MetadataAnalyzer`, `StructureAnalyzer`, `AccessibilityAnalyzer` |
+| `catalog[/ViewerPreferences]` | Via Codex `codex_analysis` — viewer preferences as parsed by Codex | `MetadataAnalyzer` |
+| `catalog[/Lang]` | Via Codex `codex_analysis` — document language string | `MetadataAnalyzer` |
+| `catalog[/MarkInfo]` | Via Codex `codex_analysis` — marked PDF flags | `AccessibilityAnalyzer` |
+| `catalog[/StructTreeRoot]` | Via Codex `codex_analysis` — tagged-PDF structure tree presence | `AccessibilityAnalyzer`, `StructureAnalyzer` |
+| `catalog[/AcroForm]` | Via Codex `codex_analysis.has_acroform` boolean | `StructureAnalyzer`, `DocumentAnalyzer` |
+| `catalog[/OCProperties]` | Via Codex `codex_analysis.has_oc_properties` boolean | `StructureAnalyzer` |
+| `catalog[/OpenAction]` | Via Codex `codex_analysis.has_open_action` boolean | `DocumentAnalyzer` |
+| `catalog[/Outlines]` | Via Codex `codex_analysis` | `StructureAnalyzer` |
+| `catalog[/NeedsRendering]` | Via Codex `codex_analysis` | `DocumentAnalyzer` |
+| `output_intents` | Codex `output_intents` array — each entry: `subtype`, `output_condition_identifier`, `profile_id`. DestOutputProfile ICC stream is referenced by ID, not embedded. | `IccProfileAnalyzer`, `ColorAnalyzer`, `GamutAnalyzer` |
+| `trailer` | Always `{}` in the Codex path — raw trailer is not re-exposed. Trailer ID presence is surfaced via `codex_analysis.trailer_id_present`. | `DocumentAnalyzer` |
+| `dieline_result` | Always `None` in the Codex path — dieline detection moved to Codex's analysis layer. | `DielineIso19593Analyzer`, `DielinePerfIndicatorAnalyzer`, `PackagingAnalyzer` |
 
 ---
 
@@ -112,11 +121,11 @@ Populated per page into `SemanticPage` with all resource inheritance resolved. P
 
 | Field | PDF source | Consumed by |
 |---|---|---|
-| `rotate` | `/Rotate` (inherited; 0 / 90 / 180 / 270) | `PageGeometryAnalyzer`, all spatial analyzers |
-| `user_unit` | `/UserUnit` (default 1.0 = 1/72 in) | All geometry checks |
-| `resources` | `/Resources` dictionary (raw) | Parser base; resolved into typed collections below |
-| `content_stream` | Concatenated, decompressed page content stream bytes | Content stream interpreter |
-| `transparency_group` | `/Group` dictionary on the page | `TransparencyAnalyzer` |
+| `rotate` | Codex `pages[i].rotation` (0 / 90 / 180 / 270) | `PageGeometryAnalyzer`, all spatial analyzers |
+| `user_unit` | Always `1.0` in the Codex path — Codex normalises coordinates to 1/72 in points | All geometry checks |
+| `resources` | `{"codex_analysis": <page_analysis_dict>}` — Codex per-page analysis signals. Raw `/Resources` dictionary is not re-exposed. | Analyzers that consume Codex analysis signals |
+| `content_stream` | Always `b""` in the Codex path — page content stream is not re-exposed | (no longer consumed) |
+| `transparency_group` | Always `None` in the Codex path — transparency group detection moved to Codex analysis | `TransparencyAnalyzer` |
 
 ### Resolved resource collections (per page)
 
@@ -138,8 +147,9 @@ One `PdfFont` object per font resource on each page. All fields are required by 
 | `name` | Resource key (e.g. `F1`) | Identifies font within the page resource dict |
 | `base_font` | `/BaseFont` entry | PostScript name; may include 6-char subset prefix (`ABCDEF+`) |
 | `font_type` | `/Subtype` | One of: `Type1`, `TrueType`, `Type0`, `Type3`, `CIDFontType0`, `CIDFontType2` |
-| `embedded` | Font program stream presence (`/FontFile`, `/FontFile2`, `/FontFile3`) | Required for embedding checks |
+| `embedded` | Codex embedding status — string enum: `"full"` (fully embedded), `"subset"` (subset-embedded), `"referenced"` (not embedded, referenced by name). **No longer a bool.** | Required for embedding checks |
 | `subset` | Subset prefix pattern in `base_font` | 6 uppercase chars + `+` |
+| `missing_glyphs_detected` | `bool` — Codex detected missing glyph entries in the font's cmap or width table | `FontAnalyzer` |
 | `encoding` | `/Encoding` | `WinAnsiEncoding`, `Identity-H`, `MacRomanEncoding`, etc. |
 | `font_descriptor` | `/FontDescriptor` dictionary | Flags, FontBBox, ItalicAngle, Ascent, Descent, CapHeight, XHeight, StemV, StemH, MissingWidth |
 | `has_to_unicode` | `/ToUnicode` CMap stream presence | Required for text-extraction / accessibility checks |
@@ -151,23 +161,23 @@ One `PdfFont` object per font resource on each page. All fields are required by 
 
 ## 4. Image data (`PdfImage`)
 
-One `PdfImage` object per image XObject or inline image on each page. Placement geometry comes from `ImagePlacedEvent` (see section 8).
+One `PdfImage` object per image XObject or inline image on each page. All fields are now sourced from the Codex JSON `images[]` array. Placement geometry (effective DPI) is pre-computed by Codex — the old `ImagePlacedEvent.ctm` path no longer applies.
 
-| Field | PDF source | Notes |
+| Field | Codex JSON source | Notes |
 |---|---|---|
-| `name` | Resource key or `inline_N` | Identifies image within page resources |
-| `width` | `/Width` | Pixel columns |
-| `height` | `/Height` | Pixel rows |
-| `bits_per_component` | `/BitsPerComponent` | 1, 2, 4, 8, or 16 |
-| `color_space` | `/ColorSpace` (resolved) | Full `PdfColorSpace` object |
-| `filters` | `/Filter` (ordered) | `FlateDecode`, `DCTDecode`, `JBIG2Decode`, `CCITTFaxDecode`, `JPXDecode`, `RunLengthDecode`, `LZWDecode` |
-| `has_soft_mask` | `/SMask` stream presence | Transparency |
-| `has_hard_mask` | `/Mask` as stream (not color key) | Hard clipping mask |
-| `interpolate` | `/Interpolate` | Bilinear upscaling enabled |
-| `intent` | `/Intent` | Per-image rendering intent override |
-| `inline` | Inline image (`BI`/`ID`/`EI`) vs XObject | Affects stream re-use |
-| `has_opi` | `/OPI` dictionary presence | OPI proxy; low-res placeholder |
-| Placement CTM | From `ImagePlacedEvent.ctm` (see §8) | Required for effective DPI calculation |
+| `name` | `images[i].name` | Resource key or `inline_N` |
+| `width` | `images[i].width_px` | Pixel columns |
+| `height` | `images[i].height_px` | Pixel rows |
+| `bits_per_component` | `images[i].bits_per_component` | 1, 2, 4, 8, or 16 |
+| `color_space` | `images[i].color_space_id` → resolved `PdfColorSpace` | Full `PdfColorSpace` object |
+| `filters` | `images[i].filters` (ordered) | `FlateDecode`, `DCTDecode`, `JBIG2Decode`, `CCITTFaxDecode`, `JPXDecode`, `RunLengthDecode`, `LZWDecode` |
+| `has_soft_mask` | `images[i].has_soft_mask` | Transparency |
+| `has_hard_mask` | `images[i].has_hard_mask` | Hard clipping mask |
+| `interpolate` | `images[i].interpolate` | Bilinear upscaling enabled |
+| `intent` | `images[i].rendering_intent` | Per-image rendering intent override |
+| `inline` | `images[i].inline` | Inline image vs XObject |
+| `has_opi` | `images[i].has_opi` | OPI proxy; low-res placeholder |
+| `effective_resolution_dpi` | `images[i].effective_resolution_dpi` → `{x_dpi, y_dpi}` | **Pre-computed by Codex** using placement CTM. Replaces the old `ImagePlacedEvent.ctm` + manual DPI arithmetic. Required for all `LPDF_IMG_*` DPI checks. |
 
 **Consumed by:** `ImageAnalyzer` (`LPDF_IMG_*`), `IccProfileAnalyzer` (`LPDF_ICC_*`), `EpmTierCAnalyzer`, GPU image-quality analyzer, NSFW detector, logo detection.
 
@@ -175,18 +185,41 @@ One `PdfImage` object per image XObject or inline image on each page. Placement 
 
 ## 5. Color space data (`PdfColorSpace`)
 
-One `PdfColorSpace` per named color space on each page, plus inline color space objects embedded in image and content stream operators.
+One `PdfColorSpace` per named color space on each page. All fields are now sourced from the Codex JSON `color_spaces[]` array.
 
-| Field | PDF source | Notes |
+| Field | Codex JSON source | Notes |
 |---|---|---|
-| `cs_type` | Color space name or array type | `DeviceRGB`, `DeviceCMYK`, `DeviceGray`, `ICCBased`, `CalRGB`, `CalGray`, `Lab`, `Indexed`, `Separation`, `DeviceN`, `NChannel`, `Pattern` |
-| `components` | Derived from cs_type or profile | Number of color components |
-| `colorant_names` | First element of `Separation` or `DeviceN` array | Spot color names; central for ink inventory |
-| `icc_profile_ref` | Stream reference inside `ICCBased` array | Resolved to ICC profile bytes |
-| `alternate` | Alternate color space (for `Separation`, `DeviceN`, `ICCBased`) | Fallback for rendering |
-| `base_space` | Base space for `Indexed` | Underlying full color space |
+| `cs_type` | `color_spaces[i].family` | `DeviceRGB`, `DeviceCMYK`, `DeviceGray`, `ICCBased`, `CalRGB`, `CalGray`, `Lab`, `Indexed`, `Separation`, `DeviceN`, `NChannel`, `Pattern` |
+| `components` | `color_spaces[i].canonical.components` | Number of color components |
+| `colorant_names` | `color_spaces[i].spot_colorants[*].name` | Spot color names; central for ink inventory |
+| `icc_profile_ref` | `color_spaces[i].profile_id` | References ICC profile by Codex ID |
+| `alternate` | `color_spaces[i].alternate` | Alternate color space (for `Separation`, `DeviceN`, `ICCBased`) |
+| `base_space` | `color_spaces[i].base_space` | Base space for `Indexed` |
 
-**Consumed by:** `ColorAnalyzer` (`LPDF_COLOR_*`), `SpotColorAnalyzer` (`LPDF_SPOT_*`), `IccProfileAnalyzer` (`LPDF_ICC_*`), `GamutAnalyzer`, `InkCoverageAnalyzer` (`LPDF_INK_*`), `DuplicateProcessSpotAnalyzer`, `SpotNameSimilarityAnalyzer`, `SoloSpotVerifyAnalyzer`, `AdvancedColorAnalyzer` (`LPDF_ADV_*`), `ColorInventoryAuditAnalyzer`, `EpmAnalyzer` / `EpmTierA/B/CAnalyzer`.
+### Spot colorant enrichment (`spot_colorants[]`)
+
+For `Separation` and `DeviceN` color spaces, Codex populates each colorant entry with resolved color authority data (Codex 1.5+):
+
+| Field | Notes |
+|---|---|
+| `name` | Colorant name (e.g. `PANTONE 485 C`) |
+| `lab` | CIE Lab `[L*, a*, b*]` — authoritative |
+| `cmyk` | CMYK `[C, M, Y, K]` tint values |
+| `rgb` | sRGB `[R, G, B]` display values |
+| `pantone_name` | Matched Pantone name, or `null` |
+| `neutral_density` | CIE-derived ND value `[0.05–2.50]`, or `null` (Codex 1.5 §2.1) |
+| `neutral_density_source` | `"measured"` / `"computed_from_lab"` / `"estimated"` / `null` (Codex 1.5 §2.1) |
+
+### ECG / CMYKOGV requirements (`LPDF_ECG_*`)
+
+`EcgAnalyzer` (18 check IDs `LPDF_ECG_001`–`018`) additionally requires:
+
+- `DeviceN` color spaces with Orange / Violet / Green colorant names in addition to CMYK — checked against FOGRA55 gamut boundary
+- 7-channel TAC sum across all CMYKOGV colorants
+- ECG ICC output intent profile (version ≥ 4, CMYKOGV color space type)
+- Per-colorant Lab values from `spot_colorants[]` for ΔE-2000 gamut boundary checks
+
+**Consumed by:** `ColorAnalyzer` (`LPDF_COLOR_*`), `SpotColorAnalyzer` (`LPDF_SPOT_*`), `IccProfileAnalyzer` (`LPDF_ICC_*`), `GamutAnalyzer`, `InkCoverageAnalyzer` (`LPDF_INK_*`), `DuplicateProcessSpotAnalyzer`, `SpotNameSimilarityAnalyzer`, `SoloSpotVerifyAnalyzer`, `AdvancedColorAnalyzer` (`LPDF_ADV_*`), `ColorInventoryAuditAnalyzer`, `EpmAnalyzer` / `EpmTierA/B/CAnalyzer`, **`EcgAnalyzer` (`LPDF_ECG_*`)** (new).
 
 ---
 
@@ -223,6 +256,15 @@ One `PdfAnnotation` per annotation on each page.
 ---
 
 ## 8. Content stream events
+
+> **Status: legacy schema — events are always `[]` in the current Codex-backed path.**
+> `semantic/interpreter.py` was removed when the engine migrated to codex-authoritative
+> ingestion. The `events` parameter is passed to analyzers and conformance validators
+> for API compatibility but is never populated. Analyzer logic that previously relied on
+> events (path painting, color changes, overprint state, text rendering) now reads
+> equivalent data from `SemanticDocument` fields derived from the Codex JSON payload.
+> This section is retained as a schema reference for the legacy analyzer protocol and
+> for OSS hosts that may re-introduce direct interpretation.
 
 The content stream interpreter walks each page's content stream and emits typed, frozen-dataclass events. CPU analyzers consume `ctx.events` directly; they never re-parse PDF operators.
 
