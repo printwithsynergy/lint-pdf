@@ -1,0 +1,19 @@
+docs/pdf-data-requirements.md
+  s_8664a88c9c4458::t_d49ca12b5701fe 479-912
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "1bba121d64897f7e4e14f4225f70f5f477f76f83",
+  "prompts": {},
+  "sessions": {
+    "s_8664a88c9c4458": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9fe66a82-fcf7-48ad-bbcc-f2ab4cafb917",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Quincy Adams <quincy@thinkneverland.com>"
+    }
+  }
+}
