@@ -321,9 +321,7 @@ def _auto_generate_reports(
         and tenant_obj.app_custom_domain_verified
     ):
         viewer_base = f"https://{tenant_obj.app_custom_domain}"
-    branding.viewer_url = build_viewer_handoff_url(
-        viewer_base.rstrip("/"), tokens["html"]
-    )
+    branding.viewer_url = build_viewer_handoff_url(viewer_base.rstrip("/"), tokens["html"])
 
     for fmt in ["html", "pdf"]:
         content = service._generate_format(

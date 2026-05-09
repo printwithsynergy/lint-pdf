@@ -127,9 +127,11 @@ def _canonical_result_from_codex(payload: dict[str, Any]) -> DielineResult | Non
 
     best = max(
         canonical_candidates,
-        key=lambda c: float(c.get("confidence", 0.0))
-        if isinstance(c.get("confidence"), (int, float))
-        else 0.0,
+        key=lambda c: (
+            float(c.get("confidence", 0.0))
+            if isinstance(c.get("confidence"), (int, float))
+            else 0.0
+        ),
     )
     best_name = str(best.get("name") or "").strip() or None
     confidence = best.get("confidence")
@@ -264,7 +266,12 @@ def _detect_by_geometry(page_signals: dict[str, Any]) -> tuple[int, float] | Non
     if not isinstance(media, list) or len(media) != 4:
         return None
     try:
-        mb_x0, mb_y0, mb_x1, mb_y1 = (float(media[0]), float(media[1]), float(media[2]), float(media[3]))
+        mb_x0, mb_y0, mb_x1, mb_y1 = (
+            float(media[0]),
+            float(media[1]),
+            float(media[2]),
+            float(media[3]),
+        )
     except Exception:
         return None
     mb_w = mb_x1 - mb_x0

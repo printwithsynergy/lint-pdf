@@ -28,7 +28,6 @@ Check IDs:
 from __future__ import annotations
 
 import logging
-import math
 from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer

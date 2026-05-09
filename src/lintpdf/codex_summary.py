@@ -37,7 +37,7 @@ def _normalize_color_component(value: float) -> float:
 
 
 def _to_u8(value: float) -> int:
-    return int(round(max(0.0, min(1.0, value)) * 255))
+    return round(max(0.0, min(1.0, value)) * 255)
 
 
 def _rgb_hex(values: list[Any]) -> str | None:
@@ -177,15 +177,15 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
             rgb = spot.get("rgb") if isinstance(spot.get("rgb"), list) else []
             cmyk = spot.get("cmyk") if isinstance(spot.get("cmyk"), list) else []
             lab = spot.get("lab") if isinstance(spot.get("lab"), list) else []
-            alt_id = (
-                str(spot.get("alternate_space_id") or cs.get("alternate_space_id") or "").strip()
-            )
+            alt_id = str(
+                spot.get("alternate_space_id") or cs.get("alternate_space_id") or ""
+            ).strip()
             alt_cs = color_space_by_id.get(alt_id) if alt_id else None
             rgb_hex = _rgb_hex(rgb)
             cmyk_hex = _cmyk_hex(cmyk)
-            if (cs.get("family") == "ICCBased" or (alt_cs and alt_cs.get("family") == "ICCBased")) and (
-                rgb_hex or cmyk_hex
-            ):
+            if (
+                cs.get("family") == "ICCBased" or (alt_cs and alt_cs.get("family") == "ICCBased")
+            ) and (rgb_hex or cmyk_hex):
                 swatch_hex = rgb_hex or cmyk_hex or swatch_hex
                 swatch_source = "icc_alternate"
                 swatch_note = f"ICCBased alternate via {alt_id or 'unknown'}"
@@ -321,7 +321,9 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "spot_colors": {
             "count": len(spot_by_name),
-            "colors": sorted(spot_by_name.values(), key=lambda item: str(item.get("name", "")).lower()),
+            "colors": sorted(
+                spot_by_name.values(), key=lambda item: str(item.get("name", "")).lower()
+            ),
         },
         "dieline": {
             "count": len(candidates),
@@ -345,9 +347,7 @@ def _lint_dieline_signals(payload: dict[str, Any]) -> dict[str, Any]:
                     names.append(name)
     page_1 = analysis.get("page_1") if isinstance(analysis.get("page_1"), dict) else {}
     prop_to_ocg = (
-        page_1.get("prop_to_ocg_name")
-        if isinstance(page_1.get("prop_to_ocg_name"), dict)
-        else {}
+        page_1.get("prop_to_ocg_name") if isinstance(page_1.get("prop_to_ocg_name"), dict) else {}
     )
     for raw in prop_to_ocg.values():
         name = str(raw).strip()
@@ -370,7 +370,11 @@ def _lint_dieline_signals(payload: dict[str, Any]) -> dict[str, Any]:
         "dieline_signals": {
             "name_token_matches": matches,
             "match_count": len(matches),
-            "derived_from": ["analysis.spot_names", "analysis.layer_names", "analysis.page_1.prop_to_ocg_name"],
+            "derived_from": [
+                "analysis.spot_names",
+                "analysis.layer_names",
+                "analysis.page_1.prop_to_ocg_name",
+            ],
         },
     }
 

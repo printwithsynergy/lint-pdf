@@ -95,12 +95,15 @@ class TestUnconfigured:
             "lintpdf.conformance.verapdf_runner.is_verapdf_configured",
             return_value=False,
         ):
-            assert run_verapdf_checks(
-                _FAKE_PDF,
-                conformance="pdfx4",
-                enabled_ua=True,
-                metadata_out=meta,
-            ) == []
+            assert (
+                run_verapdf_checks(
+                    _FAKE_PDF,
+                    conformance="pdfx4",
+                    enabled_ua=True,
+                    metadata_out=meta,
+                )
+                == []
+            )
         assert meta.get("configured") is False
         assert meta.get("skipped_reason") == "not_configured"
 

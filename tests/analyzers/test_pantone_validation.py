@@ -306,6 +306,4 @@ class TestEnrichedPantoneReference:
         )
         assert len(fg_entries) > 4000  # Should be ~4,646
         missing_bridge = [e.name for e in fg_entries if e.cmyk_bridge is None]
-        assert not missing_bridge, (
-            f"Formula Guide colors missing cmyk_bridge: {missing_bridge[:5]}"
-        )
+        assert not missing_bridge, f"Formula Guide colors missing cmyk_bridge: {missing_bridge[:5]}"

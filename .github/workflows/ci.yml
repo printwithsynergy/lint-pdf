@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -42,13 +42,12 @@ jobs:
         run: ruff format --check src/ tests/
 
       - name: pytest
-        # The 14 pre-existing-failure deselects from the Phase 4
-        # extraction were addressed in W6c-6b. test_worker.py was
-        # updated to match production Celery config values + the
-        # dispatcher session-management fix; test_check_names_shape.py
-        # gained an explicit exemption list for customer-facing check
-        # IDs whose Title-Case names use ``Has`` / ``Will``. CI now
-        # runs the full suite.
+        # CODEX_LOCAL_FALLBACK=1 tells HttpClient to use in-process
+        # codex_pdf.extract rather than a live codex HTTP server.
+        # Without this, any test that exercises the preflight pipeline
+        # raises CodexClientError (no CODEX_API_BASE + no fallback flag).
+        env:
+          CODEX_LOCAL_FALLBACK: "1"
         run: pytest --no-header
 
   tripwires:

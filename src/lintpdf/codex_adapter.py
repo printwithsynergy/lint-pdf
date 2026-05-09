@@ -62,7 +62,7 @@ def extract_viewer_payload_via_codex(pdf_bytes: bytes) -> CodexViewerPayload:
 
     return CodexViewerPayload(
         pdf_version=str(payload.get("pdf_version") or "unknown"),
-        page_count=int(len(pages)),
+        page_count=len(pages),
         is_encrypted=bool(payload.get("is_encrypted", False)),
         pages=pages,
         info_dict=(payload.get("info") or {}) if isinstance(payload.get("info"), dict) else {},
@@ -86,9 +86,7 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
     pages: list[SemanticPage] = []
     analysis_payload = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
     page_analysis = (
-        analysis_payload.get("page_1")
-        if isinstance(analysis_payload.get("page_1"), dict)
-        else {}
+        analysis_payload.get("page_1") if isinstance(analysis_payload.get("page_1"), dict) else {}
     )
     for page in pages_payload:
         boxes = page.get("boxes") if isinstance(page, dict) else {}
@@ -167,7 +165,9 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
         is_encrypted=bool(payload.get("is_encrypted", False)),
         info_dict=info_dict,
         catalog={"codex_analysis": analysis_payload},
-        output_intents=[oi for oi in output_intents if oi.get("/S") or oi.get("/DestOutputProfile")],
+        output_intents=[
+            oi for oi in output_intents if oi.get("/S") or oi.get("/DestOutputProfile")
+        ],
         metadata_stream=metadata_stream,
         trailer={},
         pages=pages,
@@ -346,9 +346,7 @@ def _group_images_by_page(
         page_num = _as_int(image.get("page_num"), 1)
         color_space_id = image.get("color_space_id")
         color_space = (
-            color_space_by_id.get(str(color_space_id))
-            if color_space_id is not None
-            else None
+            color_space_by_id.get(str(color_space_id)) if color_space_id is not None else None
         )
         compression = image.get("compression")
         filters = tuple([str(compression)]) if compression else ()

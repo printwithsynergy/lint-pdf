@@ -238,7 +238,7 @@ def get_page_media_box(pdf_bytes: bytes, page_num: int) -> tuple[float, float, f
 # ---------------------------------------------------------------------------
 
 
-from codex_pdf.render._common import OCGError  # noqa: E402, F401
+from codex_pdf.render._common import OCGError  # noqa: E402
 
 
 def _bytes_io(data: bytes) -> io.BytesIO:  # legacy helper retained for callers

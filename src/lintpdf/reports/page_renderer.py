@@ -20,10 +20,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 from lintpdf.codex_render import (
     get_page_count as _codex_get_page_count,
+)
+from lintpdf.codex_render import (
     get_page_media_box as _codex_get_page_media_box,
 )
 
 logger = logging.getLogger(__name__)
+
 
 def _check_poppler() -> bool:
     """Legacy availability gate — now always True.

@@ -26,7 +26,7 @@ from __future__ import annotations
 import io
 import logging
 import re
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from PIL import Image
 
@@ -209,9 +209,7 @@ def render_separation_channel(
 
     png = _codex_render_separation_channel(pdf_bytes, page_num, channel, dpi=dpi)
     if png is None:
-        raise RuntimeError(
-            f"Channel '{channel}' not found in codex output for page {page_num}"
-        )
+        raise RuntimeError(f"Channel '{channel}' not found in codex output for page {page_num}")
 
     if cache_ok and tenant_id and job_id and storage:
         key = channel_cache_key(tenant_id, job_id, page_num, dpi, channel)
@@ -373,7 +371,7 @@ def render_composite_via_separations(
     """Software-composite the page from per-channel separations (codex-backed).
 
     Mirrors the legacy subtractive-ink model exactly: every 1 % of
-    tint applied to a plate removes ``absorption_coef × 0.01`` from
+    tint applied to a plate removes ``absorption_coef * 0.01`` from
     the paper's reflected light per RGB channel.
     """
     import numpy as np
@@ -430,13 +428,9 @@ def render_composite_via_separations(
             for ch_name, arr in plates:
                 key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch_name)
                 try:
-                    storage.upload_raw(
-                        key, _pct_array_to_png_bytes(arr), content_type="image/png"
-                    )
+                    storage.upload_raw(key, _pct_array_to_png_bytes(arr), content_type="image/png")
                 except Exception:
-                    logger.warning(
-                        "render_composite_via_separations: failed to cache %s", ch_name
-                    )
+                    logger.warning("render_composite_via_separations: failed to cache %s", ch_name)
 
     if not plates:
         return None
