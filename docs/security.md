@@ -2,7 +2,7 @@
 title: "Security"
 description: "Vulnerability disclosure process, supported versions, the engine's security model (sandboxing, untrusted PDF handling, AGPL-aware reporting), and where to send a security report."
 group: "Project"
-order: 2
+order: 11
 ---
 
 # Security

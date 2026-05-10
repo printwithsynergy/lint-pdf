@@ -1,13 +1,13 @@
 ---
 title: "HTTP API"
-description: "Reference for the engine's HTTP surface — 88 routes across job submission, results, reports, viewer payloads, AI explain, decisions audit, profile catalogue, and batch jobs. The OpenAPI spec is the single source of truth."
+description: "Reference for the engine's HTTP surface — 91 routes across job submission, results, reports, viewer payloads, AI explain, decisions audit, profile catalogue, and batch jobs. The OpenAPI spec is the single source of truth."
 group: "Reference"
 order: 8
 ---
 
 # HTTP API
 
-The engine exposes a FastAPI application with 88 routes across 12
+The engine exposes a FastAPI application with 91 routes across 12
 modules under [`src/lintpdf/api/routes/`](../src/lintpdf/api/routes/).
 Every public route has a Pydantic response model and an explicit
 `responses=` mapping for non-200 statuses, so the OpenAPI spec at

@@ -2,7 +2,7 @@
 title: "Licensing"
 description: "AGPL-3.0+ terms for the LintPDF OSS engine, what self-hosting and modification mean in practice, and how to obtain a commercial license for proprietary or embedded use."
 group: "Project"
-order: 1
+order: 10
 ---
 
 # Licensing

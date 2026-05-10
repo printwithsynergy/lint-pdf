@@ -81,9 +81,9 @@ The Celery worker picks up the job and runs the orchestrator
    - `services.{database, renderer, gpu_client, cost_cap, metering,
      verapdf_client, llm_client, …}` — Protocol-typed handles for
      SaaS-coupled functionality.
-   - `capabilities.{page_images, ocr_text, …}` — shared work
-     providers (so two analyzers reading the same rendered page
-     image fulfil the request once, not twice).
+   - `capabilities.{page_images, text_regions, content_stream_events}`
+     — shared work providers (so two analyzers reading the same
+     rendered page image fulfil the request once, not twice).
 3. Dispatches in **tier order**:
    - `Tier.CPU` — runs in the orchestrator process.
    - `Tier.GPU` — needs `gpu_client` and usually `page_images`.

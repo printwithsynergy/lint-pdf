@@ -2,7 +2,7 @@
 title: "Preflight engine audit"
 description: "Engineering record tying the preflight capability map to known failure modes, the edits shipped in this cycle, and how to regress them."
 group: "Project"
-order: 11
+order: 12
 ---
 
 # LintPDF preflight engine audit (implementation notes)
