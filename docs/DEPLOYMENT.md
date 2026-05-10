@@ -57,6 +57,7 @@ OSS engine as a Python dep.
 | `LINTPDF_GPU_INFERENCE_URL` | optional | Point at the AI inference service if running with AI features. Without it, AI analyzers self-skip. |
 | `S3_*` / `LINTPDF_S3_*` | yes if using object storage | R2 / S3 credentials for PDF + report storage. |
 | `LINTPDF_CLAMAV_URL` | optional | If set, every upload is scanned. Best-effort fail-open by default (set `LINTPDF_CLAMAV_REQUIRED=1` to fail-closed). |
+| `LINTPDF_AUTH_MODE` | optional | `required` (default) — every tenant-scoped route requires a valid API key. `open` — bypass API key checks and inject a built-in OSS sentinel tenant. Use only when access is gated upstream (e.g. behind your own auth gateway) or on a demo box. |
 
 ## Boot a server (pip)
 

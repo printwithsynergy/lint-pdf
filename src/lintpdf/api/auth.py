@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import secrets
+import uuid
 from typing import TYPE_CHECKING, Any
 
 from fastapi import Depends, Header, HTTPException, Security, status
@@ -23,6 +24,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+
+# Sentinel tenant returned when ``LINTPDF_AUTH_MODE=open``. The id is
+# fixed so logs / decision audit trails attribute every open-mode call
+# to the same synthetic tenant rather than minting a fresh UUID per
+# request. Plan is intentionally non-billing — quota gates that read
+# ``plan`` route through the OSS-friendly path.
+_OSS_OPEN_TENANT = TenantContext(
+    id=uuid.UUID("00000000-0000-0000-0000-00000000050a"),
+    name="OSS open-mode",
+    is_active=True,
+    plan="oss",
+)
 
 
 def hash_api_key(api_key: str) -> str:
@@ -62,6 +75,10 @@ async def get_current_tenant(
     side-effect); OSS default returns ``None`` so OSS-only deploys
     must install their own auth service.
 
+    When ``LINTPDF_AUTH_MODE=open`` the API key check is bypassed and a
+    built-in OSS sentinel tenant is returned. Use only on deployments
+    where access is gated upstream.
+
     Args:
         authorization: Raw Authorization header value.
         db: Database session (injected by FastAPI).
@@ -72,6 +89,11 @@ async def get_current_tenant(
     Raises:
         HTTPException: 401 if key is missing/invalid, 403 if tenant inactive.
     """
+    from lintpdf.api.config import get_settings
+
+    if get_settings().auth_mode == "open":
+        return _OSS_OPEN_TENANT
+
     api_key = _extract_api_key(authorization)
     if api_key is None:
         raise HTTPException(
@@ -106,7 +128,16 @@ async def get_optional_tenant(
     Returns None instead of raising 401 when no key is provided or the key
     is invalid. Useful for endpoints that provide richer responses to
     authenticated callers but still work without auth.
+
+    When ``LINTPDF_AUTH_MODE=open`` the OSS sentinel tenant is returned
+    instead of None, so optional-auth endpoints behave as if the caller
+    were authenticated.
     """
+    from lintpdf.api.config import get_settings
+
+    if get_settings().auth_mode == "open":
+        return _OSS_OPEN_TENANT
+
     api_key = _extract_api_key(authorization)
     if api_key is None:
         return None
