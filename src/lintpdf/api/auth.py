@@ -29,12 +29,18 @@ _api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 # fixed so logs / decision audit trails attribute every open-mode call
 # to the same synthetic tenant rather than minting a fresh UUID per
 # request. Plan is intentionally non-billing — quota gates that read
-# ``plan`` route through the OSS-friendly path.
+# ``plan`` route through the OSS-friendly path. ``rate_limit_daily``
+# defaults to 0 on ``TenantContext`` (which the daily-rate middleware
+# treats as "no allowance"); we override to 1_000_000 so open-mode
+# deploys aren't blocked the moment they ship the first request. Hosts
+# that want a tighter cap can wrap ``get_current_tenant`` themselves.
 _OSS_OPEN_TENANT = TenantContext(
     id=uuid.UUID("00000000-0000-0000-0000-00000000050a"),
     name="OSS open-mode",
     is_active=True,
     plan="oss",
+    rate_limit_daily=1_000_000,
+    max_file_size_mb=1024,
 )
 
 
