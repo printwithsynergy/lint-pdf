@@ -142,6 +142,28 @@ async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                 "until this is resolved.",
             )
 
+        # OSS open-mode — seed the sentinel tenant row so the FK on
+        # jobs.tenant_id resolves the first time someone submits a job.
+        # No-op when auth_mode != "open". Idempotent.
+        if settings.auth_mode == "open":
+            try:
+                from lintpdf.api.auth import seed_oss_open_tenant
+                from lintpdf.api.database import get_db_session
+
+                _seed_db = get_db_session()
+                try:
+                    seed_oss_open_tenant(_seed_db)
+                finally:
+                    _seed_db.close()
+            except Exception:
+                import logging
+
+                logging.getLogger(__name__).exception(
+                    "seed_oss_open_tenant failed at startup — open-mode "
+                    "job submission will fail with FK violation until "
+                    "this is resolved.",
+                )
+
         # Phase 0.7 PR-B1 — register the 9 category-level toggle rows
         # that anchor the unified configuration cascade. Idempotent;
         # safe to call on every startup. Failures here don't block the
