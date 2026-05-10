@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
-from lintpdf.api.auth import generate_api_key, hash_api_key
+import pytest
+
+from lintpdf.api.auth import (
+    _OSS_OPEN_TENANT,
+    generate_api_key,
+    get_current_tenant,
+    get_optional_tenant,
+    hash_api_key,
+)
+from lintpdf.api.config import get_settings
 
 
 class TestApiKeyGeneration:
@@ -31,3 +40,39 @@ class TestApiKeyGeneration:
         h = hash_api_key("test")
         assert len(h) == 64  # SHA-256 hex digest
         assert all(c in "0123456789abcdef" for c in h)
+
+
+class TestAuthModeOpen:
+    """``LINTPDF_AUTH_MODE=open`` bypasses API key checks and returns
+    the OSS sentinel tenant. Used by self-hosters running the engine
+    behind their own auth gateway, demo deployments where access is
+    gated upstream, or local hacking."""
+
+    @staticmethod
+    @pytest.fixture(autouse=True)
+    def _reset_settings_cache() -> None:
+        get_settings.cache_clear()
+        yield
+        get_settings.cache_clear()
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_get_current_tenant_returns_sentinel_in_open_mode(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("LINTPDF_AUTH_MODE", "open")
+        get_settings.cache_clear()
+        tenant = await get_current_tenant(authorization=None, db=None)  # type: ignore[arg-type]
+        assert tenant is _OSS_OPEN_TENANT
+        assert tenant.is_active is True
+        assert tenant.plan == "oss"
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_get_optional_tenant_returns_sentinel_in_open_mode(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("LINTPDF_AUTH_MODE", "open")
+        get_settings.cache_clear()
+        tenant = await get_optional_tenant(authorization=None, db=None)  # type: ignore[arg-type]
+        assert tenant is _OSS_OPEN_TENANT

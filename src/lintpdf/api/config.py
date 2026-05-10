@@ -113,6 +113,22 @@ class Settings(BaseSettings):
     # Admin
     admin_api_key: str = ""
 
+    # Auth mode for the tenant-scoped API surface.
+    #
+    # ``required`` (default) — every tenant-scoped route requires a valid
+    # API key, dispatched through ``TenantContextService``.
+    # ``open`` — bypass API key checks and inject a built-in OSS sentinel
+    # tenant. Intended for self-hosters running the engine behind their
+    # own auth gateway, demo deployments where access is gated upstream
+    # (rate limiting + marketing-side AV), or local hacking.
+    #
+    # The hosted SaaS at lintpdf.com runs ``required``. The marketing
+    # demo at lintpdf.com/demo runs ``open`` against the public engine
+    # endpoint because the marketing app's /api/demo/upload route already
+    # rate-limits, magic-byte-validates, and ClamAV-scans every upload
+    # before it touches the engine.
+    auth_mode: str = "required"
+
     # Dev auth (impersonation endpoint)
     dev_auth_enabled: bool = False
 
