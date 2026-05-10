@@ -51,6 +51,60 @@ _OSS_OPEN_TENANT = TenantContext(
 )
 
 
+def seed_oss_open_tenant(db: Session) -> None:
+    """Insert the OSS open-mode sentinel into the ``tenants`` table.
+
+    The sentinel id is the foreign-key target for every job submitted
+    through an open-mode deploy, so without this row the first
+    ``POST /api/v1/jobs`` raises ``IntegrityError`` on the
+    ``jobs_tenant_id_fkey`` constraint. Idempotent — safe to call on
+    every startup.
+
+    Called from ``app._lifespan`` when ``settings.auth_mode == "open"``.
+    """
+    from sqlalchemy import text
+
+    try:
+        db.execute(
+            text(
+                """
+                INSERT INTO tenants (
+                    id, name, api_key_hash, plan,
+                    rate_limit_daily, max_file_size_mb,
+                    overage_enabled,
+                    brand_custom_domain_verified, app_custom_domain_verified,
+                    brand_hide_footer, report_email_enabled,
+                    report_summary_page, share_email_required,
+                    report_storage_used_bytes
+                )
+                VALUES (
+                    :id, :name, :api_key_hash, :plan,
+                    :rate_limit_daily, :max_file_size_mb,
+                    false, false, false, false, true, 'prepend', false, 0
+                )
+                ON CONFLICT (id) DO NOTHING
+                """
+            ),
+            {
+                "id": str(_OSS_OPEN_TENANT.id),
+                "name": _OSS_OPEN_TENANT.name,
+                # Placeholder — auth_mode=open never looks the row up by
+                # api_key_hash, but the column is NOT NULL UNIQUE in the
+                # SaaS schema. Use a fixed sentinel value that no real
+                # SHA-256 hash collides with.
+                "api_key_hash": "OSS_OPEN_MODE_NO_KEY",
+                "plan": _OSS_OPEN_TENANT.plan,
+                "rate_limit_daily": _OSS_OPEN_TENANT.rate_limit_daily,
+                "max_file_size_mb": _OSS_OPEN_TENANT.max_file_size_mb,
+            },
+        )
+        db.commit()
+        logger.info("Seeded OSS open-mode sentinel tenant")
+    except Exception:
+        db.rollback()
+        logger.exception("seed_oss_open_tenant failed")
+
+
 def hash_api_key(api_key: str) -> str:
     """Hash an API key for storage using SHA-256."""
     return hashlib.sha256(api_key.encode()).hexdigest()
