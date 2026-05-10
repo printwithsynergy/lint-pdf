@@ -1,3 +1,10 @@
+---
+title: "Preflight engine audit"
+description: "Engineering record tying the preflight capability map to known failure modes, the edits shipped in this cycle, and how to regress them."
+group: "Project"
+order: 12
+---
+
 # LintPDF preflight engine audit (implementation notes)
 
 This document ties the **preflight capability map** ([preflight-capability-map.md](preflight-capability-map.md)) to **known failure modes**, the **edits shipped in this cycle**, and how to **regress** them.

@@ -1,3 +1,10 @@
+---
+title: "Preflight capability map"
+description: "What the lint-pdf engine detects today across print production, packaging, accessibility/PDF-UA, and AI regulatory checks — mapped to the built-in profiles that enable each surface."
+group: "Reference"
+order: 10
+---
+
 # LintPDF preflight capability map (engine)
 
 This document maps what the `lint-pdf/` engine can **detect** today to the major preflight “surfaces” (print production, packaging, accessibility/PDF-UA, and AI regulatory checks), and to the builtin profiles that enable them.

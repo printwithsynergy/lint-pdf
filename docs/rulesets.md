@@ -15,7 +15,7 @@ to every analyzer, and emits the resulting findings.
 
 ## Built-in catalogue
 
-The engine ships 63 built-in profiles under
+The engine ships 62 built-in profiles under
 [`src/lintpdf/profiles/builtin/`](../src/lintpdf/profiles/builtin/).
 They split into three families:
 

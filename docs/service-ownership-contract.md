@@ -1,3 +1,10 @@
+---
+title: "Service ownership contract"
+description: "Ownership boundaries across loupe-pdf (display and visual inspection UX), lint-pdf (reporting, policy/rules, preflight workflow orchestration), and codex-pdf (extraction and normalized document intelligence)."
+group: "Project"
+order: 13
+---
+
 # Service Ownership Contract
 
 This contract defines ownership boundaries across:
