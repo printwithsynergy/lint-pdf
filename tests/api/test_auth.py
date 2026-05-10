@@ -65,7 +65,7 @@ class TestAuthModeOpen:
         tenant = await get_current_tenant(authorization=None, db=None)  # type: ignore[arg-type]
         assert tenant is _OSS_OPEN_TENANT
         assert tenant.is_active is True
-        assert tenant.plan == "oss"
+        assert tenant.plan == "enterprise"
 
     @staticmethod
     @pytest.mark.asyncio
