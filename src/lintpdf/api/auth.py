@@ -38,7 +38,14 @@ _OSS_OPEN_TENANT = TenantContext(
     id=uuid.UUID("00000000-0000-0000-0000-00000000050a"),
     name="OSS open-mode",
     is_active=True,
-    plan="oss",
+    # Use the most permissive valid TenantPlan so entitlement / feature
+    # gates on the SaaS-only catalogue don't fire on OSS deploys. The
+    # plan field is opaque-string from the engine's perspective; the
+    # constraint comes from TenantPlan(...) in
+    # lintpdf.tenants.entitlements.resolve_entitlements which raises if
+    # the value isn't in the enum (FREE/VIEWER/STARTER/GROWTH/SCALE/
+    # ENTERPRISE).
+    plan="enterprise",
     rate_limit_daily=1_000_000,
     max_file_size_mb=1024,
 )
