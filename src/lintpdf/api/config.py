@@ -167,6 +167,20 @@ class Settings(BaseSettings):
     reports_inline_enabled: bool = True
     reports_idempotency_enabled: bool = True
 
+    # Codex unified-extraction feature flags.
+    #
+    # When the matching flag is on AND the CodexClient reports
+    # is_enabled() == True, the orchestrator routes the work through
+    # codex (text-region detection, veraPDF conformance, per-stage
+    # telemetry capture) instead of the local pass / runner. Default
+    # off so customer-facing output stays byte-identical until codex's
+    # endpoint contract is verified in staging. Each flag is
+    # independent — text-regions, conformance, and stage telemetry can
+    # roll out one at a time.
+    codex_text_regions_enabled: bool = False
+    codex_conformance_enabled: bool = False
+    codex_stage_telemetry_enabled: bool = False
+
     @property
     def max_upload_size_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024

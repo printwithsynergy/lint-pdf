@@ -56,6 +56,14 @@ class PreflightResult:
     summary: PreflightSummary
     metadata: dict[str, Any]
     duration_ms: int
+    # Per-stage timing in milliseconds. Keys are the canonical stage
+    # names (extract, analyzers, conformance, text_regions, ai_analyzers,
+    # filter, color_score, bbox_enrich). The nested ``codex`` subtree
+    # carries codex's own per-stage spans when
+    # ``LINTPDF_CODEX_STAGE_TELEMETRY_ENABLED`` is on and codex emits
+    # the ``X-Codex-Stage-Durations-Ms`` header. Empty dict on jobs
+    # that ran through the no-telemetry path.
+    stage_durations_ms: dict[str, Any] | None = None
 
 
 def _mm_to_pts(mm: float) -> float:
@@ -353,13 +361,28 @@ class PreflightOrchestrator:
         """Execute full preflight pipeline on raw PDF bytes."""
         start = time.monotonic()
         job_id = str(uuid.uuid4())
+        stage_durations_ms: dict[str, Any] = {}
+
+        def _stage(name: str, started_at: float) -> None:
+            """Record one stage's wall time (ms) and emit the matching
+            Prometheus observation. Cheap enough to call inline."""
+            elapsed_ms = int((time.monotonic() - started_at) * 1000)
+            stage_durations_ms[name] = elapsed_ms
+            try:
+                from lintpdf.api.metrics import JOB_STAGE_DURATION
+
+                JOB_STAGE_DURATION.labels(stage=name).observe(elapsed_ms / 1000.0)
+            except Exception:  # pragma: no cover — metrics best-effort
+                pass
 
         # Store pdf_bytes for AI analyzers
         if self._pdf_bytes is None:
             self._pdf_bytes = pdf_bytes
 
         # Step 1-3: Parse, build model, interpret
+        _extract_started = time.monotonic()
         document, events = self._parse_and_interpret(pdf_bytes)
+        _stage("extract", _extract_started)
 
         # Raw PDF bytes for analyzers that rasterise crops (2D barcode
         # zxing verification, etc.). Not a dataclass field — set dynamically.
@@ -370,11 +393,14 @@ class PreflightOrchestrator:
         document.dieline_result = None
 
         # Step 4: Run analyzers
+        _analyzers_started = time.monotonic()
         raw_findings: list[Finding] = []
         for analyzer in self._create_analyzers():
             raw_findings.extend(analyzer.analyze(document, events))
+        _stage("analyzers", _analyzers_started)
 
         # Step 5: Run conformance validator
+        _conformance_started = time.monotonic()
         if self._plan.conformance == "pdfx4":
             from lintpdf.conformance.pdfx4 import PdfX4Validator
 
@@ -400,18 +426,27 @@ class PreflightOrchestrator:
         # Step 5b: veraPDF-backed PDF/X / PDF/A / PDF/UA conformance
         # (T1-CMP01, T4-A01, T4-A02). Silent no-op when the sidecar
         # isn't configured or isn't reachable.
-        from lintpdf.conformance.verapdf_runner import run_verapdf_checks
+        #
+        # Codex dispatch: when LINTPDF_CODEX_CONFORMANCE_ENABLED is on
+        # and the CodexClient reports is_enabled(), the verdicts come
+        # from codex's on-demand
+        # ``POST /documents/{id}/conformance/{profile}`` endpoint
+        # instead. Falls back to local veraPDF on any codex error.
+        from lintpdf.api.config import get_settings
+        from lintpdf.codex_client import dispatch_verapdf_checks, get_codex_client
 
         ua_enabled = any(
             p.startswith("LPDF_UA_") or p == "LPDF_UA_*" for p in self._plan.checks.enabled
         ) and not any(p == "LPDF_UA_*" or p == "LPDF_UA_CONF" for p in self._plan.checks.disabled)
         verapdf_trace: dict[str, Any] = {}
         raw_findings.extend(
-            run_verapdf_checks(
+            dispatch_verapdf_checks(
                 pdf_bytes,
                 conformance=self._plan.conformance,
                 enabled_ua=ua_enabled,
                 metadata_out=verapdf_trace,
+                codex_client=get_codex_client(),
+                use_codex=get_settings().codex_conformance_enabled,
             )
         )
 
@@ -420,6 +455,7 @@ class PreflightOrchestrator:
         from lintpdf.conformance.pdfvt import check_pdfvt_structure
 
         raw_findings.extend(check_pdfvt_structure(document))
+        _stage("conformance", _conformance_started)
 
         # Step 5d: Shared OCR text-region pass. Runs only on pages where the
         # trigger heuristic fires (placed-image area > 25% OR path-heavy /
@@ -427,25 +463,51 @@ class PreflightOrchestrator:
         # ``page.detected_text_regions`` instead of issuing their own GPU OCR
         # calls. Failure is best-effort: pages where the GPU call fails or
         # rendering breaks are left as ``None`` and consumers skip them.
+        #
+        # Codex dispatch: when LINTPDF_CODEX_TEXT_REGIONS_ENABLED is on and
+        # the CodexClient reports is_enabled(), the orchestrator pulls
+        # regions from codex's cached extraction surface instead. Falls
+        # back to the local pass on any codex error so consumers never
+        # see drift.
+        _text_regions_started = time.monotonic()
+        codex_client_for_telemetry = None
         try:
-            from lintpdf.ai import text_region_pass
+            from lintpdf.api.config import get_settings
+            from lintpdf.codex_client import (
+                dispatch_text_region_pass,
+                get_codex_client,
+            )
 
-            text_region_pass.run(document, events, pdf_bytes, ai_config=self._ai_config)
+            codex_client_for_telemetry = get_codex_client()
+            dispatch_text_region_pass(
+                document,
+                events,
+                pdf_bytes,
+                codex_client=codex_client_for_telemetry,
+                ai_config=self._ai_config,
+                use_codex=get_settings().codex_text_regions_enabled,
+            )
         except Exception:  # pragma: no cover — best-effort, never fail the job
             import logging as _logging
 
             _logging.getLogger(__name__).warning(
                 "text_region_pass failed; consumer analyzers will skip", exc_info=True
             )
+        _stage("text_regions", _text_regions_started)
 
         # Step 6: Run AI analyzers (if AI enabled in profile)
+        _ai_started = time.monotonic()
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
         raw_findings.extend(ai_findings)
+        _stage("ai_analyzers", _ai_started)
 
         # Step 7-8: Filter and override
+        _filter_started = time.monotonic()
         findings = self._apply_overrides_and_filter(raw_findings)
+        _stage("filter", _filter_started)
 
         # Step 9: Compute Color Quality Score
+        _color_started = time.monotonic()
         color_score_data: dict[str, Any] | None = None
         try:
             from lintpdf.color_score import compute_color_quality_score
@@ -459,13 +521,33 @@ class PreflightOrchestrator:
             }
         except Exception:
             pass
+        _stage("color_score", _color_started)
 
         # Step 9b: Enrich findings with bounding boxes from events
+        _bbox_started = time.monotonic()
         findings = self._enrich_bboxes(findings, events)
+        _stage("bbox_enrich", _bbox_started)
 
         # Step 10: Build result
         duration_ms = int((time.monotonic() - start) * 1000)
         summary = self._build_summary(findings, document.page_count, len(pdf_bytes))
+
+        # Merge codex's own per-stage durations under a nested "codex"
+        # key when the stage-telemetry flag is on. Keeps lint-side
+        # stages flat at the top level and isolates codex's slice so
+        # operators can attribute time without name collisions.
+        try:
+            from lintpdf.api.config import get_settings as _get_settings
+
+            if (
+                _get_settings().codex_stage_telemetry_enabled
+                and codex_client_for_telemetry is not None
+            ):
+                codex_durations = codex_client_for_telemetry.last_stage_durations_ms()
+                if codex_durations:
+                    stage_durations_ms["codex"] = codex_durations
+        except Exception:  # pragma: no cover — telemetry best-effort
+            pass
 
         metadata: dict[str, Any] = {
             "pdf_version": document.version,
@@ -499,6 +581,7 @@ class PreflightOrchestrator:
             summary=summary,
             metadata=metadata,
             duration_ms=duration_ms,
+            stage_durations_ms=stage_durations_ms,
         )
 
     def run_on_document(

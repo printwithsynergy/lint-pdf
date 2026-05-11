@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.plugin.manifest import PluginManifest, Tier
 from lintpdf.plugin.services import (
     Services,
+    noop_codex_client,
     noop_cost_cap,
     noop_metering,
     noop_storage,
@@ -68,6 +69,7 @@ class _SaasServices:
     database: Any
     tenants: Any
     storage: Any
+    codex_client: Any
 
 
 def default_services_for_saas() -> Services:
@@ -93,6 +95,7 @@ def default_services_for_saas() -> Services:
     database = _wrap_database()
     tenants = _wrap_tenants()
     storage = _wrap_storage()
+    codex_client = _wrap_codex_client()
 
     return _SaasServices(  # type: ignore[return-value]
         metering=metering,
@@ -104,6 +107,7 @@ def default_services_for_saas() -> Services:
         database=database,
         tenants=tenants,
         storage=storage,
+        codex_client=codex_client,
     )
 
 
@@ -272,6 +276,25 @@ def _wrap_database() -> Any:
             return _db.SessionLocal()
 
     return _DatabaseWrap()
+
+
+def _wrap_codex_client() -> Any:
+    """Return the active CodexClient for this host.
+
+    Delegates to :func:`lintpdf.codex_client.get_codex_client`, which
+    returns the HTTP-backed client when ``codex_pdf.client`` is
+    importable and the no-op stub otherwise. The orchestrator still
+    needs the ``LINTPDF_CODEX_*`` feature flags to be on (commit 4)
+    AND ``is_enabled()`` to return True before any call hits the
+    wire, so this wiring alone is byte-identical to the prior
+    behaviour.
+    """
+    try:
+        from lintpdf.codex_client import get_codex_client
+    except ImportError:
+        logger.info("lintpdf.codex_client unavailable; using no-op")
+        return noop_codex_client()
+    return get_codex_client()
 
 
 def _wrap_storage() -> Any:

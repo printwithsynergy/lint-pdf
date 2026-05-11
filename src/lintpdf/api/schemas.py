@@ -219,6 +219,19 @@ class JobResponse(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     duration_ms: int | None = None
+    stage_durations_ms: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Per-stage orchestrator timing in milliseconds. Keys include "
+            "`extract`, `analyzers`, `conformance`, `text_regions`, "
+            "`ai_analyzers`, `filter`, `color_score`, `bbox_enrich`. The "
+            "nested `codex` subtree carries codex's own per-stage spans "
+            "(`extract`, `render`, `text_regions`, `conformance`) when "
+            "`LINTPDF_CODEX_STAGE_TELEMETRY_ENABLED` is on and codex emits "
+            "the `X-Codex-Stage-Durations-Ms` header. `null` for jobs that "
+            "ran before this surface was deployed."
+        ),
+    )
     summary: JobSummaryResponse | None = None
     findings: list[FindingResponse] | None = None
     error_message: str | None = None

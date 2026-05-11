@@ -1,0 +1,191 @@
+{
+  "findings": [
+    {
+      "category": "",
+      "inspection_id": "LPDF_ACCESS_001",
+      "iso_clause": "ISO 14289-1:2014 7.1",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_ACCESS_002",
+      "iso_clause": "ISO 14289-1:2014 7.2",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_ACCESS_004",
+      "iso_clause": "ISO 14289-1:2014 7.2",
+      "page_num": 0,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_ACCESS_012",
+      "iso_clause": "",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_ADV_004",
+      "iso_clause": "",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_BOX_001",
+      "iso_clause": "ISO 15930-7:2010 6.2.1",
+      "page_num": 1,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_BOX_001",
+      "iso_clause": "ISO 15930-7:2010 6.2.1",
+      "page_num": 1,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_BOX_004",
+      "iso_clause": "",
+      "page_num": 1,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_COLOR_006",
+      "iso_clause": "ISO 15930-7:2010 6.2.3",
+      "page_num": 0,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_DOC_003",
+      "iso_clause": "ISO 32000-2:2020 14.3.3",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "metadata",
+      "inspection_id": "LPDF_DOC_METADATA_INCOMPLETE",
+      "iso_clause": "",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_FONT_001",
+      "iso_clause": "ISO 15930-7:2010 6.2.11.2",
+      "page_num": 1,
+      "severity": "error",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_FONT_003",
+      "iso_clause": "ISO 32000-2:2020 9.6.2.2",
+      "page_num": 1,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_FONT_005",
+      "iso_clause": "ISO 32000-2:2020 9.10.2",
+      "page_num": 1,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_FONT_007",
+      "iso_clause": "ISO 32000-2:2020 9.6.1",
+      "page_num": 1,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_INK_003",
+      "iso_clause": "",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_META_001",
+      "iso_clause": "ISO 15930-7:2010 6.2.2",
+      "page_num": 0,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_STD_001",
+      "iso_clause": "",
+      "page_num": 0,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_STD_002",
+      "iso_clause": "",
+      "page_num": 0,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_STD_003",
+      "iso_clause": "ISO 12647-2",
+      "page_num": 0,
+      "severity": "warning",
+      "source": "engine"
+    },
+    {
+      "category": "",
+      "inspection_id": "LPDF_VIEWER_DISPLAY_TITLE",
+      "iso_clause": "ISO 32000-2 \u00a712.2 / WCAG 2.1 SC 2.4.2",
+      "page_num": 0,
+      "severity": "advisory",
+      "source": "engine"
+    }
+  ],
+  "metadata": {
+    "ai_enabled": false,
+    "ai_findings_count_type": "int",
+    "conformance": null,
+    "has_structural_evidence": true,
+    "is_encrypted": false,
+    "page_count": 1,
+    "pdf_version": "1.7",
+    "verapdf_keys": [],
+    "workflow": "CMYK"
+  },
+  "summary": {
+    "advisory_count": 12,
+    "error_count": 1,
+    "page_count": 1,
+    "passed": false,
+    "total_findings": 21,
+    "warning_count": 8
+  }
+}
