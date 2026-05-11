@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.plugin.manifest import PluginManifest, Tier
 from lintpdf.plugin.services import (
     Services,
+    noop_codex_client,
     noop_cost_cap,
     noop_metering,
     noop_storage,
@@ -68,6 +69,7 @@ class _SaasServices:
     database: Any
     tenants: Any
     storage: Any
+    codex_client: Any
 
 
 def default_services_for_saas() -> Services:
@@ -93,6 +95,7 @@ def default_services_for_saas() -> Services:
     database = _wrap_database()
     tenants = _wrap_tenants()
     storage = _wrap_storage()
+    codex_client = _wrap_codex_client()
 
     return _SaasServices(  # type: ignore[return-value]
         metering=metering,
@@ -104,6 +107,7 @@ def default_services_for_saas() -> Services:
         database=database,
         tenants=tenants,
         storage=storage,
+        codex_client=codex_client,
     )
 
 
@@ -272,6 +276,19 @@ def _wrap_database() -> Any:
             return _db.SessionLocal()
 
     return _DatabaseWrap()
+
+
+def _wrap_codex_client() -> Any:
+    """Return the active CodexClient for this host.
+
+    Phase 2 (this commit) wires the no-op default — every call site
+    sees ``is_enabled() == False`` and routes to the local
+    text-region pass + the local veraPDF runner, so customer-facing
+    output is unchanged. The follow-up commit replaces this with
+    ``_CodexHttpClient`` once the codex contract endpoints ship and
+    the ``LINTPDF_CODEX_*`` feature flags are flipped on.
+    """
+    return noop_codex_client()
 
 
 def _wrap_storage() -> Any:

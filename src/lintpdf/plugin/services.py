@@ -17,7 +17,11 @@ path is deleted; Phase 1 keeps both paths working.
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from lintpdf.semantic.model import DetectedTextRegion
 
 
 class MeteringService(Protocol):
@@ -207,6 +211,86 @@ class TenantsService(Protocol):
         ...
 
 
+@dataclass(frozen=True)
+class ClauseFailure:
+    """One failed conformance clause as reported by codex (or veraPDF
+    wrapped behind it). Mirrors the handoff Phase 0 contract."""
+
+    clause: str
+    test_number: str
+    description: str
+    failed_check_count: int
+
+
+@dataclass(frozen=True)
+class ConformanceVerdict:
+    """Per-profile conformance result returned by codex's
+    ``POST /documents/{id}/conformance/{profile}``.
+
+    ``passed=True`` with empty ``clauses`` means the document is
+    conformant. ``passed=False`` carries the capped list of failed
+    clauses for the report.
+    """
+
+    passed: bool
+    clauses: list[ClauseFailure] = field(default_factory=list)
+
+
+class CodexClient(Protocol):
+    """Handle for the unified codex extraction surface.
+
+    Codex owns text-region detection, veraPDF conformance parsing,
+    render dedup, and per-stage telemetry post-Phase 1 of the
+    unified-extraction refactor. lint-pdf reads these signals via
+    this Protocol instead of running them locally.
+
+    Implementations:
+    * ``_NoOpCodexClient`` — default for OSS hosts and the flag-off
+      path on hosted SaaS; ``is_enabled()`` returns ``False`` so the
+      orchestrator falls back to the local pass.
+    * ``_CodexHttpClient`` (added in a follow-up commit) — wraps
+      ``codex_pdf.client.HttpClient`` and reads the new endpoints
+      once codex publishes them.
+    """
+
+    def is_enabled(self) -> bool:
+        """Return ``True`` when this client is configured to route the
+        codex-owned endpoints. ``False`` makes the orchestrator skip
+        the codex path entirely (no exception, no log spam)."""
+        ...
+
+    def get_text_regions(
+        self,
+        *,
+        pdf_hash: str,
+        page_index: int,
+        dpi: int,
+    ) -> list[DetectedTextRegion]:
+        """Return cached OCR text regions for one page, scaled to PDF
+        points. Cache key matches codex's
+        ``(pdf_hash, page_index, dpi)``."""
+        ...
+
+    def get_conformance_verdict(
+        self,
+        *,
+        document_id: str,
+        profile: str,
+    ) -> ConformanceVerdict:
+        """Trigger / fetch the codex conformance check for one profile
+        (``pdfx4``, ``pdfa1b``, ``pdfua1`` etc.). Cache key matches
+        codex's ``(pdf_hash, profile)``."""
+        ...
+
+    def last_stage_durations_ms(self) -> dict[str, int]:
+        """Return the per-stage durations codex reported on the most
+        recent call (parsed from ``X-Codex-Stage-Durations-Ms`` or the
+        response envelope). Empty dict when nothing was reported.
+        Cleared at the start of each new request so callers can
+        accumulate independently."""
+        ...
+
+
 class Services(Protocol):
     """Aggregate service surface exposed to plugins via ``ctx.services``.
 
@@ -225,6 +309,7 @@ class Services(Protocol):
     database: DatabaseService
     tenants: TenantsService
     storage: StorageService
+    codex_client: CodexClient
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +356,45 @@ class _NoOpStorage:
         return None
 
 
+class _NoOpCodexClient:
+    """Default CodexClient that always reports unconfigured.
+
+    OSS hosts and the flag-off path on hosted SaaS get this stub. It
+    returns ``is_enabled() == False`` so the orchestrator's dispatch
+    helper short-circuits to the local pass without touching the
+    other methods. The other methods raise to surface accidental
+    callers that forget to gate on ``is_enabled()``.
+    """
+
+    def is_enabled(self) -> bool:
+        return False
+
+    def get_text_regions(
+        self,
+        *,
+        pdf_hash: str,
+        page_index: int,
+        dpi: int,
+    ) -> list[Any]:
+        raise RuntimeError(
+            "_NoOpCodexClient.get_text_regions called without is_enabled() guard — fix the caller."
+        )
+
+    def get_conformance_verdict(
+        self,
+        *,
+        document_id: str,
+        profile: str,
+    ) -> ConformanceVerdict:
+        raise RuntimeError(
+            "_NoOpCodexClient.get_conformance_verdict called without "
+            "is_enabled() guard — fix the caller."
+        )
+
+    def last_stage_durations_ms(self) -> dict[str, int]:
+        return {}
+
+
 def noop_metering() -> MeteringService:
     """Return a metering stub that records nothing. Safe for OSS hosts."""
 
@@ -300,3 +424,14 @@ def noop_storage() -> StorageService:
     Analyzers that need storage self-skip."""
 
     return _NoOpStorage()
+
+
+def noop_codex_client() -> CodexClient:
+    """Return a CodexClient stub that reports unconfigured.
+
+    Safe default for OSS hosts and for hosted SaaS when the
+    ``LINTPDF_CODEX_*`` feature flags are off. ``is_enabled()``
+    returns ``False`` so the orchestrator routes to the local
+    text-region pass and the local veraPDF runner."""
+
+    return _NoOpCodexClient()
