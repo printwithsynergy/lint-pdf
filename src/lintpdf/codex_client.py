@@ -300,6 +300,91 @@ def _to_clause_failure(raw: dict[str, Any]) -> ClauseFailure:
     )
 
 
+def compute_pdf_hash(pdf_bytes: bytes) -> str:
+    """SHA-256 of the raw PDF bytes — the cache key codex uses across
+    its unified-extraction endpoints. Computed once per preflight."""
+    import hashlib
+
+    return hashlib.sha256(pdf_bytes).hexdigest()
+
+
+def populate_text_regions_via_codex(
+    document: Any,
+    events: list[Any],
+    pdf_bytes: bytes,
+    *,
+    codex_client: CodexClient,
+    dpi: int = 200,
+) -> None:
+    """Populate ``page.detected_text_regions`` from codex.
+
+    Iterates pages that pass the local trigger heuristic (image-heavy
+    or path-heavy / text-light, identical to ``text_region_pass``)
+    and asks codex for each page's regions. Codex caches by
+    ``(pdf_hash, page_index, dpi)`` so repeated calls are cheap.
+
+    Raises ``CodexUnavailableError`` on the first endpoint failure so
+    the caller's fallback path can run the local pass instead.
+    Callers MUST gate on ``codex_client.is_enabled()`` before
+    calling this.
+    """
+    from lintpdf.ai.text_region_pass import should_run_for_page
+
+    pdf_hash = compute_pdf_hash(pdf_bytes)
+    for page in document.pages:
+        if not should_run_for_page(page, events):
+            continue
+        regions = codex_client.get_text_regions(
+            pdf_hash=pdf_hash,
+            page_index=page.page_num,
+            dpi=dpi,
+        )
+        page.detected_text_regions = regions
+
+
+def dispatch_text_region_pass(
+    document: Any,
+    events: list[Any],
+    pdf_bytes: bytes,
+    *,
+    codex_client: CodexClient,
+    ai_config: Any,
+    use_codex: bool,
+    dpi: int = 200,
+) -> None:
+    """Run the orchestrator's text-region step through codex when
+    ``use_codex`` is True AND codex is enabled, else through the
+    local pass.
+
+    Falls back to the local pass on ``CodexUnavailableError`` so a
+    misconfigured codex endpoint never produces a regression in the
+    consumer analyzers that read ``page.detected_text_regions``.
+
+    ``use_codex`` is the resolved feature-flag value — the caller is
+    expected to read ``Settings.codex_text_regions_enabled`` and pass
+    it here, keeping the orchestrator free of settings imports.
+    """
+    from lintpdf.ai import text_region_pass
+
+    if use_codex and codex_client.is_enabled():
+        try:
+            populate_text_regions_via_codex(
+                document,
+                events,
+                pdf_bytes,
+                codex_client=codex_client,
+                dpi=dpi,
+            )
+            return
+        except CodexUnavailableError as exc:
+            logger.warning(
+                "codex text regions unavailable (%s); falling back to local pass",
+                exc,
+            )
+
+    text_region_pass.run(document, events, pdf_bytes, ai_config=ai_config)
+
+
 def get_codex_client() -> CodexClient:
     """Return the active CodexClient for this process.
 

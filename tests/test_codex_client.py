@@ -18,12 +18,21 @@ import pytest
 from lintpdf.codex_client import (
     CodexUnavailableError,
     _CodexHttpClient,
+    compute_pdf_hash,
+    dispatch_text_region_pass,
     get_codex_client,
 )
 from lintpdf.plugin.services import (
     ClauseFailure,
     ConformanceVerdict,
     noop_codex_client,
+)
+from lintpdf.semantic.model import (
+    DetectedTextRegion,
+    PdfBox,
+    PdfImage,
+    SemanticDocument,
+    SemanticPage,
 )
 
 
@@ -229,6 +238,160 @@ class TestStageDurationCapture:
         with _patched_client(stub_without):
             client.get_text_regions(pdf_hash="x", page_index=0, dpi=200)
         assert client.last_stage_durations_ms() == {}
+
+
+def _trigger_qualifying_doc() -> SemanticDocument:
+    """Build a SemanticDocument whose single page passes the
+    image-heavy trigger heuristic in ``text_region_pass``. Required
+    for the codex dispatch helper to ask the client for regions.
+    """
+    img = PdfImage(
+        name="Im1",
+        width=600,
+        height=800,
+        bits_per_component=8,
+        color_space=None,
+        filters=("DCTDecode",),
+        page_num=1,
+    )
+    page = SemanticPage(
+        page_num=1,
+        media_box=PdfBox(0, 0, 612, 792),
+        images=[img],
+    )
+    return SemanticDocument(
+        version="1.7",
+        page_count=1,
+        is_encrypted=False,
+        pages=[page],
+    )
+
+
+class _FakeCodexClient:
+    """Stub CodexClient that records the dispatch helper's calls."""
+
+    def __init__(
+        self,
+        *,
+        enabled: bool,
+        regions: list[DetectedTextRegion] | None = None,
+        raise_unavailable: bool = False,
+    ) -> None:
+        self._enabled = enabled
+        self._regions = regions or []
+        self._raise = raise_unavailable
+        self.calls: list[tuple[str, int, int]] = []
+
+    def is_enabled(self) -> bool:
+        return self._enabled
+
+    def get_text_regions(
+        self,
+        *,
+        pdf_hash: str,
+        page_index: int,
+        dpi: int,
+    ) -> list[DetectedTextRegion]:
+        self.calls.append((pdf_hash, page_index, dpi))
+        if self._raise:
+            raise CodexUnavailableError("simulated outage")
+        return list(self._regions)
+
+    def get_conformance_verdict(self, **_: Any) -> ConformanceVerdict:
+        raise NotImplementedError
+
+    def last_stage_durations_ms(self) -> dict[str, int]:
+        return {}
+
+
+class TestDispatchTextRegionPass:
+    """The orchestrator's text-region dispatch must pick codex when the
+    flag is on AND the client is enabled, fall back to the local pass
+    on any unavailability, and be a no-op when the flag is off (default).
+    """
+
+    def test_flag_off_runs_local_pass(self) -> None:
+        document = _trigger_qualifying_doc()
+        fake = _FakeCodexClient(enabled=True)  # is_enabled True but flag off
+        with patch("lintpdf.ai.text_region_pass.run") as local:
+            dispatch_text_region_pass(
+                document,
+                [],
+                b"pdf",
+                codex_client=fake,
+                ai_config=None,
+                use_codex=False,
+            )
+        local.assert_called_once()
+        assert fake.calls == []
+
+    def test_flag_on_but_client_disabled_runs_local_pass(self) -> None:
+        document = _trigger_qualifying_doc()
+        fake = _FakeCodexClient(enabled=False)
+        with patch("lintpdf.ai.text_region_pass.run") as local:
+            dispatch_text_region_pass(
+                document,
+                [],
+                b"pdf",
+                codex_client=fake,
+                ai_config=None,
+                use_codex=True,
+            )
+        local.assert_called_once()
+        assert fake.calls == []
+
+    def test_flag_on_and_client_enabled_routes_to_codex(self) -> None:
+        document = _trigger_qualifying_doc()
+        regions = [
+            DetectedTextRegion(
+                bbox=PdfBox(10, 20, 100, 50),
+                text="Hello",
+                confidence=0.9,
+                polygon=None,
+                source="codex",
+            )
+        ]
+        fake = _FakeCodexClient(enabled=True, regions=regions)
+        # Force the trigger heuristic open — the heuristic itself is
+        # tested in text_region_pass tests; this test isolates the
+        # dispatch path.
+        with (
+            patch("lintpdf.ai.text_region_pass.run") as local,
+            patch("lintpdf.ai.text_region_pass.should_run_for_page", return_value=True),
+        ):
+            dispatch_text_region_pass(
+                document,
+                [],
+                b"pdf-bytes",
+                codex_client=fake,
+                ai_config=None,
+                use_codex=True,
+            )
+        local.assert_not_called()
+        assert len(fake.calls) == 1
+        pdf_hash, page_index, dpi = fake.calls[0]
+        assert pdf_hash == compute_pdf_hash(b"pdf-bytes")
+        assert page_index == 1
+        assert dpi == 200
+        # Mutated the page in place.
+        assert document.pages[0].detected_text_regions == regions
+
+    def test_codex_failure_falls_back_to_local_pass(self) -> None:
+        document = _trigger_qualifying_doc()
+        fake = _FakeCodexClient(enabled=True, raise_unavailable=True)
+        with (
+            patch("lintpdf.ai.text_region_pass.run") as local,
+            patch("lintpdf.ai.text_region_pass.should_run_for_page", return_value=True),
+        ):
+            dispatch_text_region_pass(
+                document,
+                [],
+                b"pdf",
+                codex_client=fake,
+                ai_config=None,
+                use_codex=True,
+            )
+        local.assert_called_once()
 
 
 class TestFactory:

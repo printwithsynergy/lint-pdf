@@ -427,10 +427,27 @@ class PreflightOrchestrator:
         # ``page.detected_text_regions`` instead of issuing their own GPU OCR
         # calls. Failure is best-effort: pages where the GPU call fails or
         # rendering breaks are left as ``None`` and consumers skip them.
+        #
+        # Codex dispatch: when LINTPDF_CODEX_TEXT_REGIONS_ENABLED is on and
+        # the CodexClient reports is_enabled(), the orchestrator pulls
+        # regions from codex's cached extraction surface instead. Falls
+        # back to the local pass on any codex error so consumers never
+        # see drift.
         try:
-            from lintpdf.ai import text_region_pass
+            from lintpdf.api.config import get_settings
+            from lintpdf.codex_client import (
+                dispatch_text_region_pass,
+                get_codex_client,
+            )
 
-            text_region_pass.run(document, events, pdf_bytes, ai_config=self._ai_config)
+            dispatch_text_region_pass(
+                document,
+                events,
+                pdf_bytes,
+                codex_client=get_codex_client(),
+                ai_config=self._ai_config,
+                use_codex=get_settings().codex_text_regions_enabled,
+            )
         except Exception:  # pragma: no cover — best-effort, never fail the job
             import logging as _logging
 
