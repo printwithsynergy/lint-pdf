@@ -265,6 +265,13 @@ class Job(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Per-stage timing captured by the orchestrator (extract, analyzers,
+    # conformance, text_regions, ai_analyzers, filter, color_score,
+    # bbox_enrich). Nested ``codex`` subtree carries codex's own per-stage
+    # spans when LINTPDF_CODEX_STAGE_TELEMETRY_ENABLED is on and codex
+    # emits the X-Codex-Stage-Durations-Ms header. NULL for jobs that
+    # ran before this column was deployed.
+    stage_durations_ms: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     color_quality_score: Mapped[Any | None] = mapped_column(Numeric(5, 1), nullable=True)
     jdf_overrides: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     # Universal per-call override envelope (see ``lintpdf.overrides``).

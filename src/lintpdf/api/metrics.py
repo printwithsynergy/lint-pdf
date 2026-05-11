@@ -88,6 +88,20 @@ JOB_TERMINAL = Counter(
     registry=REGISTRY,
 )
 
+# Per-stage histogram for the preflight orchestrator. The ``stage``
+# label takes the canonical stage names (extract, analyzers,
+# conformance, text_regions, ai_analyzers, filter, color_score,
+# bbox_enrich) plus a ``codex.<stage>`` family when codex emits its
+# own telemetry. Bucket layout mirrors the HTTP histogram so the
+# Grafana panel can stack stage durations beside request durations.
+JOB_STAGE_DURATION = Histogram(
+    "lintpdf_job_stage_duration_seconds",
+    "Preflight orchestrator per-stage duration (seconds).",
+    labelnames=("stage",),
+    buckets=_DEFAULT_BUCKETS,
+    registry=REGISTRY,
+)
+
 
 class PrometheusMiddleware:
     """ASGI middleware that records request count + duration.

@@ -305,6 +305,32 @@ class TestCodexParitySnapshots:
         _assert_or_update(request, "low_dpi_image", payload)
 
     @staticmethod
+    def test_stage_durations_populated(
+        parity_profile: PreflightProfile,
+    ) -> None:
+        """Each canonical orchestrator stage records a non-negative
+        duration. Locks the shape — drift here would mean a stage
+        timing was dropped during refactor.
+        """
+        result = _run_orchestrator(_empty_doc(), profile=parity_profile)
+        assert result.stage_durations_ms is not None
+        expected_stages = {
+            "extract",
+            "analyzers",
+            "conformance",
+            "text_regions",
+            "ai_analyzers",
+            "filter",
+            "color_score",
+            "bbox_enrich",
+        }
+        assert expected_stages.issubset(result.stage_durations_ms.keys())
+        for stage in expected_stages:
+            value = result.stage_durations_ms[stage]
+            assert isinstance(value, int)
+            assert value >= 0
+
+    @staticmethod
     def test_pdfx4_conformance_dispatch_parity(
         request: pytest.FixtureRequest,
     ) -> None:
