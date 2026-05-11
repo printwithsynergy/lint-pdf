@@ -400,18 +400,27 @@ class PreflightOrchestrator:
         # Step 5b: veraPDF-backed PDF/X / PDF/A / PDF/UA conformance
         # (T1-CMP01, T4-A01, T4-A02). Silent no-op when the sidecar
         # isn't configured or isn't reachable.
-        from lintpdf.conformance.verapdf_runner import run_verapdf_checks
+        #
+        # Codex dispatch: when LINTPDF_CODEX_CONFORMANCE_ENABLED is on
+        # and the CodexClient reports is_enabled(), the verdicts come
+        # from codex's on-demand
+        # ``POST /documents/{id}/conformance/{profile}`` endpoint
+        # instead. Falls back to local veraPDF on any codex error.
+        from lintpdf.api.config import get_settings
+        from lintpdf.codex_client import dispatch_verapdf_checks, get_codex_client
 
         ua_enabled = any(
             p.startswith("LPDF_UA_") or p == "LPDF_UA_*" for p in self._plan.checks.enabled
         ) and not any(p == "LPDF_UA_*" or p == "LPDF_UA_CONF" for p in self._plan.checks.disabled)
         verapdf_trace: dict[str, Any] = {}
         raw_findings.extend(
-            run_verapdf_checks(
+            dispatch_verapdf_checks(
                 pdf_bytes,
                 conformance=self._plan.conformance,
                 enabled_ua=ua_enabled,
                 metadata_out=verapdf_trace,
+                codex_client=get_codex_client(),
+                use_codex=get_settings().codex_conformance_enabled,
             )
         )
 

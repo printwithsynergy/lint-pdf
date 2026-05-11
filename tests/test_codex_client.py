@@ -20,6 +20,7 @@ from lintpdf.codex_client import (
     _CodexHttpClient,
     compute_pdf_hash,
     dispatch_text_region_pass,
+    dispatch_verapdf_checks,
     get_codex_client,
 )
 from lintpdf.plugin.services import (
@@ -392,6 +393,124 @@ class TestDispatchTextRegionPass:
                 use_codex=True,
             )
         local.assert_called_once()
+
+
+class _ConformanceFakeClient:
+    """Stub CodexClient that returns a canned conformance verdict."""
+
+    def __init__(
+        self,
+        *,
+        enabled: bool,
+        verdict: ConformanceVerdict | None = None,
+        raise_unavailable: bool = False,
+    ) -> None:
+        self._enabled = enabled
+        self._verdict = verdict or ConformanceVerdict(passed=True, clauses=[])
+        self._raise = raise_unavailable
+        self.calls: list[tuple[str, str]] = []
+
+    def is_enabled(self) -> bool:
+        return self._enabled
+
+    def get_text_regions(self, **_: Any) -> list[DetectedTextRegion]:
+        raise NotImplementedError
+
+    def get_conformance_verdict(self, *, document_id: str, profile: str) -> ConformanceVerdict:
+        self.calls.append((document_id, profile))
+        if self._raise:
+            raise CodexUnavailableError("simulated outage")
+        return self._verdict
+
+    def last_stage_durations_ms(self) -> dict[str, int]:
+        return {}
+
+
+class TestDispatchVerapdfChecks:
+    """The verapdf dispatch must produce the same Finding shape whether
+    the verdict comes from local veraPDF or codex."""
+
+    def test_flag_off_runs_local_verapdf(self) -> None:
+        fake = _ConformanceFakeClient(enabled=True)
+        with patch(
+            "lintpdf.conformance.verapdf_runner.run_verapdf_checks",
+            return_value=[],
+        ) as local:
+            findings = dispatch_verapdf_checks(
+                b"pdf",
+                conformance="pdfx4",
+                enabled_ua=False,
+                metadata_out=None,
+                codex_client=fake,
+                use_codex=False,
+            )
+        local.assert_called_once()
+        assert findings == []
+        assert fake.calls == []
+
+    def test_flag_on_passes_through_to_codex_and_emits_finding(self) -> None:
+        verdict = ConformanceVerdict(
+            passed=False,
+            clauses=[
+                ClauseFailure(
+                    clause="6.2.3.1",
+                    test_number="2",
+                    description="OutputIntent missing destination profile",
+                    failed_check_count=1,
+                )
+            ],
+        )
+        fake = _ConformanceFakeClient(enabled=True, verdict=verdict)
+        trace: dict[str, Any] = {}
+        with patch("lintpdf.conformance.verapdf_runner.run_verapdf_checks") as local:
+            findings = dispatch_verapdf_checks(
+                b"pdf-bytes",
+                conformance="pdfx4",
+                enabled_ua=False,
+                metadata_out=trace,
+                codex_client=fake,
+                use_codex=True,
+            )
+        local.assert_not_called()
+        assert len(findings) == 1
+        finding = findings[0]
+        assert finding.inspection_id == "LPDF_PDFX_CONF"
+        assert finding.details["validator"] == "codex"
+        assert finding.details["failure_count"] == 1
+        # Trace mirrors the shape verapdf_runner emits.
+        assert trace["via"] == "codex"
+        assert trace["flavours"][0]["codex_profile"] == "pdfx4"
+        assert fake.calls == [(compute_pdf_hash(b"pdf-bytes"), "pdfx4")]
+
+    def test_codex_failure_falls_back_to_local_verapdf(self) -> None:
+        fake = _ConformanceFakeClient(enabled=True, raise_unavailable=True)
+        with patch(
+            "lintpdf.conformance.verapdf_runner.run_verapdf_checks",
+            return_value=[],
+        ) as local:
+            findings = dispatch_verapdf_checks(
+                b"pdf",
+                conformance="pdfa1b",
+                enabled_ua=False,
+                metadata_out=None,
+                codex_client=fake,
+                use_codex=True,
+            )
+        local.assert_called_once()
+        assert findings == []
+
+    def test_ua_enabled_calls_pdfua1_profile(self) -> None:
+        fake = _ConformanceFakeClient(enabled=True)
+        with patch("lintpdf.conformance.verapdf_runner.run_verapdf_checks"):
+            dispatch_verapdf_checks(
+                b"pdf",
+                conformance=None,
+                enabled_ua=True,
+                metadata_out=None,
+                codex_client=fake,
+                use_codex=True,
+            )
+        assert fake.calls == [(compute_pdf_hash(b"pdf"), "pdfua1")]
 
 
 class TestFactory:

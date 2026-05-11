@@ -385,6 +385,202 @@ def dispatch_text_region_pass(
     text_region_pass.run(document, events, pdf_bytes, ai_config=ai_config)
 
 
+_CONFORMANCE_TO_CODEX_PROFILE: dict[str, str] = {
+    "pdfx1a": "pdfx1a",
+    "pdfx1a2003": "pdfx1a",
+    "pdfx3": "pdfx3",
+    "pdfx32003": "pdfx3",
+    "pdfx4": "pdfx4",
+    "pdfx4p": "pdfx4",
+    "pdfx5": "pdfx4",
+    "pdfx6": "pdfx4",
+    "pdfa1b": "pdfa1b",
+    "pdfa2b": "pdfa2b",
+    "pdfa3b": "pdfa3b",
+}
+
+
+def _codex_verdict_to_finding(
+    verdict: ConformanceVerdict,
+    *,
+    inspection_id: str,
+    severity: Any,
+    iso_clause: str,
+    conformance: str | None,
+    codex_profile: str,
+) -> Any:
+    """Convert a ``ConformanceVerdict`` back into a lint-pdf ``Finding``
+    with the same shape ``verapdf_runner`` emits today.
+
+    Keeps inspection ids stable (``LPDF_PDFX_CONF`` / ``LPDF_PDFA_CONF``
+    / ``LPDF_UA_CONF``) so the report/UI layer doesn't need to know
+    whether the verdict came from codex or local veraPDF.
+    """
+    from lintpdf.analyzers.finding import Finding
+
+    failures = [
+        {
+            "clause": clause.clause,
+            "test_number": clause.test_number,
+            "description": clause.description[:160],
+            "failed_checks": clause.failed_check_count,
+        }
+        for clause in verdict.clauses[:25]
+    ]
+    profile_label = (conformance or codex_profile).upper()
+    return Finding(
+        inspection_id=inspection_id,
+        severity=severity,
+        message=(f"PDF is not {profile_label} conformant (codex: {len(failures)} rule(s) failed)"),
+        details={
+            "conformance": conformance,
+            "codex_profile": codex_profile,
+            "failure_count": len(failures),
+            "failures": failures,
+            "validator": "codex",
+        },
+        iso_clause=iso_clause,
+    )
+
+
+def _verapdf_via_codex(
+    pdf_bytes: bytes,
+    *,
+    conformance: str | None,
+    enabled_ua: bool,
+    metadata_out: dict[str, Any] | None,
+    codex_client: CodexClient,
+) -> list[Any]:
+    """Call codex's per-profile conformance endpoint and convert each
+    failed verdict into the same ``Finding`` shape ``verapdf_runner``
+    produces.
+
+    Raises ``CodexUnavailableError`` on the first endpoint failure so
+    the caller's fallback path can run local veraPDF instead.
+    """
+    from lintpdf.analyzers.finding import Severity
+
+    trace: dict[str, Any] = {
+        "configured": True,
+        "empty_input": not bool(pdf_bytes),
+        "conformance": conformance,
+        "ua_requested": enabled_ua,
+        "via": "codex",
+        "flavours": [],
+    }
+    if trace["empty_input"]:
+        trace["skipped_reason"] = "empty_pdf_bytes"
+        if metadata_out is not None:
+            metadata_out.clear()
+            metadata_out.update(trace)
+        return []
+
+    pdf_hash = compute_pdf_hash(pdf_bytes)
+    findings: list[Any] = []
+
+    def _record(profile: str, status: str, failure_count: int) -> None:
+        trace["flavours"].append(
+            {
+                "codex_profile": profile,
+                "status": status,
+                "failure_count": failure_count,
+            }
+        )
+
+    if conformance and conformance.lower() in _CONFORMANCE_TO_CODEX_PROFILE:
+        codex_profile = _CONFORMANCE_TO_CODEX_PROFILE[conformance.lower()]
+        verdict = codex_client.get_conformance_verdict(
+            document_id=pdf_hash,
+            profile=codex_profile,
+        )
+        status = "pass" if verdict.passed else "fail"
+        _record(codex_profile, status, len(verdict.clauses))
+        if not verdict.passed:
+            inspection_id = (
+                "LPDF_PDFX_CONF" if codex_profile.startswith("pdfx") else "LPDF_PDFA_CONF"
+            )
+            iso_clause = (
+                "ISO 15930-* (PDF/X family)"
+                if codex_profile.startswith("pdfx")
+                else "ISO 19005-* (PDF/A family)"
+            )
+            findings.append(
+                _codex_verdict_to_finding(
+                    verdict,
+                    inspection_id=inspection_id,
+                    severity=Severity.ERROR,
+                    iso_clause=iso_clause,
+                    conformance=conformance,
+                    codex_profile=codex_profile,
+                )
+            )
+
+    if enabled_ua:
+        verdict = codex_client.get_conformance_verdict(document_id=pdf_hash, profile="pdfua1")
+        status = "pass" if verdict.passed else "fail"
+        _record("pdfua1", status, len(verdict.clauses))
+        if not verdict.passed:
+            findings.append(
+                _codex_verdict_to_finding(
+                    verdict,
+                    inspection_id="LPDF_UA_CONF",
+                    severity=Severity.WARNING,
+                    iso_clause="ISO 14289-1 (PDF/UA) / Matterhorn Protocol",
+                    conformance=None,
+                    codex_profile="pdfua1",
+                )
+            )
+
+    trace["skipped_reason"] = None
+    trace["finding_ids"] = [f.inspection_id for f in findings]
+    if metadata_out is not None:
+        metadata_out.clear()
+        metadata_out.update(trace)
+    return findings
+
+
+def dispatch_verapdf_checks(
+    pdf_bytes: bytes,
+    *,
+    conformance: str | None,
+    enabled_ua: bool,
+    metadata_out: dict[str, Any] | None,
+    codex_client: CodexClient,
+    use_codex: bool,
+) -> list[Any]:
+    """Run the orchestrator's veraPDF step through codex when
+    ``use_codex`` is True AND codex is enabled, else through the
+    local ``run_verapdf_checks``.
+
+    Falls back to local veraPDF on ``CodexUnavailableError`` so a
+    misconfigured codex endpoint never breaks the conformance
+    pipeline.
+    """
+    from lintpdf.conformance.verapdf_runner import run_verapdf_checks
+
+    if use_codex and codex_client.is_enabled():
+        try:
+            return _verapdf_via_codex(
+                pdf_bytes,
+                conformance=conformance,
+                enabled_ua=enabled_ua,
+                metadata_out=metadata_out,
+                codex_client=codex_client,
+            )
+        except CodexUnavailableError as exc:
+            logger.warning(
+                "codex conformance unavailable (%s); falling back to local veraPDF",
+                exc,
+            )
+
+    return run_verapdf_checks(
+        pdf_bytes,
+        conformance=conformance,
+        enabled_ua=enabled_ua,
+        metadata_out=metadata_out,
+    )
+
+
 def get_codex_client() -> CodexClient:
     """Return the active CodexClient for this process.
 
