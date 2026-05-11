@@ -241,16 +241,18 @@ class CodexClient(Protocol):
 
     Codex owns text-region detection, veraPDF conformance parsing,
     render dedup, and per-stage telemetry post-Phase 1 of the
-    unified-extraction refactor. lint-pdf reads these signals via
-    this Protocol instead of running them locally.
+    unified-extraction refactor. Every lint-pdf host (hosted or
+    self-hosted) reads these signals via this Protocol instead of
+    running them locally.
 
     Implementations:
-    * ``_NoOpCodexClient`` — default for OSS hosts and the flag-off
-      path on hosted SaaS; ``is_enabled()`` returns ``False`` so the
-      orchestrator falls back to the local pass.
-    * ``_CodexHttpClient`` (added in a follow-up commit) — wraps
-      ``codex_pdf.client.HttpClient`` and reads the new endpoints
-      once codex publishes them.
+    * ``_NoOpCodexClient`` — default when codex's SDK is not
+      importable or the endpoint contract is not yet available;
+      ``is_enabled()`` returns ``False`` so the orchestrator falls
+      back to the local pass.
+    * ``_CodexHttpClient`` (in ``lintpdf.codex_client``) — wraps
+      ``codex_pdf.client.HttpClient`` and reads the unified
+      endpoints once codex publishes them.
     """
 
     def is_enabled(self) -> bool:
@@ -359,11 +361,12 @@ class _NoOpStorage:
 class _NoOpCodexClient:
     """Default CodexClient that always reports unconfigured.
 
-    OSS hosts and the flag-off path on hosted SaaS get this stub. It
-    returns ``is_enabled() == False`` so the orchestrator's dispatch
-    helper short-circuits to the local pass without touching the
-    other methods. The other methods raise to surface accidental
-    callers that forget to gate on ``is_enabled()``.
+    Active whenever ``codex_pdf.client`` is not importable or the
+    unified-extraction endpoint contract isn't available. Returns
+    ``is_enabled() == False`` so the orchestrator's dispatch helper
+    short-circuits to the local pass without touching the other
+    methods. The other methods raise to surface accidental callers
+    that forget to gate on ``is_enabled()``.
     """
 
     def is_enabled(self) -> bool:
@@ -429,7 +432,7 @@ def noop_storage() -> StorageService:
 def noop_codex_client() -> CodexClient:
     """Return a CodexClient stub that reports unconfigured.
 
-    Safe default for OSS hosts and for hosted SaaS when the
+    Used whenever codex's SDK is unavailable or the
     ``LINTPDF_CODEX_*`` feature flags are off. ``is_enabled()``
     returns ``False`` so the orchestrator routes to the local
     text-region pass and the local veraPDF runner."""

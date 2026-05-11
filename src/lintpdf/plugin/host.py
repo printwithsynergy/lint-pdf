@@ -281,14 +281,20 @@ def _wrap_database() -> Any:
 def _wrap_codex_client() -> Any:
     """Return the active CodexClient for this host.
 
-    Phase 2 (this commit) wires the no-op default — every call site
-    sees ``is_enabled() == False`` and routes to the local
-    text-region pass + the local veraPDF runner, so customer-facing
-    output is unchanged. The follow-up commit replaces this with
-    ``_CodexHttpClient`` once the codex contract endpoints ship and
-    the ``LINTPDF_CODEX_*`` feature flags are flipped on.
+    Delegates to :func:`lintpdf.codex_client.get_codex_client`, which
+    returns the HTTP-backed client when ``codex_pdf.client`` is
+    importable and the no-op stub otherwise. The orchestrator still
+    needs the ``LINTPDF_CODEX_*`` feature flags to be on (commit 4)
+    AND ``is_enabled()`` to return True before any call hits the
+    wire, so this wiring alone is byte-identical to the prior
+    behaviour.
     """
-    return noop_codex_client()
+    try:
+        from lintpdf.codex_client import get_codex_client
+    except ImportError:
+        logger.info("lintpdf.codex_client unavailable; using no-op")
+        return noop_codex_client()
+    return get_codex_client()
 
 
 def _wrap_storage() -> Any:
