@@ -712,12 +712,33 @@ class PreflightOrchestrator:
                     except (TypeError, ValueError):
                         ai_config_dict = None
 
+            # Phase 3 (codex 1.11+): pull the latest codex document
+            # so AI analyzers can consume the codex AI signal fields
+            # (detected_language / detected_logos / detected_symbols /
+            # detected_barcodes / spell_candidates /
+            # document_classification) instead of running their own
+            # Claude calls. Codex caches the result so the second call
+            # is free, but we still wrap in try/except so a codex
+            # outage degrades gracefully.
+            codex_payload: dict[str, Any] | None = None
+            try:
+                from lintpdf.codex_adapter import extract_codex_document_via_codex
+
+                codex_payload = extract_codex_document_via_codex(pdf_bytes)
+            except Exception:
+                logger.exception("Phase 3: codex AI signal fetch failed")
+
             services = default_services_for_saas()
+            config: dict[str, Any] = {}
+            if ai_config_dict is not None:
+                config["ai_config"] = ai_config_dict
+            if codex_payload is not None:
+                config["codex_payload"] = codex_payload
             ctx = AnalyzerContext(
                 document=document,
                 events=events,
                 pdf_bytes=pdf_bytes,
-                config={"ai_config": ai_config_dict} if ai_config_dict is not None else {},
+                config=config,
                 services=services,
             )
 
