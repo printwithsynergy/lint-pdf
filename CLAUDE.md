@@ -68,15 +68,28 @@ with the script's hint after a clean migration commit. The hook in
 
 Keep ownership explicit across core repos:
 
-- `loupe-pdf` owns display + visual inspection UX.
+- `loupe-pdf` owns display + visual inspection UX. Built-in
+  `FindingsSidebar` + `DielineInfoPanel` components (0.3.0-beta.71 +)
+  + `splitFindingsByLocation` / `hasViewerLocation` helpers so
+  adapters map findings into the canvas consistently.
 - `lint-pdf` owns reporting, rules, and preflight workflow semantics.
-- `codex-pdf` owns extraction + normalized reusable intelligence payloads.
+- `codex-pdf` owns extraction + normalized reusable intelligence
+  payloads. Floor pin: `codex-pdf>=1.15.0` (AI Signal Phases 0–4 +
+  dieline.count root-cause fix).
 
 Rules for this repo:
 
 - Prefer consuming Codex signals/summaries instead of re-implementing extraction primitives.
 - Keep policy decisions and report semantics here.
 - Avoid viewer/UI behavior in engine logic.
+
+AI signal extraction: the `codex_signals_*` analyzers in
+`src/lintpdf/ai/analyzers/codex_signals/` (0.1.0b16 +) read codex's
+AI signal fields (language, logos, symbols, barcodes, classification,
+spell) instead of running their own Claude calls. Codex pays the
+LLM bill once per `(pdf_hash, signal_kind)` and caches; lint just
+reads. Service-boundary win: codex stays data-collection, lint
+stays policy-over-data.
 
 Future offshoots (Forge, Trap, Impose, Marks, etc.) must map each capability to one owner layer and integrate through stable contracts.
 
