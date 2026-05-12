@@ -125,6 +125,16 @@ def _canonical_result_from_codex(payload: dict[str, Any]) -> DielineResult | Non
     if not canonical_candidates:
         return None
 
+    # codex 1.15.0+ synthesises a single ``source: analysis_stroke_bbox``
+    # candidate when its bbox-based geometry path detects a size but no
+    # named candidate fired. That candidate isn't a real spot name —
+    # treating it as one would short-circuit lint's own name-match /
+    # geometry-fallback pathways that DO know how to find a real
+    # ``Dieline`` spot color or count corner marks. Bail out and let
+    # the rest of detect_dieline() do its thing.
+    if all(c.get("source") == "analysis_stroke_bbox" for c in canonical_candidates):
+        return None
+
     best = max(
         canonical_candidates,
         key=lambda c: (
