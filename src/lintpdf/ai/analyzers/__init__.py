@@ -2,6 +2,7 @@
 
 from lintpdf.ai.analyzers import (
     barcode,  # noqa: F401
+    codex_signals,  # noqa: F401  # Phase 3: read codex's AI signal contract
     color_analysis,  # noqa: F401
     color_compliance,  # noqa: F401
     content_quality,  # noqa: F401
