@@ -44,6 +44,4 @@ def downgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_index(
-        "ix_waitlist_entries_email", "waitlist_entries", ["email"], unique=True
-    )
+    op.create_index("ix_waitlist_entries_email", "waitlist_entries", ["email"], unique=True)
