@@ -63,7 +63,7 @@ class CodexSymbolsReader(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="CODEX_SYMBOL",
-                        severity=Severity.INFO,
+                        severity=Severity.ADVISORY,
                         message=f"Detected symbol: {kind} (confidence {confidence:.2f})",
                         page_num=page_num,
                         details={

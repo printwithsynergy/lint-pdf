@@ -58,7 +58,7 @@ class CodexBarcodesReader(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="CODEX_BARCODE",
-                        severity=Severity.INFO,
+                        severity=Severity.ADVISORY,
                         message=f"Decoded barcode ({fmt}): {value}",
                         page_num=page_num,
                         details={

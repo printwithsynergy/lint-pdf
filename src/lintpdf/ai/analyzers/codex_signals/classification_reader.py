@@ -51,7 +51,7 @@ class CodexClassificationReader(BaseAIAnalyzer):
         return [
             self._make_finding(
                 inspection_id="CODEX_CLASSIFICATION",
-                severity=Severity.INFO,
+                severity=Severity.ADVISORY,
                 message=f"Document classification: {summary}",
                 page_num=0,
                 details={"classification": dict(classification)},

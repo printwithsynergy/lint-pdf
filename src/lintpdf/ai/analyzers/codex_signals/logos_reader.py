@@ -62,7 +62,7 @@ class CodexLogosReader(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="CODEX_LOGO",
-                        severity=Severity.INFO,
+                        severity=Severity.ADVISORY,
                         message=f"Detected logo: {identity} (confidence {confidence:.2f})",
                         page_num=page_num,
                         details={

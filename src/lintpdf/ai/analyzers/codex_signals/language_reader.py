@@ -49,7 +49,7 @@ class CodexLanguageReader(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="CODEX_LANGUAGE",
-                    severity=Severity.INFO,
+                    severity=Severity.ADVISORY,
                     message=f"Detected language: {code} (confidence {confidence:.2f})",
                     page_num=page_num,
                     details={
