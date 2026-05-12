@@ -313,6 +313,26 @@ def cmd_parity_corpus(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_migrate(args: argparse.Namespace) -> int:
+    """Run `alembic upgrade head` against the configured DATABASE_URL.
+
+    Uses the alembic config bundled inside the lintpdf wheel
+    (``lintpdf._migrations``) so callers don't need the upstream repo
+    on disk. Reads ``DATABASE_URL`` (or ``LINTPDF_DATABASE_URL``) at
+    runtime — the same env wiring used by the running engine.
+
+    Idempotent: running on an already-up-to-date database is a no-op
+    single metadata query.
+    """
+    import importlib.resources
+    from alembic import config as alembic_config
+
+    target = args.target or "head"
+    ini_path = importlib.resources.files("lintpdf._migrations") / "alembic.ini"
+    alembic_config.main(argv=["-c", str(ini_path), "upgrade", target])
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lint-pdf")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -362,6 +382,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Disable non-zero exit on diff (still writes diff report).",
     )
     parity_corpus.set_defaults(func=cmd_parity_corpus)
+
+    migrate = sub.add_parser(
+        "migrate",
+        help="Run Alembic migrations against the configured DATABASE_URL.",
+    )
+    migrate.add_argument(
+        "--target",
+        default="head",
+        help="Alembic revision target (default: head).",
+    )
+    migrate.set_defaults(func=cmd_migrate)
+
     return parser
 
 

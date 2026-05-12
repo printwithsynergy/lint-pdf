@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lint-pdf"
-version = "0.1.0b12"
+version = "0.1.0b13"
 description = "Detection-only PDF preflight engine"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -113,6 +113,14 @@ codex-pdf = { path = "../codex-pdf", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lintpdf"]
+
+# Non-.py bundled assets — hatch's default include pattern is *.py
+# only, so the alembic.ini and the Mako template need explicit
+# inclusion. Migrations themselves are .py and ride along with the
+# package.
+[tool.hatch.build.targets.wheel.force-include]
+"src/lintpdf/_migrations/alembic.ini" = "lintpdf/_migrations/alembic.ini"
+"src/lintpdf/_migrations/alembic/script.py.mako" = "lintpdf/_migrations/alembic/script.py.mako"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
