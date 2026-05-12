@@ -22,9 +22,11 @@ detection.
 
 from __future__ import annotations
 
-from lintpdf.ai.analyzers.codex_signals import barcodes_reader  # noqa: F401
-from lintpdf.ai.analyzers.codex_signals import classification_reader  # noqa: F401
-from lintpdf.ai.analyzers.codex_signals import language_reader  # noqa: F401
-from lintpdf.ai.analyzers.codex_signals import logos_reader  # noqa: F401
-from lintpdf.ai.analyzers.codex_signals import spell_reader  # noqa: F401
-from lintpdf.ai.analyzers.codex_signals import symbols_reader  # noqa: F401
+from lintpdf.ai.analyzers.codex_signals import (
+    barcodes_reader,  # noqa: F401
+    classification_reader,  # noqa: F401
+    language_reader,  # noqa: F401
+    logos_reader,  # noqa: F401
+    spell_reader,  # noqa: F401
+    symbols_reader,  # noqa: F401
+)
