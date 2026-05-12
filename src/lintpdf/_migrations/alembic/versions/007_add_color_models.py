@@ -5,8 +5,8 @@ Revises: 006_nautical_rebrand
 Create Date: 2026-03-21
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "007_add_color_models"

@@ -13,8 +13,8 @@ Renames:
 - jobs.jdf_overrides column added for JDF sidecar support
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "008_print_terminology_rebrand"
