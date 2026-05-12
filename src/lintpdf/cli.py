@@ -325,6 +325,7 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     single metadata query.
     """
     import importlib.resources
+
     from alembic import config as alembic_config
 
     target = args.target or "head"
