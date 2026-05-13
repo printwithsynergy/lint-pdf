@@ -6,6 +6,42 @@ from typing import Any
 
 from celery import Celery
 from celery.signals import task_postrun, task_prerun, worker_process_init
+from kombu import Queue
+
+# All Celery queues this engine routes tasks to. Declared here (rather
+# than in start commands) so a worker invoked without ``-Q`` —
+# i.e. the README quickstart and the docker-compose default — still
+# subscribes to every routable queue. Without this, the engine
+# happily submits to ``ai_heavy`` (per
+# ``lintpdf.api.routes.jobs.submit_job``) while a flag-less worker
+# subscribes only to Celery's built-in ``celery`` queue and tasks
+# accumulate in Redis forever. The OSS demo of this bug surfaced as
+# AI-enabled preflight jobs sitting in ``pending`` indefinitely.
+#
+# Operators who want queue-level isolation can still override with
+# ``celery worker -Q ai_heavy`` etc. (mirrors
+# ``railway.worker-ai.toml`` / ``docker-compose.yml``'s worker-ai
+# service). This list is the FLOOR, not the ceiling.
+_TASK_QUEUES = tuple(
+    Queue(name)
+    for name in (
+        # General preflight: free-tier non-AI jobs.
+        "default",
+        # Entitlement-flagged jobs (paid / SaaS priority lane).
+        "priority",
+        # AI-enabled preflight (Claude signal extractors + codex AI).
+        # ``lintpdf.api.routes.jobs.submit_job`` routes here when the
+        # caller sets ``ai_enabled=true``.
+        "ai_heavy",
+        # Outbound webhook delivery; isolated so a slow customer
+        # endpoint can't head-of-line block preflight.
+        "webhooks",
+        # Long-running report renders (PDF / HTML / annotated PDF).
+        "reports",
+        # Viewer tile pre-rasterisation.
+        "tiles",
+    )
+)
 
 
 def create_celery_app(broker_url: str) -> Celery:
@@ -21,6 +57,12 @@ def create_celery_app(broker_url: str) -> Celery:
 
     app.conf.update(
         result_backend=broker_url,
+        # Declare every queue the API + tasks route to so a flag-less
+        # ``celery worker`` invocation auto-subscribes to all of them
+        # instead of falling back to Celery's built-in ``celery``
+        # queue. See _TASK_QUEUES above for the rationale.
+        task_queues=_TASK_QUEUES,
+        task_default_queue="default",
         # Job status is the source of truth in Postgres; Celery results are
         # only ever polled indirectly (never via AsyncResult.get). Keeping
         # the meta rows beyond an hour just bloats Redis — this caps them at

@@ -1,10 +1,24 @@
 """Celery worker entry point.
 
-Usage:
+Usage (single-process, subscribes to every routable queue):
     celery -A lintpdf.queue.worker worker --loglevel=info --concurrency=2
 
-This module initializes the database and storage before the worker starts
-processing tasks, then re-exports the celery app for the CLI.
+The flag-less command above is the recommended quickstart. The
+Celery app declares ``task_queues`` for every queue the engine
+routes to (``default``, ``priority``, ``ai_heavy``, ``webhooks``,
+``reports``, ``tiles``) in ``lintpdf.queue.app``, so a worker
+started without ``-Q`` auto-subscribes to all of them.
+
+For multi-pool deployments that need queue isolation (the
+production layout on lintpdf.com uses one process per queue),
+override with ``-Q``:
+
+    celery -A lintpdf.queue.worker worker -Q ai_heavy --pool=threads
+    celery -A lintpdf.queue.worker worker -Q webhooks
+    celery -A lintpdf.queue.worker worker -Q default,priority
+
+This module initializes the database and storage before the worker
+starts processing tasks, then re-exports the celery app for the CLI.
 """
 
 from __future__ import annotations
