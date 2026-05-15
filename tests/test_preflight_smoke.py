@@ -25,7 +25,6 @@ import pytest
 
 from lintpdf.profiles.orchestrator import PreflightOrchestrator
 from lintpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
-from lintpdf.reports.html_report import generate_html_report
 from lintpdf.reports.json_report import generate_json_report
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "test-sample.pdf"
@@ -87,16 +86,24 @@ def test_orchestrator_runs_against_fixture():
     assert result.summary.page_count >= 1
 
 
-def test_html_report_carries_epm_card():
-    """Every rendered HTML report ships an EPM verdict card."""
+def test_result_json_carries_epm_block():
+    """result_json produced by the orchestrator carries a well-formed epm block.
+
+    HTML rendering is now handled by lens-server; this test verifies the
+    upstream data contract (the payload lint-pdf sends to lens-server) rather
+    than the rendered HTML output.
+    """
+    import json as _json
+
     orch = PreflightOrchestrator(_default_profile(), profile_id="smoke")
     result = orch.run(_FIXTURE.read_bytes())
-    html = generate_html_report(result).decode("utf-8")
-    assert "EPM:" in html
-    assert "epm-card" in html
-    # CSS for the AI-Explain block ships in every render so populated
-    # findings have somewhere to land.
-    assert ".finding-ai-explain" in html
+    # generate_json_report serialises the full result including the epm block.
+    data = _json.loads(generate_json_report(result))
+    epm = data.get("epm")
+    assert epm is not None, "epm block missing from result_json"
+    assert "tier" in epm
+    assert "rejection_drivers" in epm
+    assert "advisories" in epm
 
 
 def test_json_report_carries_epm_block():

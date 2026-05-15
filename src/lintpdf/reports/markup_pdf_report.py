@@ -1,5 +1,11 @@
 """Bake-to-PDF reviewer markup export.
 
+.. deprecated::
+    Rendering has been moved to lens-server. ``ReportService`` now delegates
+    markup PDF generation to ``lintpdf.reports.lens_client.render_markup_pdf``
+    via HTTP. This module is kept in place only because existing tests import it
+    directly; it will be removed once those tests are ported to lens-server.
+
 Stamps the user-drawn viewer annotations (rectangles, circles, arrows,
 freehand strokes, sticky-note pins) and their threaded comments onto
 the original PDF using pikepdf content-stream overlays, then appends an

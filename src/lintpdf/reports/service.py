@@ -210,10 +210,10 @@ class BrandingContext:
     When ``anonymous`` is ``True`` the template MUST NOT emit any logo,
     tenant name, footer text, or identifying copy. This mode is used
     when a broker forwards a preflight report to a downstream distributor
-    who shouldn't know which broker ran it. The pipeline additionally
-    sanitises the rendered PDF's Author / Producer / Creator metadata
-    (see :func:`sanitize_pdf_metadata_for_anonymous`) and emits a neutral
-    filename (``preflight-<short-job-id>.pdf``).
+    who shouldn't know which broker ran it. lens-server sanitises the
+    rendered PDF's Author / Producer / Creator metadata when this flag is
+    set; lint-pdf emits a neutral filename
+    (``preflight-<short-job-id>.pdf``).
     """
 
     name: str = "LintPDF"
@@ -242,6 +242,21 @@ class BrandingContext:
             footer_text=None,
             anonymous=True,
         )
+
+
+def _branding_to_dict(branding: BrandingContext) -> dict[str, Any]:
+    """Convert BrandingContext to a plain dict for the lens-server API."""
+    return {
+        "name": branding.name,
+        "logo_url": branding.logo_url,
+        "primary_color": branding.primary_color,
+        "accent_color": branding.accent_color,
+        "footer_text": branding.footer_text,
+        "pdf_download_url": branding.pdf_download_url,
+        "report_url": branding.report_url,
+        "viewer_url": branding.viewer_url,
+        "anonymous": branding.anonymous,
+    }
 
 
 class BrandMode(StrEnum):
@@ -284,55 +299,6 @@ def parse_brand_param(raw: str | None) -> tuple[BrandMode | None, str | None]:
     # Any other value is treated as a brand profile ID (UUID);
     # the caller is responsible for validating/parsing it.
     return BrandMode.PROFILE, raw.strip()
-
-
-def sanitize_pdf_metadata_for_anonymous(pdf_bytes: bytes) -> bytes:
-    """Rewrite a PDF's identifying metadata so nothing points back to the
-    generator.
-
-    EXPORT PATH — runs **after** WeasyPrint produces the report PDF when
-    ``branding.anonymous`` is true. The pikepdf access here mutates
-    bytes lint-pdf itself just produced (a one-off export asset), so it
-    is intentionally exempt from the codex-only parser-surface audit.
-    Falls back to the original bytes when pikepdf is unimportable.
-    """
-    try:
-        import pikepdf  # type: ignore
-    except ImportError:  # pragma: no cover — pikepdf is a hard dep in prod
-        logger.warning("pikepdf missing — skipping anonymous metadata sanitation")
-        return pdf_bytes
-
-    try:
-        with (
-            pikepdf.open(pikepdf.util.io.BytesIO(pdf_bytes))  # noqa: LINTPDF_EXPORT_PIKEPDF
-            if hasattr(pikepdf, "util")
-            else pikepdf.open(_bytes_stream(pdf_bytes)) as pdf  # noqa: LINTPDF_EXPORT_PIKEPDF
-        ):
-            info = pdf.docinfo
-            info["/Author"] = ""
-            info["/Creator"] = "Preflight"
-            info["/Producer"] = "Preflight"
-            info["/Title"] = "Preflight Report"
-            # Strip the XMP metadata stream — WeasyPrint embeds a signature
-            # that leaks the generator. Dropping it entirely is safer than
-            # editing fields piecemeal.
-            if "/Metadata" in pdf.Root:
-                del pdf.Root["/Metadata"]
-            out = _bytes_stream()
-            pdf.save(out)
-            return out.getvalue()
-    except Exception:
-        logger.exception("Failed to sanitise PDF metadata for anonymous render")
-        return pdf_bytes
-
-
-def _bytes_stream(initial: bytes | None = None) -> Any:
-    """Return a BytesIO — factored out so pikepdf's varying versions can
-    be called uniformly even when its bundled ``pikepdf.util.io`` is
-    missing."""
-    from io import BytesIO
-
-    return BytesIO(initial) if initial is not None else BytesIO()
 
 
 def build_anonymous_filename(job_id: str, extension: str = "pdf") -> str:
@@ -1073,7 +1039,7 @@ class ReportService:
         return None
 
     @staticmethod
-    def _generate_html(  # skipcq: PY-R1000
+    def _generate_html(
         result_json: dict[str, Any],
         branding: BrandingContext,
         *,
@@ -1081,216 +1047,27 @@ class ReportService:
         detail_level: str = "standard",
         summary_page: str = "prepend",
     ) -> bytes:
-        """Generate branded HTML report from result JSON."""
-        from jinja2 import Environment, FileSystemLoader
+        """Generate branded HTML report by delegating to lens-server."""
+        from lintpdf.reports.check_names import get_check_info
+        from lintpdf.reports.lens_client import render_html
 
-        from lintpdf.reports.html_report import _TEMPLATE_DIR
-
-        env = Environment(  # nosemgrep: direct-use-of-jinja2
-            loader=FileSystemLoader(str(_TEMPLATE_DIR)),
-            autoescape=True,
-        )
-
-        def _decode_svg_data_uri(data_uri: str) -> str:
-            """Decode a base64 SVG data URI to inline <svg> markup for WeasyPrint."""
-            import base64
-
-            from markupsafe import Markup
-
-            try:
-                # Strip the data:image/svg+xml;base64, prefix
-                b64 = data_uri.split(",", 1)[1]
-                svg = base64.b64decode(b64).decode("utf-8")
-                # Add class for sizing
-                svg = svg.replace("<svg ", '<svg class="header-logo" ', 1)
-                return Markup(svg)
-            except Exception:
-                return Markup("")
-
-        env.filters["decode_svg_data_uri"] = _decode_svg_data_uri
-
-        template = env.get_template("report.html")
-
-        summary = result_json.get("summary", {})
-        metadata = result_json.get("metadata", {})
-        findings = result_json.get("findings", [])
-
-        # Enrich findings with friendly names
-        try:
-            from lintpdf.reports.check_names import get_check_info
-
-            for f in findings:
-                info = get_check_info(f.get("inspection_id", ""))
-                f.setdefault("friendly_name", info.name)
-                f.setdefault("friendly_description", info.description)
-                f.setdefault("thumbnail_base64", "")
-        except Exception:
-            pass
-
-        # Build findings_by_page from flat findings list
-        findings_by_page: dict[int, list[dict[str, Any]]] = {}
+        # Enrich findings with friendly names before sending to renderer
+        findings = result_json.get("findings") or []
         for f in findings:
-            page = f.get("page_num") or 0
-            if page not in findings_by_page:
-                findings_by_page[page] = []
-            findings_by_page[page].append(f)
+            if not isinstance(f, dict):
+                continue
+            info = get_check_info(f.get("inspection_id", ""))
+            f.setdefault("friendly_name", info.name)
+            f.setdefault("friendly_description", info.description)
+            f.setdefault("thumbnail_base64", "")
 
-        # Generate annotated page screenshots (standard + comprehensive only)
-        annotated_pages: dict[int, Any] = {}
-        render_failed = False
-        if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
-            try:
-                from lintpdf.reports.page_renderer import render_annotated_pages
-
-                annotated_pages = render_annotated_pages(pdf_bytes, findings_by_page, dpi=150)
-            except Exception:
-                logger.exception("Failed to render annotated pages for service report")
-
-            # Generate per-finding cropped thumbnails
-            try:
-                from lintpdf.reports.page_renderer import render_finding_thumbnails
-
-                render_finding_thumbnails(pdf_bytes, findings, dpi=120)
-            except Exception:
-                logger.exception("Failed to render per-finding thumbnails")
-
-            if not annotated_pages and findings_by_page:
-                render_failed = True
-        elif pdf_bytes is None and detail_level != ReportDetailLevel.EXECUTIVE:
-            render_failed = True
-
-        # Build top findings for executive summary (sorted by severity priority)
-        severity_order = {"error": 0, "warning": 1, "advisory": 2}
-        sorted_findings = sorted(
-            findings,
-            key=lambda f: severity_order.get(f.get("severity", "advisory"), 3),
+        return render_html(
+            result_json,
+            branding=_branding_to_dict(branding),
+            detail_level=detail_level,
+            summary_page=summary_page,
+            pdf_bytes=pdf_bytes,
         )
-        top_findings = sorted_findings[:10]
-
-        # Extract ink coverage data for comprehensive reports
-        ink_separations: list[dict[str, Any]] = []
-        ink_tac_by_page: dict[int, dict[str, Any]] = {}
-        ink_inventory: dict[str, Any] = {}
-        color_score_breakdown: dict[str, Any] = {}
-
-        if detail_level == ReportDetailLevel.COMPREHENSIVE:
-            for f in findings:
-                iid = f.get("inspection_id", "")
-                details = f.get("details") or {}
-                if iid == "LPDF_INK_002":
-                    ink_separations.append(
-                        {
-                            "name": details.get("separation_name", ""),
-                            "pages_used": details.get("pages_used", []),
-                            "max_value": details.get("max_value", 0),
-                            "event_count": details.get("event_count", 0),
-                        }
-                    )
-                elif iid == "LPDF_INK_001":
-                    page = f.get("page_num", 0)
-                    if page > 0:
-                        ink_tac_by_page[page] = {
-                            "max_tac": details.get("max_tac", 0),
-                            "tac_limit": details.get("tac_limit", 0),
-                            "sample_count": details.get("sample_count", 0),
-                        }
-                elif iid == "LPDF_INK_003" and details.get("process_channels"):
-                    ink_inventory = details
-
-            color_score_breakdown = metadata.get("color_score_breakdown", {})
-
-        # Deduplicate same-check same-page findings, then sort
-        deduped = deduplicate_findings(findings)
-        all_findings_sorted = sorted(
-            deduped,
-            key=lambda f: (
-                severity_order.get(f.get("severity", "advisory"), 3),
-                f.get("page_num") or 0,
-            ),
-        )
-
-        # Summary page data (thumbnails + health score)
-        page_thumbnails: list[str] = []
-        health = compute_health_score(summary, findings)
-        if summary_page != "off" and pdf_bytes is not None:
-            try:
-                from lintpdf.reports.page_renderer import render_page_thumbnail_grid
-
-                page_thumbnails = render_page_thumbnail_grid(pdf_bytes, max_pages=12, dpi=72)
-            except Exception:
-                logger.exception("Failed to render page thumbnails for summary page")
-
-        # Extract color info for summary page
-        color_spaces_used = set()
-        spot_colors: list[str] = []
-        max_tac = 0.0
-        for f in findings:
-            iid = f.get("inspection_id", "")
-            details = f.get("details") or {}
-            if iid == "LPDF_INK_002":
-                name = details.get("separation_name", "")
-                if name and name not in ("Cyan", "Magenta", "Yellow", "Black"):
-                    spot_colors.append(name)
-            if iid == "LPDF_INK_001":
-                mt = details.get("max_tac", 0)
-                if mt > max_tac:
-                    max_tac = mt
-            if iid == "LPDF_COLOR_014":
-                cs = details.get("color_spaces", [])
-                color_spaces_used.update(cs if isinstance(cs, list) else [])
-
-        summary_color_info = {
-            "color_spaces": sorted(color_spaces_used) or ["DeviceCMYK"],
-            "spot_colors": spot_colors[:6],
-            "max_tac": round(max_tac, 1),
-        }
-
-        passed = summary.get("passed", True)
-        context = {
-            "result": type(
-                "R",
-                (),
-                {
-                    "job_id": result_json.get("job_id", ""),
-                    "profile_id": result_json.get("profile_id", ""),
-                    "findings": findings,
-                    "duration_ms": result_json.get("duration_ms", 0),
-                },
-            )(),
-            "summary": type("S", (), summary)(),
-            "metadata": metadata,
-            "findings_by_page": dict(sorted(findings_by_page.items())),
-            "severity_groups": {},
-            "pass_fail": "PASS" if passed else "FAIL",
-            "badge_color": "#22c55e" if passed else "#ef4444",
-            "brand": branding,
-            "annotated_pages": annotated_pages,
-            "render_failed": render_failed,
-            "color_quality_score": metadata.get("color_quality_score"),
-            "color_quality_grade": metadata.get("color_quality_grade"),
-            "file_name": result_json.get("file_name", metadata.get("file_name", "")),
-            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-            # Detail level controls
-            "detail_level": detail_level,
-            "top_findings": top_findings,
-            "all_findings_sorted": all_findings_sorted,
-            # Comprehensive-only data
-            "ink_separations": ink_separations,
-            "ink_tac_by_page": ink_tac_by_page,
-            "ink_inventory": ink_inventory,
-            "color_score_breakdown": color_score_breakdown,
-            # Summary page
-            "summary_page": summary_page,
-            "page_thumbnails": page_thumbnails,
-            "health": health,
-            "summary_color_info": summary_color_info,
-            # EPM verdict + AI-Explain — populated by
-            # ``_hydrate_substrate_fields`` so every render path sees them.
-            "epm": result_json.get("epm"),
-        }
-
-        html = template.render(**context)  # nosemgrep: direct-use-of-jinja2
-        return html.encode("utf-8")
 
     def _generate_pdf(
         self,
@@ -1301,41 +1078,41 @@ class ReportService:
         detail_level: str = "standard",
         summary_page: str = "prepend",
     ) -> bytes:
-        """Generate PDF from branded HTML.
+        """Generate PDF report by delegating to lens-server."""
+        from lintpdf.reports.check_names import get_check_info
+        from lintpdf.reports.lens_client import render_pdf
 
-        When ``branding.anonymous`` is true the rendered PDF is post-processed
-        by :func:`sanitize_pdf_metadata_for_anonymous` so the broker's
-        identity doesn't leak via Author / Producer / Creator / XMP.
-        """
-        from weasyprint import HTML
+        findings = result_json.get("findings") or []
+        for f in findings:
+            if not isinstance(f, dict):
+                continue
+            info = get_check_info(f.get("inspection_id", ""))
+            f.setdefault("friendly_name", info.name)
+            f.setdefault("friendly_description", info.description)
+            f.setdefault("thumbnail_base64", "")
 
-        html_bytes = self._generate_html(
+        return render_pdf(
             result_json,
-            branding,
-            pdf_bytes=pdf_bytes,
+            branding=_branding_to_dict(branding),
             detail_level=detail_level,
             summary_page=summary_page,
+            pdf_bytes=pdf_bytes,
         )
-        pdf_bytes_out: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
-        if branding.anonymous:
-            pdf_bytes_out = sanitize_pdf_metadata_for_anonymous(pdf_bytes_out)
-        return pdf_bytes_out
 
     def _generate_annotated_pdf(
         self,
         result_json: dict[str, Any],
         branding: BrandingContext,
     ) -> bytes | None:
-        """Generate annotated PDF with finding overlays on original pages.
+        """Generate annotated PDF with finding overlays by delegating to lens-server.
 
         Requires the original PDF bytes to be available in storage.
         Falls back to None if the original PDF cannot be retrieved or if
-        the overlay rendering throws (pikepdf import errors, malformed
-        source PDFs, etc.) — never propagate to a 500. The mint endpoint
+        the render call throws — never propagate to a 500. The mint endpoint
         treats a None return as "skip this format" and the rest of the
         formats in the request still mint successfully.
         """
-        from lintpdf.reports.annotated_pdf_report import generate_annotated_pdf
+        from lintpdf.reports.lens_client import render_annotated_pdf
 
         # Get original PDF from storage
         file_key = result_json.get("metadata", {}).get("file_key", "")
@@ -1353,13 +1130,8 @@ class ReportService:
             )
             return None
 
-        findings = result_json.get("findings", [])
         try:
-            return generate_annotated_pdf(
-                pdf_bytes,
-                findings,
-                branding_name=branding.name,
-            )
+            return render_annotated_pdf(result_json, pdf_bytes, branding_name=branding.name)
         except Exception:
             logger.exception(
                 "Annotated PDF render failed for job %s; skipping format",
@@ -1372,7 +1144,8 @@ class ReportService:
         result_json: dict[str, Any],
         branding: BrandingContext,
     ) -> bytes | None:
-        """Stamp reviewer markup (annotations + comments) onto the original PDF.
+        """Stamp reviewer markup (annotations + comments) onto the original PDF
+        by delegating to lens-server.
 
         Distinct from ``_generate_annotated_pdf``: that format overlays
         preflight *findings*, whereas this one overlays user-drawn
@@ -1383,7 +1156,7 @@ class ReportService:
         import uuid as uuid_mod
 
         from lintpdf.api.models import ViewerAnnotation, ViewerAnnotationComment
-        from lintpdf.reports.markup_pdf_report import generate_markup_pdf
+        from lintpdf.reports.lens_client import render_markup_pdf
 
         file_key = result_json.get("metadata", {}).get("file_key", "")
         job_id_raw = result_json.get("job_id", "")
@@ -1456,7 +1229,7 @@ class ReportService:
             )
 
         try:
-            return generate_markup_pdf(
+            return render_markup_pdf(
                 pdf_bytes,
                 ann_dicts,
                 comments_by_annotation,

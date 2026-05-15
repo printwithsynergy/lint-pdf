@@ -345,15 +345,11 @@ def _tile_cache_key(
 def _channel_cache_key(
     tenant_id: str, job_id: str, page_num: int, dpi: int, channel_name: str
 ) -> str:
-    """S3 key for a cached separation channel tile.
+    """S3 key for a cached separation channel tile."""
+    import re
 
-    Kept for backward compatibility with any call site that imports this
-    name directly. The renderer module owns the canonical key format —
-    see ``lintpdf.reports.separation_renderer.channel_cache_key``.
-    """
-    from lintpdf.reports.separation_renderer import channel_cache_key
-
-    return channel_cache_key(tenant_id, job_id, page_num, dpi, channel_name)
+    slug = re.sub(r"[^a-zA-Z0-9_-]", "_", channel_name)
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_ch_{slug}.png"
 
 
 def _tac_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
@@ -365,9 +361,7 @@ def _tac_runs_cache_key(
     tenant_id: str, job_id: str, page_num: int, dpi: int, tac_limit: int
 ) -> str:
     """S3 key for cached TAC per-run metadata JSON."""
-    from lintpdf.reports.separation_renderer import tac_runs_cache_key
-
-    return tac_runs_cache_key(tenant_id, job_id, page_num, dpi, tac_limit)
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_tac_l{tac_limit}_runs.json"
 
 
 # ---------------------------------------------------------------------------
@@ -556,28 +550,23 @@ async def get_page_tile(
     # layer filter. Composite preview is for the "default state" view.
     if not ocg_on and not ocg_off:
         try:
-            from lintpdf.reports.separation_renderer import (
-                list_separations,
-                render_composite_via_separations,
+            from lintpdf.codex_render import list_separations
+            from lintpdf.reports.lens_viewer_client import (
+                ensure_pdf_registered,
+                get_composite_png,
             )
 
             spots = [s for s in list_separations(pdf_bytes) if s.get("type") == "spot"]
             if spots:
-                tile_bytes = render_composite_via_separations(
-                    pdf_bytes,
-                    page_num,
-                    dpi=dpi,
-                    tenant_id=str(tenant.id),
-                    job_id=str(job.id),
-                    storage=storage,
-                )
+                ensure_pdf_registered(str(job.id), pdf_bytes)
+                tile_bytes = get_composite_png(str(job.id), page_num, dpi=dpi)
                 if tile_bytes is not None:
                     logger.debug(
-                        "get_page_tile: software composite hit (spots=%d)",
+                        "get_page_tile: lens composite hit (spots=%d)",
                         len(spots),
                     )
         except Exception:
-            logger.exception("get_page_tile: software composite failed; falling back to GS")
+            logger.exception("get_page_tile: lens composite failed; falling back to GS")
             tile_bytes = None
 
     if tile_bytes is None:
@@ -652,7 +641,7 @@ async def get_separations(
     db: Session = Depends(get_db),
 ) -> SeparationsResponse:
     """List all ink channels (CMYK + spot colors) in the job's PDF."""
-    from lintpdf.reports.separation_renderer import list_separations
+    from lintpdf.codex_render import list_separations
 
     _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     channels_raw = list_separations(pdf_bytes)
@@ -675,10 +664,10 @@ async def get_separation_channel(
     db: Session = Depends(get_db),
 ) -> Response:
     """Render a single ink channel as a grayscale PNG."""
-    from lintpdf.reports.separation_renderer import render_separation_channel
+    from lintpdf.reports.lens_viewer_client import ensure_pdf_registered, get_channel_png
 
     # Ghostscript's tiffsep device only decomposes CMYK + spot colors.
-    # For pure-RGB / pure-Gray PDFs, ``list_separations`` now correctly
+    # For pure-RGB / pure-Gray PDFs, ``list_separations`` correctly
     # reports those channels as ``type="rgb"`` / ``"gray"``, but the
     # separation renderer has no equivalent. Return 422 for now so the
     # viewer can surface "preview not available" instead of silently
@@ -698,20 +687,31 @@ async def get_separation_channel(
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
 
-    # The renderer owns the S3 cache (direct hit for this channel; warm
-    # all four CMYK siblings on miss) — we just surface the bytes.
+    # S3 cache check — avoid re-uploading to lens-server on every request.
+    cache_key = _channel_cache_key(str(tenant.id), str(job.id), page_num, dpi, channel_name)
     try:
-        img_bytes = render_separation_channel(
-            pdf_bytes,
-            page_num,
-            channel_name,
-            dpi=dpi,
-            tenant_id=str(tenant.id),
-            job_id=str(job.id),
-            storage=storage,
-        )
+        cached = storage.download_raw(cache_key)
+        if cached is not None:
+            return Response(
+                content=cached,
+                media_type="image/png",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+    except Exception:
+        pass
+
+    try:
+        ensure_pdf_registered(str(job.id), pdf_bytes)
+        img_bytes = get_channel_png(str(job.id), page_num, channel_name, dpi=dpi)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    try:
+        storage.upload_raw(cache_key, img_bytes, content_type="image/png")
+    except Exception:
+        logger.warning("get_separation_channel: failed to cache %s", cache_key)
 
     return Response(
         content=img_bytes,
@@ -762,7 +762,8 @@ def _render_tac_with_runs(
     """
     import json as _json
 
-    from lintpdf.reports.separation_renderer import render_tac_heatmap
+    from lintpdf.codex_render import render_heatmap as _codex_render_heatmap
+    from lintpdf.reports.lens_viewer_client import ensure_pdf_registered, get_tac_png
 
     storage = get_storage()
     png_key = _tac_cache_key(tenant_id, job_id, page_num, dpi)
@@ -786,20 +787,21 @@ def _render_tac_with_runs(
             logger.warning("TAC runs cache corrupt at %s; regenerating", runs_key)
 
     try:
-        heatmap = render_tac_heatmap(
-            pdf_bytes,
-            page_num,
-            dpi=dpi,
-            tac_limit=tac_limit,
-            tenant_id=tenant_id,
-            job_id=job_id,
-            storage=storage,
-        )
-    except RuntimeError as exc:
+        ensure_pdf_registered(job_id, pdf_bytes)
+        png_bytes = get_tac_png(job_id, page_num, dpi=dpi, tac_limit=tac_limit)
+    except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    png_bytes = heatmap["png"]
-    runs = [TacRunResponse(**dict(r)) for r in heatmap["runs"]]
+    # TAC runs (per-text-run coverage metadata) come from codex's text-aware
+    # heatmap render — lens-server's pixel-based renderer doesn't compute them.
+    try:
+        heatmap = _codex_render_heatmap(pdf_bytes, page_num, dpi=dpi, tac_limit=tac_limit)
+        runs = [TacRunResponse(**dict(r)) for r in heatmap.get("runs", [])]
+    except Exception:
+        logger.warning(
+            "TAC runs computation failed for job %s page %d; runs will be empty", job_id, page_num
+        )
+        runs = []
 
     try:
         storage.upload_raw(png_key, png_bytes, content_type="image/png")
@@ -1691,7 +1693,7 @@ async def _sample_densitometer(
     supplied, the CMYK S3 cache is consulted — second-click reads skip
     Ghostscript entirely.
     """
-    from lintpdf.reports.separation_renderer import sample_densitometer
+    from lintpdf.reports.lens_viewer_client import ensure_pdf_registered, sample_density
 
     media_box = _media_box_for_page(pdf_bytes, page_num)
     page_w = media_box.x1 - media_box.x0
@@ -1701,28 +1703,26 @@ async def _sample_densitometer(
     local_x = x - media_box.x0
     local_y = y - media_box.y0
 
-    storage = get_storage() if (tenant_id and job_id) else None
+    def _do_sample() -> dict:
+        if job_id:
+            ensure_pdf_registered(job_id, pdf_bytes)
+        eff_job_id = job_id or "ephemeral"
+        return sample_density(
+            eff_job_id,
+            page_num,
+            x=local_x,
+            y=local_y,
+            page_width_pts=page_w,
+            page_height_pts=page_h,
+            dpi=dpi,
+            tac_limit=tac_limit,
+        )
 
     loop = asyncio.get_running_loop()
     try:
-        result = await loop.run_in_executor(
-            None,
-            lambda: sample_densitometer(
-                pdf_bytes,
-                page_num,
-                x=local_x,
-                y=local_y,
-                page_w=page_w,
-                page_h=page_h,
-                dpi=dpi,
-                tac_limit=tac_limit,
-                tenant_id=tenant_id,
-                job_id=job_id,
-                storage=storage,
-            ),
-        )
-    except RuntimeError as exc:
-        # No CMYK channels (RGB-only PDF) or Ghostscript failure. Surface as
+        result = await loop.run_in_executor(None, _do_sample)
+    except Exception as exc:
+        # No CMYK channels (RGB-only PDF) or lens-server failure. Surface as
         # 422 so the UI can render a "no separations available" hint.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -2232,28 +2232,22 @@ async def public_get_tile(
     """
     job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
-    storage = get_storage()
     from lintpdf.rendering import render_page_to_image
 
     png: bytes | None = None
     try:
-        from lintpdf.reports.separation_renderer import (
-            list_separations,
-            render_composite_via_separations,
+        from lintpdf.codex_render import list_separations
+        from lintpdf.reports.lens_viewer_client import (
+            ensure_pdf_registered,
+            get_composite_png,
         )
 
         spots = [s for s in list_separations(pdf_bytes) if s.get("type") == "spot"]
         if spots:
-            png = render_composite_via_separations(
-                pdf_bytes,
-                page_num,
-                dpi=dpi,
-                tenant_id=str(job.tenant_id),
-                job_id=str(job.id),
-                storage=storage,
-            )
+            ensure_pdf_registered(str(job.id), pdf_bytes)
+            png = get_composite_png(str(job.id), page_num, dpi=dpi)
     except Exception:
-        logger.exception("public_get_tile: software composite failed; falling back to GS")
+        logger.exception("public_get_tile: lens composite failed; falling back to GS")
         png = None
 
     if png is None:
@@ -2300,7 +2294,7 @@ async def public_page_info(
 async def public_separations(token: str, db: Session = Depends(get_db)) -> dict:
     """Public: list ink separation channels."""
     job, pdf_bytes = _get_job_pdf_by_token(token, db)
-    from lintpdf.reports.separation_renderer import list_separations
+    from lintpdf.codex_render import list_separations
 
     channels = list_separations(pdf_bytes)
     return {"job_id": str(job.id), "channels": channels}
@@ -2322,21 +2316,32 @@ async def public_channel(
     """Public: render a separation channel as grayscale PNG."""
     job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
-    from lintpdf.reports.separation_renderer import render_separation_channel
+    from lintpdf.reports.lens_viewer_client import ensure_pdf_registered, get_channel_png
 
     storage = get_storage()
+    cache_key = _channel_cache_key(str(job.tenant_id), str(job.id), page_num, dpi, channel_name)
     try:
-        png = render_separation_channel(
-            pdf_bytes,
-            page_num,
-            channel_name,
-            dpi=dpi,
-            tenant_id=str(job.tenant_id),
-            job_id=str(job.id),
-            storage=storage,
-        )
-    except RuntimeError as exc:
+        cached = storage.download_raw(cache_key)
+        if cached is not None:
+            return Response(
+                content=cached,
+                media_type="image/png",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+    except Exception:
+        pass
+
+    try:
+        ensure_pdf_registered(str(job.id), pdf_bytes)
+        png = get_channel_png(str(job.id), page_num, channel_name, dpi=dpi)
+    except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    try:
+        storage.upload_raw(cache_key, png, content_type="image/png")
+    except Exception:
+        logger.warning("public_channel: failed to cache %s", cache_key)
+
     return Response(
         content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
     )

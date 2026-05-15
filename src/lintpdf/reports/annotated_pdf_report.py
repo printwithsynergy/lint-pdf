@@ -1,5 +1,11 @@
 """Annotated PDF report generator.
 
+.. deprecated::
+    Rendering has been moved to lens-server. ``ReportService`` now delegates
+    annotated PDF generation to ``lintpdf.reports.lens_client.render_annotated_pdf``
+    via HTTP. This module is kept in place only because existing tests import it
+    directly; it will be removed once those tests are ported to lens-server.
+
 Renders the original PDF with color-coded finding overlays drawn directly
 onto each page using pikepdf content streams.  Each finding gets:
   - A severity-colored semi-transparent rectangle over its bounding box

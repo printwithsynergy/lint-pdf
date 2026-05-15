@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import uuid
+from unittest.mock import patch
 
 from lintpdf.api.storage import InMemoryStorage
 from lintpdf.reports.service import BrandingContext, ReportService
+
+_FAKE_HTML = (
+    b"<html><head><title>Preflight Report</title></head><body>Preflight Report</body></html>"
+)
 
 
 class _FakeDB:
@@ -109,24 +114,24 @@ class TestReportService:
         job_id = str(uuid.uuid4())
         tenant_id = str(uuid.uuid4())
 
-        result = service.generate_and_store(
-            job_id=job_id,
-            tenant_id=tenant_id,
-            result_json=result_json,
-            formats=["html"],
-            expiry_days=30,
-        )
+        with patch("lintpdf.reports.lens_client.render_html", return_value=_FAKE_HTML):
+            result = service.generate_and_store(
+                job_id=job_id,
+                tenant_id=tenant_id,
+                result_json=result_json,
+                formats=["html"],
+                expiry_days=30,
+            )
 
         assert len(result.reports) == 1
         assert result.reports[0]["format"] == "html"
         assert "/r/" in result.reports[0]["url"]
         assert result.reports[0]["expires_at"] is not None
 
-        # Verify file was stored
+        # Verify bytes were stored (lens-server owns the content; we just store what it returns)
         key = f"reports/{tenant_id}/{job_id}/report.html"
         assert key in storage._files
-        html_content = storage._files[key].decode("utf-8")
-        assert "Preflight Report" in html_content
+        assert storage._files[key] == _FAKE_HTML
 
     def test_generate_with_branding(self) -> None:
         storage = InMemoryStorage()
@@ -143,21 +148,23 @@ class TestReportService:
             footer_text=None,
         )
 
-        result = service.generate_and_store(
-            job_id=job_id,
-            tenant_id=tenant_id,
-            result_json=result_json,
-            formats=["html"],
-            branding=branding,
-        )
+        with patch(
+            "lintpdf.reports.lens_client.render_html", return_value=_FAKE_HTML
+        ) as mock_render:
+            result = service.generate_and_store(
+                job_id=job_id,
+                tenant_id=tenant_id,
+                result_json=result_json,
+                formats=["html"],
+                branding=branding,
+            )
 
         assert len(result.reports) == 1
-        key = f"reports/{tenant_id}/{job_id}/report.html"
-        html = storage._files[key].decode("utf-8")
-        assert "Acme Print" in html
-        assert "#ff6600" in html
-        # Footer should not appear
-        assert "Powered by LintPDF" not in html
+        # Branding is passed to lens-server in the context dict, not embedded in stored HTML
+        call_kwargs = mock_render.call_args[1]
+        assert call_kwargs["branding"]["name"] == "Acme Print"
+        assert call_kwargs["branding"]["primary_color"] == "#ff6600"
+        assert call_kwargs["branding"]["footer_text"] is None
 
     def test_generate_no_expiry(self) -> None:
         storage = InMemoryStorage()
@@ -165,12 +172,13 @@ class TestReportService:
         service = ReportService(storage, db)
 
         result_json = self._make_result_json()
-        result = service.generate_and_store(
-            job_id=str(uuid.uuid4()),
-            tenant_id=str(uuid.uuid4()),
-            result_json=result_json,
-            formats=["html"],
-            expiry_days=None,
-        )
+        with patch("lintpdf.reports.lens_client.render_html", return_value=_FAKE_HTML):
+            result = service.generate_and_store(
+                job_id=str(uuid.uuid4()),
+                tenant_id=str(uuid.uuid4()),
+                result_json=result_json,
+                formats=["html"],
+                expiry_days=None,
+            )
 
         assert result.reports[0]["expires_at"] is None

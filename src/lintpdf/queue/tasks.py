@@ -2415,16 +2415,17 @@ def warm_viewer_tiles(
         # enumerated via list_separations so tenants printing with
         # Pantone / metallic inks benefit too.
         def _warm_separations() -> None:
+            import re
+
             try:
-                from lintpdf.reports.separation_renderer import (
-                    channel_cache_key,
-                    get_cmyk_channels,
-                    list_separations,
-                    render_separation_channel,
+                from lintpdf.codex_render import list_separations
+                from lintpdf.reports.lens_viewer_client import (
+                    ensure_pdf_registered,
+                    get_channel_png,
                 )
             except Exception:
                 logger.warning(
-                    "warm_viewer_tiles: separation renderer unavailable — skipping spot warm",
+                    "warm_viewer_tiles: viewer client unavailable — skipping channel warm",
                     exc_info=True,
                 )
                 return
@@ -2436,46 +2437,34 @@ def warm_viewer_tiles(
             except Exception:
                 spots = []
 
+            # Register PDF with lens-server once for all pages.
+            try:
+                ensure_pdf_registered(job_id, pdf_bytes)
+            except Exception:
+                logger.warning(
+                    "warm_viewer_tiles: PDF registration failed for %s; skipping channel warm",
+                    job_id,
+                    exc_info=True,
+                )
+                return
+
+            _cmyk = ["Cyan", "Magenta", "Yellow", "Black"]
             for page_num in range(1, page_count + 1):
-                try:
-                    # CMYK: get_cmyk_channels writes all four PNGs to
-                    # S3 when the caching context is supplied.
-                    get_cmyk_channels(
-                        pdf_bytes,
-                        page_num,
-                        dpi,
-                        tenant_id=tenant_id,
-                        job_id=job_id,
-                        storage=storage,
-                    )
-                except Exception:
-                    logger.warning(
-                        "warm_viewer_tiles: CMYK warm failed p%d for %s",
-                        page_num,
-                        job_id,
-                        exc_info=True,
-                    )
-                for spot in spots:
-                    key = channel_cache_key(tenant_id, job_id, page_num, dpi, spot)
+                for channel in _cmyk + spots:
+                    slug = re.sub(r"[^a-zA-Z0-9_-]", "_", channel)
+                    key = f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_ch_{slug}.png"
                     try:
                         if storage.download_raw(key) is not None:
-                            continue  # already cached
+                            continue  # already cached in S3
                     except Exception:
                         pass
                     try:
-                        render_separation_channel(
-                            pdf_bytes,
-                            page_num,
-                            spot,
-                            dpi=dpi,
-                            tenant_id=tenant_id,
-                            job_id=job_id,
-                            storage=storage,
-                        )
+                        png = get_channel_png(job_id, page_num, channel, dpi=dpi)
+                        storage.upload_raw(key, png, content_type="image/png")
                     except Exception:
                         logger.warning(
-                            "warm_viewer_tiles: spot %s warm failed p%d for %s",
-                            spot,
+                            "warm_viewer_tiles: channel %s warm failed p%d for %s",
+                            channel,
                             page_num,
                             job_id,
                             exc_info=True,

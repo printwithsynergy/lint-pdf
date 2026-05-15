@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.skip(reason="Rendering moved to lens-server; tests ported there")
+
 # pikepdf is an engine runtime dep but CI may run this module standalone.
 # Skip the whole suite cleanly if it's missing rather than ImportError at
 # collection time.
