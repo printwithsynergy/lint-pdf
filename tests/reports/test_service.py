@@ -8,7 +8,9 @@ from unittest.mock import patch
 from lintpdf.api.storage import InMemoryStorage
 from lintpdf.reports.service import BrandingContext, ReportService
 
-_FAKE_HTML = b"<html><head><title>Preflight Report</title></head><body>Preflight Report</body></html>"
+_FAKE_HTML = (
+    b"<html><head><title>Preflight Report</title></head><body>Preflight Report</body></html>"
+)
 
 
 class _FakeDB:
@@ -146,7 +148,9 @@ class TestReportService:
             footer_text=None,
         )
 
-        with patch("lintpdf.reports.lens_client.render_html", return_value=_FAKE_HTML) as mock_render:
+        with patch(
+            "lintpdf.reports.lens_client.render_html", return_value=_FAKE_HTML
+        ) as mock_render:
             result = service.generate_and_store(
                 job_id=job_id,
                 tenant_id=tenant_id,

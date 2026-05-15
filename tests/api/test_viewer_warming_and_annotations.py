@@ -32,7 +32,6 @@ from lintpdf.api.models import (
 )
 
 if TYPE_CHECKING:
-    import pytest
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
 

@@ -1,4 +1,5 @@
 """HTTP client for delegating report rendering to lens-server."""
+
 from __future__ import annotations
 
 import logging
@@ -14,6 +15,7 @@ _RENDER_TIMEOUT = int(os.environ.get("LENS_RENDER_TIMEOUT", "120"))
 def _get_session():
     """Return a requests.Session (lazy import to avoid import-time cost)."""
     import requests
+
     s = requests.Session()
     s.headers["User-Agent"] = "lintpdf-render-client/1.0"
     return s
