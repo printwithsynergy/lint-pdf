@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
+import pytest
+
 from lintpdf.api.models import (
     Job,
     JobStatus,
@@ -465,6 +467,7 @@ class TestAnnotationsAndComments:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="Rendering moved to lens-server")
 class TestMarkupPdfRenderer:
     """``generate_markup_pdf`` stamps reviewer markup + appendix onto a PDF."""
 
