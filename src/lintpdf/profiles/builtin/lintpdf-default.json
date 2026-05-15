@@ -1,7 +1,7 @@
 {
   "name": "LintPDF Default",
   "description": "Comprehensive preflight with all engine checks, PDF/X-4 conformance, and AI analysis.",
-  "version": "1.3",
+  "version": "1.4",
   "conformance": "pdfx4",
   "workflow": "CMYK",
   "checks": {

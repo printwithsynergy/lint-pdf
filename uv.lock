@@ -418,11 +418,12 @@ wheels = [
 
 [[package]]
 name = "codex-pdf"
-version = "1.9.0"
+version = "1.15.0"
 source = { editable = "../codex-pdf" }
 dependencies = [
     { name = "fastapi" },
     { name = "gunicorn" },
+    { name = "httpx" },
     { name = "jsonschema" },
     { name = "pikepdf" },
     { name = "pydantic" },
@@ -434,20 +435,29 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anthropic", marker = "extra == 'ai'", specifier = ">=0.40" },
     { name = "boto3", marker = "extra == 'retain'", specifier = ">=1.34" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "gunicorn", specifier = ">=23.0" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "httpx", marker = "extra == 'vision'", specifier = ">=0.27" },
+    { name = "imagehash", marker = "extra == 'vision'", specifier = ">=4.3" },
     { name = "jsonschema", specifier = ">=4.23" },
     { name = "pikepdf", specifier = ">=9.0" },
+    { name = "pillow", marker = "extra == 'ai'", specifier = ">=10.0" },
+    { name = "pillow", marker = "extra == 'ai-barcodes'", specifier = ">=10.0" },
+    { name = "pillow", marker = "extra == 'vision'", specifier = ">=10.0" },
     { name = "pyclipr", marker = "extra == 'geom'", specifier = ">=0.1.8" },
     { name = "pydantic", specifier = ">=2.8" },
+    { name = "pylibdmtx", marker = "extra == 'ai-barcodes'", specifier = ">=0.1.10" },
     { name = "pymupdf", specifier = ">=1.24" },
     { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "pyzbar", marker = "extra == 'ai-barcodes'", specifier = ">=0.1.9" },
     { name = "redis", marker = "extra == 'redis'", specifier = ">=5.0" },
     { name = "structlog", specifier = ">=24.1" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
-provides-extras = ["redis", "geom", "retain"]
+provides-extras = ["redis", "geom", "retain", "ai", "ai-barcodes", "vision"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1119,7 +1129,7 @@ wheels = [
 
 [[package]]
 name = "lint-pdf"
-version = "0.1.0b13"
+version = "0.1.0b19"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },

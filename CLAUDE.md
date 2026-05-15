@@ -146,17 +146,20 @@ Other rules:
 
 Mandatory for every non-trivial change.
 
-**Blast-radius before refactor**: run `mcp__ctxo__get_blast_radius`
-on the symbol you're touching. For renames or removals, run
-`mcp__ctxo__find_importers` so you know which files need follow-up
-edits. For cross-cutting refactors, run
-`mcp__ctxo__get_change_intelligence`.
+**Blast-radius before refactor**: before changing a symbol, grep for
+its callers (`grep -rn "symbol_name" src/ tests/`) to confirm you know
+who depends on it. For renames or removals, do the same sweep across
+the whole tree. The `ctxo` MCP tools (`get_blast_radius`,
+`find_importers`, `get_change_intelligence`, `get_pr_impact`) provide
+this analysis on a richer dependency graph but only for TypeScript,
+Go, and C#; lint-pdf is Python and no `@ctxo/lang-python` plugin is
+published yet — grep is the working substitute. Revisit when ctxo
+ships Python support.
 
 **Behavior-locking test FIRST**: when changing analyzer behaviour or
 schema shape, snapshot the current output into a test that fails if
 the output changes. Commit the test first; commit the refactor
-second. Run `mcp__ctxo__get_pr_impact` after the refactor to see
-fanout.
+second.
 
 **Customer surface frozen**: hosted LintPDF (`lintpdf.com` /
 `app.lintpdf.com` / `reports.lintpdf.com`) MUST produce bit-for-bit

@@ -120,8 +120,10 @@ async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         _run_migrations(database_url)
 
         # Seed system_profiles from the bundled JSON directory. Runs
-        # after migrations so the table always exists. Insert-if-absent
-        # semantics mean admin edits + deletes persist across deploys.
+        # after migrations so the table always exists. Missing rows are
+        # inserted; bundled-source rows whose ``version`` differs from
+        # the on-disk JSON are reconciled in place; admin-edited rows
+        # (source='admin') are never modified.
         try:
             from lintpdf.api.database import get_db_session
             from lintpdf.profiles.seed import (
