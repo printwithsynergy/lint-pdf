@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lint-pdf"
-version = "0.1.0b19"
+version = "0.1.0b20"
 description = "Detection-only PDF preflight engine"
 readme = "README.md"
 requires-python = ">=3.12"
