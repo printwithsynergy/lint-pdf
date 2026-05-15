@@ -30,8 +30,8 @@ _BUILTIN_DIR = Path(__file__).parents[2] / "src" / "lintpdf" / "profiles" / "bui
 def db() -> Session:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine, autoflush=False)
-    session = SessionLocal()
+    session_factory = sessionmaker(bind=engine, autoflush=False)
+    session = session_factory()
     try:
         yield session
     finally:
@@ -48,7 +48,7 @@ def _current_bundled_version(profile_id: str) -> str:
 class TestSeedReconcile:
     @staticmethod
     def test_inserts_when_missing(db: Session) -> None:
-        inserted, updated, skipped = seed_system_profiles_from_bundled(db)
+        inserted, updated, _ = seed_system_profiles_from_bundled(db)
         assert inserted > 0
         assert updated == 0
         # lintpdf-default is one of the bundled profiles; row should now exist.
@@ -78,7 +78,7 @@ class TestSeedReconcile:
         )
         db.commit()
 
-        inserted, updated, skipped = seed_system_profiles_from_bundled(db)
+        _, updated, _ = seed_system_profiles_from_bundled(db)
         assert updated >= 1
 
         row = db.query(SystemProfile).filter_by(profile_id="lintpdf-default").one()
@@ -109,7 +109,7 @@ class TestSeedReconcile:
         )
         db.commit()
 
-        _, updated, _ = seed_system_profiles_from_bundled(db)
+        seed_system_profiles_from_bundled(db)
 
         row = db.query(SystemProfile).filter_by(profile_id="lintpdf-default").one()
         assert row.source == "admin"
