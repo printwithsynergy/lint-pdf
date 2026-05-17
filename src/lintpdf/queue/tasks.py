@@ -2676,6 +2676,6 @@ def execute_corpus_run(self: Any, run_id: str) -> None:
                 db.commit()
         except Exception:
             logger.exception("execute_corpus_run: could not update run status for %s", run_id)
-        raise self.retry(exc=exc, countdown=300 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=300 * (2**self.request.retries)) from exc
     finally:
         db.close()

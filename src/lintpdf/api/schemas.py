@@ -1323,8 +1323,7 @@ class CorpusRunCreateRequest(BaseModel):
     profile_id: str = Field(
         ...,
         description=(
-            "Profile to run the corpus against. Must be accessible to "
-            "the authenticated tenant."
+            "Profile to run the corpus against. Must be accessible to the authenticated tenant."
         ),
     )
     assay_ids: list[uuid.UUID] = Field(

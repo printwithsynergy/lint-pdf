@@ -618,9 +618,7 @@ class CorpusAssay(Base):
     pdf_storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
     pdf_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     # List of {inspection_id, severity, page_num} dicts (None = bootstrap on first run).
-    expected_findings_json: Mapped[list[dict[str, Any]] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    expected_findings_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
