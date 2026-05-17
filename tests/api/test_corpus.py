@@ -5,13 +5,12 @@ from __future__ import annotations
 import io
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
-    from sqlalchemy.orm import Session
 
 _MINIMAL_PDF = (
     b"%PDF-1.4\n"
@@ -31,9 +30,7 @@ def _mock_corpus_task(monkeypatch):
     """Prevent execute_corpus_run from dispatching for API tests."""
     from lintpdf.queue import tasks
 
-    monkeypatch.setattr(
-        tasks.execute_corpus_run, "apply_async", MagicMock()
-    )
+    monkeypatch.setattr(tasks.execute_corpus_run, "apply_async", MagicMock())
 
 
 class TestCreateAssay:
@@ -192,7 +189,6 @@ class TestCreateRun:
         assert resp.status_code == 404
 
     def test_create_run_queues_celery_task(self, client: TestClient, monkeypatch) -> None:
-        from unittest.mock import MagicMock
         from lintpdf.queue import tasks
 
         mock = MagicMock()

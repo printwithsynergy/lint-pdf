@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import uuid as uuid_mod
+from typing import TYPE_CHECKING
 
 from fastapi import (
     APIRouter,
@@ -36,7 +37,9 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy.orm import Session
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
@@ -459,9 +462,7 @@ def get_certificate(
     was configured at the time the run completed.
     """
     run = (
-        db.query(CorpusRun)
-        .filter(CorpusRun.id == run_id, CorpusRun.tenant_id == tenant.id)
-        .first()
+        db.query(CorpusRun).filter(CorpusRun.id == run_id, CorpusRun.tenant_id == tenant.id).first()
     )
     if run is None:
         raise HTTPException(status_code=404, detail="Corpus run not found.")

@@ -12,7 +12,6 @@ rules and severity promotions — the right signal for profile regression.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import uuid
 from datetime import UTC, datetime
@@ -109,9 +108,7 @@ def execute_run(run_id: str, db: Session) -> None:
     settings = get_settings()
 
     run_assays: list[CorpusRunAssay] = (
-        db.query(CorpusRunAssay)
-        .filter(CorpusRunAssay.run_id == run.id)
-        .all()
+        db.query(CorpusRunAssay).filter(CorpusRunAssay.run_id == run.id).all()
     )
 
     # Resolve profile once — shared across all assays.
@@ -135,9 +132,7 @@ def execute_run(run_id: str, db: Session) -> None:
         try:
             pdf_bytes = storage.download_pdf(assay.pdf_storage_key)
         except Exception:
-            logger.exception(
-                "execute_run: could not download PDF for assay %s", assay.id
-            )
+            logger.exception("execute_run: could not download PDF for assay %s", assay.id)
             run_assay.status = CorpusAssayStatus.ERROR
             run_assay.error_message = "PDF download failed."
             fail_count += 1

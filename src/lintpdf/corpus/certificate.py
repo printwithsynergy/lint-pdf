@@ -16,9 +16,11 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import uuid
 
 
 def _canonical_payload(cert: dict[str, Any]) -> bytes:
@@ -62,7 +64,7 @@ def verify_certificate(cert: dict[str, Any], signing_key: str) -> bool:
     sig_field = cert.get("signature", "")
     if not sig_field.startswith("sha256:"):
         return False
-    expected_hex = sig_field[len("sha256:"):]
+    expected_hex = sig_field[len("sha256:") :]
     payload = _canonical_payload(cert)
     actual_hex = hmac.new(signing_key.encode(), payload, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected_hex, actual_hex)
