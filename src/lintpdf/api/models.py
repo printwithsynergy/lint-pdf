@@ -572,6 +572,137 @@ class SystemProfile(Base):
     )
 
 
+class CorpusRunStatus(enum.StrEnum):
+    """Status of a corpus run."""
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    PASSED = "passed"
+    FAILED = "failed"
+    ERROR = "error"
+
+
+class CorpusAssayStatus(enum.StrEnum):
+    """Per-assay result status within a corpus run."""
+
+    PENDING = "pending"
+    PASSED = "passed"
+    FAILED = "failed"
+    ERROR = "error"
+
+
+class CorpusAssay(Base):
+    """A registered test-fixture PDF with expected findings.
+
+    Developers upload a known PDF and optionally seed its
+    ``expected_findings_json``.  When the field is NULL, the *first*
+    corpus run that includes this assay bootstraps the expected
+    findings from what the engine produces (golden-master pattern).
+    Subsequent runs diff actual against expected and report any
+    regression.
+
+    The identity key for comparison is ``(inspection_id, severity,
+    page_num)`` — stable across minor engine changes but sensitive to
+    new/removed rules and severity promotions, which is the right
+    signal for profile regression testing.
+    """
+
+    __tablename__ = "corpus_assays"
+    __table_args__ = (Index("ix_corpus_assays_tenant_created", "tenant_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    pdf_storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    pdf_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    # List of {inspection_id, severity, page_num} dicts (None = bootstrap on first run).
+    expected_findings_json: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    run_assays: Mapped[list[CorpusRunAssay]] = relationship(
+        back_populates="assay", cascade="all, delete-orphan"
+    )
+
+
+class CorpusRun(Base):
+    """A corpus run — batch execution of assay PDFs against a profile.
+
+    Each run creates one ``CorpusRunAssay`` child per assay, runs the
+    preflight orchestrator against each, and diffs the findings.  A run
+    passes only when every assay passes.  Passing runs optionally carry
+    a signed ``certificate_json`` artifact (requires
+    ``LINTPDF_CORPUS_SIGNING_KEY`` to be set).
+    """
+
+    __tablename__ = "corpus_runs"
+    __table_args__ = (Index("ix_corpus_runs_tenant_created", "tenant_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    profile_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[CorpusRunStatus] = mapped_column(
+        Enum(CorpusRunStatus, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=CorpusRunStatus.PENDING,
+    )
+    assay_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pass_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    fail_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Signed JSON artifact; NULL when the run failed or no signing key is configured.
+    certificate_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    run_assays: Mapped[list[CorpusRunAssay]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
+
+class CorpusRunAssay(Base):
+    """Per-assay result within a corpus run."""
+
+    __tablename__ = "corpus_run_assays"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("corpus_runs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    assay_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("corpus_assays.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[CorpusAssayStatus] = mapped_column(
+        Enum(CorpusAssayStatus, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=CorpusAssayStatus.PENDING,
+    )
+    # Bootstrapped when expected_findings were NULL — the engine output
+    # has been written back to the assay row as the new baseline.
+    bootstrapped: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Findings diff: {missing: [...], new: [...], actual_count: int}.
+    diff_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    run: Mapped[CorpusRun] = relationship(back_populates="run_assays")
+    assay: Mapped[CorpusAssay] = relationship(back_populates="run_assays")
+
+
 # PlanLimitOverride was extracted to lintpdf_saas.api.models in W6c-1
 # (PRs thinkneverland/lint-pdf-saas#25 + thinkneverland/lint-pdf#PR-B).
 # The plan_limit_overrides table remains in the shared Postgres database;

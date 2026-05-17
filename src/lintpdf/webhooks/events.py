@@ -65,6 +65,9 @@ KNOWN_EVENTS: tuple[str, ...] = (
     "billing.ai_credits.exhausted",
     # NEW tenant admin
     "tenant.plan.changed",
+    # Corpus testing
+    "corpus_run.completed",
+    "corpus_run.failed",
 )
 
 
@@ -578,3 +581,55 @@ def fire_tenant_plan_changed(
             }
         ),
     )
+
+
+def fire_corpus_run_completed(
+    db: Session,
+    tenant_id: uuid_mod.UUID,
+    *,
+    run_id: str,
+    profile_id: str,
+    assay_count: int,
+    pass_count: int,
+    fail_count: int,
+    has_certificate: bool,
+) -> None:
+    emit_event(
+        db,
+        tenant_id,
+        "corpus_run.completed",
+        _ensure_json_safe(
+            {
+                "run_id": run_id,
+                "profile_id": profile_id,
+                "assay_count": assay_count,
+                "pass_count": pass_count,
+                "fail_count": fail_count,
+                "passed": fail_count == 0,
+                "has_certificate": has_certificate,
+            }
+        ),
+    )
+
+
+def fire_corpus_run_failed(
+    db: Session,
+    tenant_id: uuid_mod.UUID,
+    *,
+    run_id: str,
+    profile_id: str,
+    error_message: str | None,
+) -> None:
+    emit_event(
+        db,
+        tenant_id,
+        "corpus_run.failed",
+        _ensure_json_safe(
+            {
+                "run_id": run_id,
+                "profile_id": profile_id,
+                "error_message": error_message,
+            }
+        ),
+    )
+

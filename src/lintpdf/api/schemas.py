@@ -1210,6 +1210,183 @@ class SetDefaultBrandProfileRequest(BaseModel):
 # --- White-label custom report domain schemas ---
 
 
+# --- Corpus testing schemas ---
+
+
+class CorpusExpectedFinding(BaseModel):
+    """Identity tuple for a single expected finding in a corpus assay."""
+
+    inspection_id: str = Field(
+        ...,
+        description="Stable rule identifier (e.g. `LPDF_IMG_RESOLUTION_LOW`).",
+    )
+    severity: str = Field(
+        ...,
+        description="Expected severity: `error`, `warning`, or `advisory`.",
+    )
+    page_num: int | None = Field(
+        default=None,
+        description="1-indexed page number; null for document-level findings.",
+    )
+
+
+class CorpusAssayResponse(BaseModel):
+    """A registered corpus assay (test-fixture PDF)."""
+
+    id: uuid.UUID = Field(..., description="Assay UUID.")
+    name: str = Field(..., description="Human-readable name for this assay.")
+    pdf_hash: str = Field(..., description="SHA-256 hex digest of the assay PDF.")
+    expected_findings: list[CorpusExpectedFinding] | None = Field(
+        default=None,
+        description=(
+            "Expected findings. `null` means this assay will be bootstrapped "
+            "on the next corpus run — the engine output becomes the baseline."
+        ),
+    )
+    created_at: datetime = Field(..., description="UTC creation timestamp.")
+    updated_at: datetime = Field(..., description="UTC last-updated timestamp.")
+
+
+class CorpusAssayListResponse(BaseModel):
+    """Paginated list of corpus assays."""
+
+    assays: list[CorpusAssayResponse] = Field(..., description="Assay records.")
+    total: int = Field(..., description="Total assay count for this tenant.")
+
+
+class CorpusAssayExpectationsUpdateRequest(BaseModel):
+    """Overwrite the expected findings for an assay.
+
+    Pass `null` for `expected_findings` to clear the baseline so the
+    next corpus run re-bootstraps from engine output.
+    """
+
+    expected_findings: list[CorpusExpectedFinding] | None = Field(
+        default=None,
+        description="New expected findings list, or null to reset to bootstrap mode.",
+    )
+
+
+class CorpusRunAssayResult(BaseModel):
+    """Per-assay result within a corpus run."""
+
+    assay_id: uuid.UUID = Field(..., description="Assay UUID.")
+    assay_name: str = Field(..., description="Assay name at time of run.")
+    status: str = Field(
+        ...,
+        description="One of: `pending`, `passed`, `failed`, `error`.",
+    )
+    bootstrapped: bool = Field(
+        default=False,
+        description=(
+            "True when this assay had no prior baseline and the engine "
+            "output was written back as the new expected findings."
+        ),
+    )
+    diff: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Finding diff: `{missing: [...], new: [...], "
+            "actual_count: int, expected_count: int}`. "
+            "`null` when status is `pending` or `error`."
+        ),
+    )
+    error_message: str | None = Field(
+        default=None,
+        description="Error detail when status is `error`.",
+    )
+
+
+class CorpusCertificate(BaseModel):
+    """Signed corpus run certificate."""
+
+    version: str = Field(..., description="Certificate format version (`1`).")
+    run_id: str = Field(..., description="Run UUID.")
+    tenant_id: str = Field(..., description="Tenant UUID.")
+    profile_id: str = Field(..., description="Profile ID used for this run.")
+    assay_count: int = Field(..., description="Total assays in the corpus.")
+    pass_count: int = Field(..., description="Assays that passed.")
+    corpus_hash: str = Field(
+        ...,
+        description="SHA-256 of the sorted assay PDF hashes — identifies the exact corpus.",
+    )
+    issued_at: str = Field(..., description="ISO 8601 UTC timestamp.")
+    signature: str = Field(
+        ...,
+        description="HMAC-SHA256 signature: `sha256:<hex>`. Verify with the active signing key.",
+    )
+
+
+class CorpusRunCreateRequest(BaseModel):
+    """Request to create a corpus run."""
+
+    profile_id: str = Field(
+        ...,
+        description=(
+            "Profile to run the corpus against. Must be accessible to "
+            "the authenticated tenant."
+        ),
+    )
+    assay_ids: list[uuid.UUID] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Ordered list of assay UUIDs to include. Max 100 per run.",
+    )
+
+
+class CorpusRunCreateResponse(BaseModel):
+    """Response after creating a corpus run."""
+
+    run_id: uuid.UUID = Field(..., description="Run UUID.")
+    status: str = Field(default="pending", description="Always `pending` on creation.")
+    message: str = Field(
+        default="Corpus run queued.",
+        description="Human-readable status message.",
+    )
+
+
+class CorpusRunResponse(BaseModel):
+    """Full corpus run status and results."""
+
+    id: uuid.UUID = Field(..., description="Run UUID.")
+    profile_id: str = Field(..., description="Profile used for this run.")
+    status: str = Field(
+        ...,
+        description="One of: `pending`, `processing`, `passed`, `failed`, `error`.",
+    )
+    assay_count: int = Field(..., description="Total assays in the run.")
+    pass_count: int = Field(..., description="Assays that passed.")
+    fail_count: int = Field(..., description="Assays that failed.")
+    results: list[CorpusRunAssayResult] = Field(
+        default_factory=list,
+        description="Per-assay results. Empty while status is `pending` or `processing`.",
+    )
+    certificate: CorpusCertificate | None = Field(
+        default=None,
+        description=(
+            "Signed certificate. Present only when all assays passed and "
+            "`LINTPDF_CORPUS_SIGNING_KEY` is configured."
+        ),
+    )
+    error_message: str | None = Field(
+        default=None,
+        description="Top-level error detail when status is `error`.",
+    )
+    created_at: datetime = Field(..., description="UTC creation timestamp.")
+    completed_at: datetime | None = Field(
+        default=None,
+        description="UTC completion timestamp. Null while in progress.",
+    )
+
+
+class CorpusRunListResponse(BaseModel):
+    """Paginated list of corpus runs."""
+
+    runs: list[CorpusRunResponse] = Field(..., description="Run records.")
+    total: int = Field(..., description="Total run count for this tenant.")
+
+
 class SetCustomDomainRequest(BaseModel):
     """Request to set or clear a tenant's white-label custom report domain.
 

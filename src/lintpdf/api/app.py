@@ -25,6 +25,7 @@ from lintpdf.api.routes import (
     ai_health,
     annotations,
     batch,
+    corpus,
     decisions,
     epm_summary,
     health,
@@ -358,6 +359,9 @@ def create_app() -> FastAPI:
 
         # Batch submission — engine surface; available in OSS mode.
         app.include_router(batch.router)
+
+        # Corpus testing — golden-master regression suite for profiles.
+        app.include_router(corpus.router)
 
         # endpoints: extracted to lintpdf_saas in W5g
         # (PR thinkneverland/lint-pdf-saas#16). color_config,

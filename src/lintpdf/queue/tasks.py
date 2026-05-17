@@ -2597,3 +2597,85 @@ def warm_viewer_tiles(
         with contextlib.suppress(Exception):
             redis.delete(lock_key)
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Corpus testing
+# ---------------------------------------------------------------------------
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    bind=True,
+    name="lintpdf.corpus.execute_run",
+    queue="priority",
+    max_retries=2,
+    default_retry_delay=300,
+    soft_time_limit=900,
+    time_limit=1200,
+    acks_late=True,
+)
+def execute_corpus_run(self: Any, run_id: str) -> None:
+    """Execute all assays in a corpus run and persist results.
+
+    Retries up to 2 times (at 5 min / 30 min) on transient failures.
+    Emits ``corpus_run.completed`` or ``corpus_run.failed`` webhook events
+    when the run reaches a terminal state.
+    """
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.models import CorpusRun, CorpusRunStatus
+    from lintpdf.corpus.runner import execute_run
+    from lintpdf.webhooks.events import fire_corpus_run_completed, fire_corpus_run_failed
+
+    db = get_db_session()
+    try:
+        execute_run(run_id, db)
+
+        run = db.get(CorpusRun, __import__("uuid").UUID(run_id))
+        if run is None:
+            return
+
+        if run.status == CorpusRunStatus.ERROR:
+            fire_corpus_run_failed(
+                db,
+                run.tenant_id,
+                run_id=run_id,
+                profile_id=run.profile_id,
+                error_message=run.error_message,
+            )
+        else:
+            fire_corpus_run_completed(
+                db,
+                run.tenant_id,
+                run_id=run_id,
+                profile_id=run.profile_id,
+                assay_count=run.assay_count,
+                pass_count=run.pass_count,
+                fail_count=run.fail_count,
+                has_certificate=bool(run.certificate_json),
+            )
+        db.commit()
+    except Exception as exc:
+        logger.exception("execute_corpus_run: unhandled error for run %s", run_id)
+        try:
+            run = db.get(CorpusRun, __import__("uuid").UUID(run_id))
+            if run and run.status not in (
+                CorpusRunStatus.PASSED,
+                CorpusRunStatus.FAILED,
+                CorpusRunStatus.ERROR,
+            ):
+                run.status = CorpusRunStatus.ERROR
+                run.error_message = str(exc)[:500]
+                db.commit()
+                fire_corpus_run_failed(
+                    db,
+                    run.tenant_id,
+                    run_id=run_id,
+                    profile_id=run.profile_id,
+                    error_message=run.error_message,
+                )
+                db.commit()
+        except Exception:
+            logger.exception("execute_corpus_run: could not update run status for %s", run_id)
+        raise self.retry(exc=exc, countdown=300 * (2 ** self.request.retries))
+    finally:
+        db.close()
