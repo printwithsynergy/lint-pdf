@@ -167,6 +167,13 @@ class Settings(BaseSettings):
     reports_inline_enabled: bool = True
     reports_idempotency_enabled: bool = True
 
+    # Corpus testing — signing key for run certificates.
+    # Set LINTPDF_CORPUS_SIGNING_KEY to a random value (≥32 bytes).
+    # Rotated annually; old certificates remain verifiable only
+    # against the key that signed them.  NULL disables certificate
+    # issuance (runs still execute and diff, no signed artifact produced).
+    corpus_signing_key: str | None = None
+
     # Codex unified-extraction feature flags.
     #
     # When the matching flag is on AND the CodexClient reports

@@ -24,6 +24,9 @@
 engine:
   # OSS lintpdf.api.models.Base — core preflight engine
   - brand_profiles
+  - corpus_assays
+  - corpus_run_assays
+  - corpus_runs
   - job_findings
   - job_imported_reports
   - jobs
