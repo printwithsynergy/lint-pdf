@@ -19,6 +19,13 @@ on:
     tags:
       - "v*.*.*"
 
+# One publish run at a time — if a re-tag fires while a run is in progress,
+# cancel the older one. This prevents two concurrent uploads hitting PyPI's
+# rate limiter simultaneously.
+concurrency:
+  group: publish-pypi
+  cancel-in-progress: true
+
 jobs:
   build:
     name: build sdist + wheel
@@ -59,5 +66,15 @@ jobs:
           name: dist
           path: dist/
 
+      # Wait briefly before uploading — gives PyPI's rate-limit window a chance
+      # to clear when a quick re-tag follows a failed attempt.
+      - name: Pre-upload pause
+        run: sleep 10
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # If some files already landed before a rate-limit failure, skip them
+          # on re-run rather than erroring out with a duplicate-file 400.
+          skip-existing: true
+          verbose: true
