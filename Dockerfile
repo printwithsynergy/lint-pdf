@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+# README.md is required by hatchling at metadata-generation time
+COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
@@ -34,19 +35,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ghostscript \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
 COPY src/ src/
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
 COPY alembic/ alembic/
 COPY alembic.ini .
 COPY scripts/entrypoint.sh /usr/local/bin/lintpdf-entrypoint.sh
 
-# Install the package itself, normalise the entrypoint, and create the
-# non-root runtime user.
 RUN pip install --no-cache-dir --no-deps . && \
     chmod +x /usr/local/bin/lintpdf-entrypoint.sh && \
     useradd --create-home lintpdf
@@ -58,5 +55,4 @@ ENV PORT=8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')" || exit 1
 
-# Default: run migrations then the API server (Railway sets $PORT dynamically).
 CMD ["/usr/local/bin/lintpdf-entrypoint.sh"]
