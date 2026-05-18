@@ -3,7 +3,6 @@ FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Install build dependencies for pikepdf (QPDF) and WeasyPrint
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libqpdf-dev \
@@ -15,8 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# README.md is required by hatchling at metadata-generation time
+# hatchling needs all source files (including forced-include paths) at build time
 COPY pyproject.toml README.md ./
+COPY src/ ./src/
+COPY alembic/ ./alembic/
+COPY alembic.ini .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
