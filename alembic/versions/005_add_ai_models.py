@@ -26,7 +26,7 @@ def upgrade() -> None:
 
     # --- Add AI billing mode enum for PostgreSQL ---
     if is_pg:
-        op.execute("CREATE TYPE aibillingmode AS ENUM ('pay_per_use', 'credit_package')")
+        op.execute("CREATE TYPE IF NOT EXISTS aibillingmode AS ENUM ('pay_per_use', 'credit_package')")
 
     # --- TenantAIConfig ---
     op.create_table(
