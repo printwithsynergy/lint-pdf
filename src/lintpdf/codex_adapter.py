@@ -175,7 +175,10 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
         trailer={},
         pages=pages,
     )
-    return document, []
+    from lintpdf.codex_adapter_events import build_events_from_pdf
+
+    events = build_events_from_pdf(pdf_bytes)
+    return document, events
 
 
 def extract_codex_document_via_codex(pdf_bytes: bytes) -> dict[str, Any]:
