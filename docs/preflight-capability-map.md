@@ -59,6 +59,15 @@ The main pipeline is `PreflightOrchestrator.run()` in `src/lintpdf/profiles/orch
 - **Structure / encryption / interactive features**: `StructureAnalyzer`, `DocumentAnalyzer`, `AnnotationAnalyzer`
   - IDs: `LPDF_STRUCT_*`, `LPDF_DOC_*`, `LPDF_ANNOT_*` (varies by module)
 
+### Hairlines, strokes, and legibility
+
+- **HairlineAnalyzer**: detects strokes and text rendered as paths that are too thin to reproduce reliably on press. Walks the full content stream (CTM, ExtGState, color state) to compute effective line widths and font sizes after all transformations.
+  - IDs: `LPDF_STROKE_001` (hairline stroke), `LPDF_STROKE_002` (very thin stroke), `LPDF_PATH_001`/`LPDF_PATH_002` (thin path fill), `LPDF_TEXT_001`/`LPDF_TEXT_002`/`LPDF_TEXT_003` (thin text stroke / small text)
+- **LegibilityCompositeAnalyzer**: catches small outlined text (text rendered in stroke-only mode, e.g., converted to outlines at a tiny point size).
+  - ID: `LPDF_TEXT_OUTLINED_SMALL`
+
+> **Codex path note (0.1.0b23+)**: these checks previously produced zero findings on the codex path because the event stream was empty. `codex_adapter_events.py` now walks pages with pikepdf and emits real `PathPaintingEvent` / `TextRenderedEvent` objects so all hairline and legibility checks fire correctly.
+
 ### Color, ink coverage, and prepress heuristics
 
 - **Ink coverage**: `InkCoverageAnalyzer`
@@ -105,5 +114,5 @@ Common families:
 
 - **“Enabled pattern” != “actually runs”**: some analyzers are conditionally added (e.g. packaging analyzer depends on profile id, not checks pattern).
 - **veraPDF “silent skip”**: when veraPDF is unreachable, findings are suppressed (good for resilience, but you need metadata to know it didn’t run).
-- **Outlined-text / hidden-layer text**: any rule that relies on `page.content_stream` string presence can miss/gate incorrectly unless OCR/text-region fallback is used.
+- **Outlined-text / hidden-layer text**: hairline and legibility checks now work on the codex path (0.1.0b23+). The `content_stream` string-presence check (`LPDF_BOX_004`) was tightened in 0.1.0b22 to require four independent structural signals before flagging a page as empty.
 
