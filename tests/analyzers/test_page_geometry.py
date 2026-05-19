@@ -309,7 +309,9 @@ class TestEmptyPage:
     @staticmethod
     def test_codex_path_with_fonts_no_finding() -> None:
         """Codex path sets content_stream=b""; page with fonts must NOT trigger BOX_004."""
-        font = PdfFont(name="F1", base_font="Helvetica", font_type="Type1", embedded=False, subset=False)
+        font = PdfFont(
+            name="F1", base_font="Helvetica", font_type="Type1", embedded=False, subset=False
+        )
         doc = SemanticDocument(
             version="1.7",
             page_count=1,
@@ -332,7 +334,9 @@ class TestEmptyPage:
     def test_codex_path_with_images_no_finding() -> None:
         """Codex path sets content_stream=b""; page with images must NOT trigger BOX_004."""
         cs = PdfColorSpace(name="CS1", cs_type="DeviceCMYK", components=4)
-        img = PdfImage(name="Im1", width=100, height=100, bits_per_component=8, color_space=cs, page_num=1)
+        img = PdfImage(
+            name="Im1", width=100, height=100, bits_per_component=8, color_space=cs, page_num=1
+        )
         doc = SemanticDocument(
             version="1.7",
             page_count=1,
