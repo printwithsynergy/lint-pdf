@@ -87,6 +87,17 @@ class PlaceholderTextAnalyzer(BaseAnalyzer):
         # imposed sheet doesn't emit 10 copies of the same token.
         seen: set[tuple[int, str]] = set()
 
+        # Build event-text index keyed by page_num for the codex path
+        # (content_stream=b"" but TextRenderedEvent.raw_text is populated).
+        event_text_by_page: dict[int, str] = {}
+        for evt in events:
+            from lintpdf.semantic.events import TextRenderedEvent
+
+            if isinstance(evt, TextRenderedEvent) and evt.raw_text:
+                event_text_by_page[evt.page_num] = (
+                    event_text_by_page.get(evt.page_num, "") + " " + evt.raw_text
+                )
+
         for page in document.pages:
             raw_text = self._content_stream_text(page)
             findings.extend(self._scan_text(page, raw_text, seen, "live"))
@@ -104,6 +115,11 @@ class PlaceholderTextAnalyzer(BaseAnalyzer):
                 findings.extend(self._scan_text(page, flattened_spaced, seen, "live_flattened"))
             if flattened_dense and flattened_dense != raw_text:
                 findings.extend(self._scan_text(page, flattened_dense, seen, "live_flattened"))
+            # Codex path: content_stream=b"" but events carry raw_text
+            # strings decoded from Tj/TJ operands (ASCII-safe only).
+            event_text = event_text_by_page.get(page.page_num, "")
+            if event_text and not raw_text:
+                findings.extend(self._scan_text(page, event_text, seen, "events"))
             # PR-N (audit miss closure): outlined fixtures (Cherry-
             # Twist / Pink-Slush / HSI / OrangeKiss) have their
             # placeholder copy as vector paths. The OCR pass

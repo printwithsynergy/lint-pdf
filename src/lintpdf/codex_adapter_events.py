@@ -99,6 +99,37 @@ def _str_len(v: Any) -> int:
         return 1
 
 
+def _str_val(v: Any) -> str:
+    """Decode a PDF string operand to a plain string if it is ASCII-safe.
+
+    Returns "" for CID/hex blobs where the bytes don't map to printable
+    text (those carry glyph indices, not characters).
+    """
+    raw: bytes | None = None
+    if isinstance(v, (bytes, bytearray)):
+        raw = bytes(v)
+    else:
+        try:
+            raw = bytes(v)
+        except Exception:
+            try:
+                s = str(v)
+                return s if s.isprintable() else ""
+            except Exception:
+                return ""
+    if raw is None:
+        return ""
+    try:
+        text = raw.decode("latin-1")
+        # Reject if more than 20% non-printable ASCII — likely CID indices
+        printable = sum(1 for c in text if c.isprintable())
+        if len(text) > 0 and printable / len(text) < 0.8:
+            return ""
+        return text
+    except Exception:
+        return ""
+
+
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
@@ -322,7 +353,7 @@ class _Walker:
             return None
         return (x0, y0, x1, y1)
 
-    def _emit_text(self, text_len: int, op_idx: int) -> None:
+    def _emit_text(self, text_len: int, op_idx: int, raw_text: str = "") -> None:
         if not self.in_text or self.font_size <= 0:
             return
         from lintpdf.semantic.events import TextRenderedEvent
@@ -341,6 +372,7 @@ class _Walker:
                 opacity=self.fill_opacity,
                 rendering_mode=self.rendering_mode,
                 bbox=self._text_bbox(text_len),
+                raw_text=raw_text,
             )
         )
 
@@ -485,17 +517,20 @@ class _Walker:
         elif op == "Tr" and ops:
             self.rendering_mode = _i(ops[0])
         elif op == "Tj" and ops:
-            self._emit_text(_str_len(ops[0]), idx)
+            self._emit_text(_str_len(ops[0]), idx, _str_val(ops[0]))
         elif op == "TJ" and ops:
             try:
-                total = sum(_str_len(item) for item in ops[0] if not isinstance(item, (int, float)))
+                parts = [item for item in ops[0] if not isinstance(item, (int, float))]
+                total = sum(_str_len(item) for item in parts)
+                joined = "".join(_str_val(item) for item in parts)
             except Exception:
                 total = 1
-            self._emit_text(max(total, 1), idx)
+                joined = ""
+            self._emit_text(max(total, 1), idx, joined)
         elif op in ("'", '"'):
             self._move_text(0.0, -self.text_leading)
             src = ops[-1] if ops else b""
-            self._emit_text(_str_len(src), idx)
+            self._emit_text(_str_len(src), idx, _str_val(src))
 
 
 # ---------------------------------------------------------------------------

@@ -89,6 +89,7 @@ class TextRenderedEvent(ContentStreamEvent):
     rendering_mode: int = 0
     rendering_intent: str = "RelativeColorimetric"
     bbox: tuple[float, float, float, float] | None = None  # Approximate (x0, y0, x1, y1)
+    raw_text: str = ""  # Decoded ASCII/latin-1 text; empty for CID/hex-encoded glyphs
 
 
 @dataclass(frozen=True)
