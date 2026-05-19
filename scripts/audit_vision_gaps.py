@@ -156,7 +156,6 @@ Categories to check:
 - placeholder_text: variable-data tokens (LOT NUMBER, DATE CODE, PANEL labels, template markers)
 - overprint: white objects that may disappear if overprint is on
 - spot_color: unexpected spot/Pantone usage or spot color issues
-- registration: registration marks, crop marks, or technical printing marks visible in live area
 - font_issue: jagged/missing font rendering suggesting font not embedded
 - transparency: transparency effect that may not separate correctly
 - other: any other significant print issue
@@ -228,6 +227,13 @@ _CATEGORY_TO_ENGINE_PREFIX: dict[str, list[str]] = {
     "font_issue": ["LPDF_FONT_"],
     "transparency": ["LPDF_TRANS_"],
 }
+
+
+# Categories that vision frequently misidentifies as gaps but are
+# intentional PDF structure — die/cut/fold marks in a spot color layer
+# are expected and correct on packaging PDFs. Flagging them as engine
+# misses produces noise, not signal.
+_VISION_FALSE_GAP_CATEGORIES: frozenset[str] = frozenset({"registration"})
 
 
 def _engine_ids_for_category(cat: str, engine_ids: list[str]) -> list[str]:
@@ -332,7 +338,11 @@ def main() -> None:
                     engine_cats.add(cat)
 
         vision_cats = {f.category for f in res.vision_findings}
-        gaps = [f for f in res.vision_findings if not _engine_ids_for_category(f.category, res.engine_ids)]
+        gaps = [
+            f for f in res.vision_findings
+            if not _engine_ids_for_category(f.category, res.engine_ids)
+            and f.category not in _VISION_FALSE_GAP_CATEGORIES
+        ]
         engine_only_cats = engine_cats - vision_cats
         all_gaps.extend((res.label, f) for f in gaps)
         all_engine_only.extend((res.label, c) for c in engine_only_cats)
