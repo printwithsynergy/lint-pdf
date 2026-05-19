@@ -6,7 +6,15 @@ from lintpdf.analyzers.finding import Severity
 from lintpdf.analyzers.page_geometry import PageGeometryAnalyzer
 from lintpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
 from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.model import (
+    PdfAnnotation,
+    PdfBox,
+    PdfColorSpace,
+    PdfFont,
+    PdfImage,
+    SemanticDocument,
+    SemanticPage,
+)
 
 
 def _make_document(
@@ -297,6 +305,106 @@ class TestEmptyPage:
         empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
         assert len(empty) == 1
         assert empty[0].page_num == 2
+
+    @staticmethod
+    def test_codex_path_with_fonts_no_finding() -> None:
+        """Codex path sets content_stream=b""; page with fonts must NOT trigger BOX_004."""
+        font = PdfFont(
+            name="F1", base_font="Helvetica", font_type="Type1", embedded=False, subset=False
+        )
+        doc = SemanticDocument(
+            version="1.7",
+            page_count=1,
+            is_encrypted=False,
+            pages=[
+                SemanticPage(
+                    page_num=1,
+                    media_box=PdfBox(0, 0, 612, 792),
+                    content_stream=b"",
+                    fonts={"F1": font},
+                )
+            ],
+        )
+        analyzer = PageGeometryAnalyzer()
+        findings = analyzer.analyze(doc, [])
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
+        assert len(empty) == 0
+
+    @staticmethod
+    def test_codex_path_with_images_no_finding() -> None:
+        """Codex path sets content_stream=b""; page with images must NOT trigger BOX_004."""
+        cs = PdfColorSpace(name="CS1", cs_type="DeviceCMYK", components=4)
+        img = PdfImage(
+            name="Im1", width=100, height=100, bits_per_component=8, color_space=cs, page_num=1
+        )
+        doc = SemanticDocument(
+            version="1.7",
+            page_count=1,
+            is_encrypted=False,
+            pages=[
+                SemanticPage(
+                    page_num=1,
+                    media_box=PdfBox(0, 0, 612, 792),
+                    content_stream=b"",
+                    images=[img],
+                )
+            ],
+        )
+        analyzer = PageGeometryAnalyzer()
+        findings = analyzer.analyze(doc, [])
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
+        assert len(empty) == 0
+
+    @staticmethod
+    def test_codex_path_with_annotations_no_finding() -> None:
+        """Codex path sets content_stream=b""; page with annotations must NOT trigger BOX_004."""
+        annot = PdfAnnotation(subtype="Widget", rect=PdfBox(10, 10, 200, 50), page_num=1)
+        doc = SemanticDocument(
+            version="1.7",
+            page_count=1,
+            is_encrypted=False,
+            pages=[
+                SemanticPage(
+                    page_num=1,
+                    media_box=PdfBox(0, 0, 612, 792),
+                    content_stream=b"",
+                    annotations=[annot],
+                )
+            ],
+        )
+        analyzer = PageGeometryAnalyzer()
+        findings = analyzer.analyze(doc, [])
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
+        assert len(empty) == 0
+
+    @staticmethod
+    def test_codex_path_vector_only_no_finding() -> None:
+        """Codex path: page with content_ops (vector paths) but no fonts/images must NOT trigger BOX_004."""
+        doc = SemanticDocument(
+            version="1.7",
+            page_count=1,
+            is_encrypted=False,
+            pages=[
+                SemanticPage(
+                    page_num=1,
+                    media_box=PdfBox(0, 0, 612, 792),
+                    content_stream=b"",
+                    resources={
+                        "codex_analysis": {
+                            "content_ops": [
+                                {"op": "m", "operands": [0.0, 0.0]},
+                                {"op": "l", "operands": [100.0, 100.0]},
+                                {"op": "S", "operands": []},
+                            ]
+                        }
+                    },
+                )
+            ],
+        )
+        analyzer = PageGeometryAnalyzer()
+        findings = analyzer.analyze(doc, [])
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
+        assert len(empty) == 0
 
 
 class TestContentSafetyMargin:

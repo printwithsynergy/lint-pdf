@@ -66,9 +66,7 @@ def _image(
 
 def test_low_dpi_72_emits_error() -> None:
     """Image at 72 DPI is below 100 → LPDF_IMG_001 with ERROR severity."""
-    ctx = _FakeCtx(
-        config={"codex_payload": _payload([_image(x_dpi=72.0, y_dpi=72.0)])}
-    )
+    ctx = _FakeCtx(config={"codex_payload": _payload([_image(x_dpi=72.0, y_dpi=72.0)])})
     findings = ImageResolutionAnalyzer().analyze_v2(ctx)
     assert len(findings) == 1
     f = findings[0]
@@ -81,18 +79,14 @@ def test_low_dpi_72_emits_error() -> None:
 
 def test_dpi_200_no_finding() -> None:
     """Image at 200 DPI is above the 150 DPI minimum → no finding."""
-    ctx = _FakeCtx(
-        config={"codex_payload": _payload([_image(x_dpi=200.0, y_dpi=200.0)])}
-    )
+    ctx = _FakeCtx(config={"codex_payload": _payload([_image(x_dpi=200.0, y_dpi=200.0)])})
     findings = ImageResolutionAnalyzer().analyze_v2(ctx)
     assert findings == []
 
 
 def test_dpi_120_emits_warning() -> None:
     """Image at 120 DPI is below 150 but above 100 → LPDF_IMG_001 WARNING."""
-    ctx = _FakeCtx(
-        config={"codex_payload": _payload([_image(x_dpi=120.0, y_dpi=130.0)])}
-    )
+    ctx = _FakeCtx(config={"codex_payload": _payload([_image(x_dpi=120.0, y_dpi=130.0)])})
     findings = ImageResolutionAnalyzer().analyze_v2(ctx)
     assert len(findings) == 1
     f = findings[0]
@@ -124,11 +118,7 @@ def test_upscaled_image_emits_lpdf_img_006() -> None:
     """Image placed at 400% (placed_width >> pixel width) → LPDF_IMG_006."""
     # 100 px image placed at 400 pts → 400% upscale
     ctx = _FakeCtx(
-        config={
-            "codex_payload": _payload(
-                [_image(width_px=100, placed_width_pts=400.0)]
-            )
-        }
+        config={"codex_payload": _payload([_image(width_px=100, placed_width_pts=400.0)])}
     )
     findings = ImageResolutionAnalyzer().analyze_v2(ctx)
     upscale_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_006"]
@@ -142,11 +132,7 @@ def test_not_upscaled_no_lpdf_img_006() -> None:
     """Image placed at 150% is below the 200% threshold → no LPDF_IMG_006."""
     # 100 px image placed at 150 pts → 150% scale
     ctx = _FakeCtx(
-        config={
-            "codex_payload": _payload(
-                [_image(width_px=100, placed_width_pts=150.0)]
-            )
-        }
+        config={"codex_payload": _payload([_image(width_px=100, placed_width_pts=150.0)])}
     )
     findings = ImageResolutionAnalyzer().analyze_v2(ctx)
     assert not any(f.inspection_id == "LPDF_IMG_006" for f in findings)
@@ -186,9 +172,7 @@ def test_missing_codex_payload_returns_empty() -> None:
 def test_uses_min_of_x_and_y_dpi() -> None:
     """Effective DPI = min(x_dpi, y_dpi); y axis drives the violation."""
     # x is fine (300), y is low (80) → error
-    ctx = _FakeCtx(
-        config={"codex_payload": _payload([_image(x_dpi=300.0, y_dpi=80.0)])}
-    )
+    ctx = _FakeCtx(config={"codex_payload": _payload([_image(x_dpi=300.0, y_dpi=80.0)])})
     findings = ImageResolutionAnalyzer().analyze_v2(ctx)
     assert len(findings) == 1
     assert findings[0].details["dpi_effective"] == pytest.approx(80.0)

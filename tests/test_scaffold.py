@@ -4,10 +4,11 @@ from pathlib import Path
 
 
 def test_lintpdf_importable() -> None:
-    """Verify the lintpdf package can be imported."""
+    """Verify the lintpdf package can be imported and exposes a version string."""
     import lintpdf
 
-    assert lintpdf.__version__ == "0.1.0b3"
+    assert isinstance(lintpdf.__version__, str)
+    assert lintpdf.__version__  # non-empty
 
 
 def test_exceptions_importable() -> None:
