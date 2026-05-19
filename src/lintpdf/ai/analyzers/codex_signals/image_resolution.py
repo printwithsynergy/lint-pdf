@@ -4,7 +4,7 @@ Consumes ``CodexDocument.images[*].effective_resolution_dpi`` from the
 codex-pdf extraction payload and flags images whose effective (placed)
 DPI is below the minimum threshold.
 
-Effective DPI accounts for scale: a 300 DPI image enlarged 2× prints
+Effective DPI accounts for scale: a 300 DPI image enlarged 2x prints
 at 150 DPI. Codex computes this from the actual placed rect using
 ``page.get_image_rects()`` (v1.17.0+).
 
@@ -129,10 +129,7 @@ class ImageResolutionAnalyzer(BaseAIAnalyzer):
                     )
 
         # --- LPDF_IMG_006: upscaled >200% ---
-        if (
-            isinstance(placed_width_pts, (int, float))
-            and width_px > 0.0
-        ):
+        if isinstance(placed_width_pts, (int, float)) and width_px > 0.0:
             placed_w = float(placed_width_pts)
             # Natural width in points at 72 ppi: width_px / 72 * 72 = width_px pts
             natural_width_pts = width_px  # pixels == points at the PDF 72 ppi base
