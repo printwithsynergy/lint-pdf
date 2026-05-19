@@ -1129,7 +1129,7 @@ wheels = [
 
 [[package]]
 name = "lint-pdf"
-version = "0.1.0b23"
+version = "0.1.0b25"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
