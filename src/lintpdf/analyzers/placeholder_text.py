@@ -46,11 +46,28 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     # but are sitting in the live artwork. Caught by Opus on
     # DailyFiber_10up multi-up sheet.
     (re.compile(r"\bOVERLAP\s+IN\s+SEAL\b", re.IGNORECASE), "OVERLAP IN SEAL"),
+    (re.compile(r"\bOVERLAP\s+FIN\s+SEAL\b", re.IGNORECASE), "OVERLAP FIN SEAL"),
     (re.compile(r"\bEND\s+SEAL\b", re.IGNORECASE), "END SEAL"),
     (re.compile(r"\bSEAL\s+AREA\b", re.IGNORECASE), "SEAL AREA"),
     (re.compile(r"\bDIE\s+CUT\s+AREA\b", re.IGNORECASE), "DIE CUT AREA"),
     (re.compile(r"\bTemplate\s*#\s*\d+\b", re.IGNORECASE), "Template #..."),
     (re.compile(r"\bINSERT\s+IN\s+(?:END\s+SEAL|HERE)\b", re.IGNORECASE), "INSERT IN ..."),
+    # Vision-gap audit additions — technical production annotations
+    # that should never reach the live artwork layer.
+    (re.compile(r"\bTEAR\s+(?:ACROSS|HERE|OPEN)\b", re.IGNORECASE), "TEAR HERE"),
+    (re.compile(r"\bD[ÉE]CHIRER\s+ICI\b", re.IGNORECASE), "DÉCHIRER ICI"),
+    (re.compile(r"\bUNDER\s+PANEL\b", re.IGNORECASE), "UNDER PANEL"),
+    (re.compile(r"\bGUSSET\s+PANEL\b", re.IGNORECASE), "GUSSET PANEL"),
+    (re.compile(r"\bCOPY\s+NOT\s+RECOMMENDED\b", re.IGNORECASE), "COPY NOT RECOMMENDED"),
+    (re.compile(r"\bCOLOR\s+AND\s+IMAGES?\s+OK\b", re.IGNORECASE), "COLOR AND IMAGES OK"),
+    (re.compile(r"\bATTACH\s+(?:BACK|FRONT)\s+PANEL\b", re.IGNORECASE), "ATTACH PANEL"),
+    (re.compile(r"\bFOR\s+POSITION\s+ONLY\b", re.IGNORECASE), "FOR POSITION ONLY"),
+    (re.compile(r"\bFPO\b"), "FPO"),
+    (re.compile(r"\bPRINT\s+AREA\b", re.IGNORECASE), "PRINT AREA"),
+    (re.compile(r"\bFOLD\s+(?:LINE|HERE|AREA)\b", re.IGNORECASE), "FOLD LINE"),
+    (re.compile(r"\bCUT\s+(?:LINE|HERE|AREA)\b", re.IGNORECASE), "CUT LINE"),
+    (re.compile(r"\bPERF(?:ORATION)?\s+(?:LINE|HERE)\b", re.IGNORECASE), "PERF LINE"),
+    (re.compile(r"\bSCORE\s+(?:LINE|HERE)\b", re.IGNORECASE), "SCORE LINE"),
     (
         re.compile(r"\bENHANCED\s+TO\s+SHOW\s+DETAIL\b", re.IGNORECASE),
         "ENHANCED TO SHOW DETAIL",

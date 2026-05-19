@@ -75,24 +75,37 @@ class DimensionCalloutAnalyzer(BaseAnalyzer):
     ) -> list[Finding]:
         findings: list[Finding] = []
 
+        # Build event raw_text index for codex path (content_stream=b"")
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        event_texts_by_page: dict[int, list[str]] = {}
+        for evt in events:
+            if isinstance(evt, TextRenderedEvent) and evt.raw_text:
+                event_texts_by_page.setdefault(evt.page_num, []).append(evt.raw_text)
+
         for page in document.pages:
             raw = page.content_stream
-            if not raw:
-                continue
-            if isinstance(raw, str):
-                raw = raw.encode("latin-1", errors="replace")
-
             page_dims: list[str] = []
-            for m in _PDF_LITERAL_STRING.finditer(raw):
-                try:
-                    s = m.group(1).decode("latin-1")
-                except Exception:
-                    continue
-                if not _STANDALONE_DIMENSION.match(s):
-                    continue
-                snippet = s.strip()
-                if snippet not in page_dims:
-                    page_dims.append(snippet)
+
+            if raw:
+                if isinstance(raw, str):
+                    raw = raw.encode("latin-1", errors="replace")
+                for m in _PDF_LITERAL_STRING.finditer(raw):
+                    try:
+                        s = m.group(1).decode("latin-1")
+                    except Exception:
+                        continue
+                    if _STANDALONE_DIMENSION.match(s):
+                        snippet = s.strip()
+                        if snippet not in page_dims:
+                            page_dims.append(snippet)
+            else:
+                # Codex path: scan raw_text strings from TextRenderedEvents
+                for txt in event_texts_by_page.get(page.page_num, []):
+                    if _STANDALONE_DIMENSION.match(txt):
+                        snippet = txt.strip()
+                        if snippet not in page_dims:
+                            page_dims.append(snippet)
 
             if len(page_dims) < _MIN_DIMENSIONS_PER_PAGE:
                 continue
@@ -124,4 +137,5 @@ class DimensionCalloutAnalyzer(BaseAnalyzer):
                     object_type="text",
                 )
             )
+        return findings
         return findings
