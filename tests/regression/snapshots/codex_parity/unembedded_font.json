@@ -58,14 +58,6 @@
     },
     {
       "category": "",
-      "inspection_id": "LPDF_BOX_004",
-      "iso_clause": "",
-      "page_num": 1,
-      "severity": "advisory",
-      "source": "engine"
-    },
-    {
-      "category": "",
       "inspection_id": "LPDF_COLOR_006",
       "iso_clause": "ISO 15930-7:2010 6.2.3",
       "page_num": 0,
@@ -181,11 +173,11 @@
     "workflow": "CMYK"
   },
   "summary": {
-    "advisory_count": 12,
+    "advisory_count": 11,
     "error_count": 1,
     "page_count": 1,
     "passed": false,
-    "total_findings": 21,
+    "total_findings": 20,
     "warning_count": 8
   }
 }

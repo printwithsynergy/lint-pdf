@@ -85,9 +85,6 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
 
     pages: list[SemanticPage] = []
     analysis_payload = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
-    page_analysis = (
-        analysis_payload.get("page_1") if isinstance(analysis_payload.get("page_1"), dict) else {}
-    )
     for page in pages_payload:
         boxes = page.get("boxes") if isinstance(page, dict) else {}
         media = _box_or_fallback(boxes, "media")
@@ -106,6 +103,12 @@ def extract_semantic_document_via_codex(pdf_bytes: bytes) -> tuple[SemanticDocum
 
         page_num = _as_int(page.get("page_num"), 1)
         page_color_spaces = _page_color_spaces(page, color_space_by_id)
+        page_analysis_key = f"page_{page_num}"
+        page_analysis = (
+            analysis_payload.get(page_analysis_key)
+            if isinstance(analysis_payload.get(page_analysis_key), dict)
+            else {}
+        )
         pages.append(
             SemanticPage(
                 page_num=page_num,

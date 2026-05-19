@@ -373,6 +373,35 @@ class TestEmptyPage:
         empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
         assert len(empty) == 0
 
+    @staticmethod
+    def test_codex_path_vector_only_no_finding() -> None:
+        """Codex path: page with content_ops (vector paths) but no fonts/images must NOT trigger BOX_004."""
+        doc = SemanticDocument(
+            version="1.7",
+            page_count=1,
+            is_encrypted=False,
+            pages=[
+                SemanticPage(
+                    page_num=1,
+                    media_box=PdfBox(0, 0, 612, 792),
+                    content_stream=b"",
+                    resources={
+                        "codex_analysis": {
+                            "content_ops": [
+                                {"op": "m", "operands": [0.0, 0.0]},
+                                {"op": "l", "operands": [100.0, 100.0]},
+                                {"op": "S", "operands": []},
+                            ]
+                        }
+                    },
+                )
+            ],
+        )
+        analyzer = PageGeometryAnalyzer()
+        findings = analyzer.analyze(doc, [])
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
+        assert len(empty) == 0
+
 
 class TestContentSafetyMargin:
     """Test LPDF_BOX_005: content within safety margin of trim edge."""

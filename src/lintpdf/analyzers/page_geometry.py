@@ -443,9 +443,12 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             )
 
         # LPDF_BOX_004: Empty page (no content stream)
-        # On the codex ingest path content_stream is always b""; only fire when
-        # there is also no structural evidence of content (fonts, images, annotations).
-        if not page.content_stream and not page.fonts and not page.images and not page.annotations:
+        # On the codex ingest path content_stream is always b""; guard against false
+        # positives by also checking structural evidence (fonts, images, annotations)
+        # and codex content_ops (catches vector-only pages with no text or raster content).
+        _codex = page.resources.get("codex_analysis") if isinstance(page.resources, dict) else None
+        _has_codex_ops = bool(isinstance(_codex, dict) and _codex.get("content_ops"))
+        if not page.content_stream and not page.fonts and not page.images and not page.annotations and not _has_codex_ops:
             findings.append(
                 Finding(
                     inspection_id="LPDF_BOX_004",
