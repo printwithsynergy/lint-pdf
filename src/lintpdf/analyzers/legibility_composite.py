@@ -212,7 +212,7 @@ class LegibilityCompositeAnalyzer(BaseAnalyzer):
         offending outlined-text region with its bbox so Lens can circle
         each instance on the canvas. Capped at 5 per page to keep the
         findings panel manageable on dense ingredient panels."""
-        _MAX_PER_PAGE = 5
+        max_per_page = 5
         out: list[Finding] = []
         for page in getattr(document, "pages", None) or []:
             regions = getattr(page, "detected_text_regions", None)
@@ -220,7 +220,7 @@ class LegibilityCompositeAnalyzer(BaseAnalyzer):
                 continue
             emitted = 0
             for region in regions:
-                if emitted >= _MAX_PER_PAGE:
+                if emitted >= max_per_page:
                     break
                 bbox_obj = getattr(region, "bbox", None)
                 if bbox_obj is None:

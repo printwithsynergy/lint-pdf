@@ -122,12 +122,12 @@ class LegalCopyMinSizeAnalyzer(BaseAnalyzer):
         # pages. Emit one finding per offending region with its bbox so
         # Lens can circle each instance on the canvas. Capped at 5 per
         # page to keep the findings panel manageable on dense panels.
-        _MAX_PER_PAGE = 5
+        max_per_page = 5
         for page in getattr(document, "pages", None) or []:
             regions = getattr(page, "detected_text_regions", None) or []
             emitted = 0
             for region in regions:
-                if emitted >= _MAX_PER_PAGE:
+                if emitted >= max_per_page:
                     break
                 bbox_obj = getattr(region, "bbox", None)
                 if bbox_obj is None:
@@ -150,9 +150,9 @@ class LegalCopyMinSizeAnalyzer(BaseAnalyzer):
                         inspection_id="LPDF_LEGALCOPY_001",
                         severity=Severity.ADVISORY,
                         message=(
-                            "Outlined text ~%.1f pt on page %d" % (h, page.page_num)
-                            + " is below FDA / CFIA minimum of %.0f pt" % _LEGAL_MIN_PT
-                            + (" \u2014 \"%s\"" % text_preview if text_preview else "")
+                            f"Outlined text ~{h:.1f} pt on page {page.page_num}"
+                            f" is below FDA / CFIA minimum of {_LEGAL_MIN_PT:.0f} pt"
+                            + (' — "' + text_preview + '"' if text_preview else "")
                             + ". Confirm FDA 21 CFR 101.2 / CFIA SOR/2003-11."
                         ),
                         page_num=page.page_num,
