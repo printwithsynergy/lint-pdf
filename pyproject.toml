@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lint-pdf"
-version = "0.1.0b31"
+version = "0.1.0b32"
 description = "Detection-only PDF preflight engine"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -72,7 +72,7 @@ dependencies = [
     # Canonical PDF facts + render engine. lint-pdf consumes codex
     # for parse + raster surfaces; exports remain in lint as one-off
     # assets (see codex_render.py + reports/markup_pdf_report.py).
-    "codex-pdf>=1.18.0",
+    "codex-pdf>=1.19.0",
 ]
 
 [project.scripts]
