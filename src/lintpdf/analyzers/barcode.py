@@ -497,20 +497,33 @@ class BarcodeAnalyzer(BaseAnalyzer):
 
         findings: list[Finding] = []
 
-        # Build candidates per page
+        # Build candidates per page.
+        # Barcode bars appear as either:
+        #   (a) thin stroked lines (line_width < narrow_stroke_width), or
+        #   (b) narrow filled rectangles (fill=True, bbox width < narrow_stroke_width)
+        # Many packaging PDFs use filled rects for bar construction, so checking
+        # only stroke events misses the entire candidate on those files.
         candidates: dict[int, _BarcodeCandidate] = {}
 
         for event in events:
-            if (
-                isinstance(event, PathPaintingEvent)
-                and event.stroke
-                and 0 < event.line_width < self.narrow_stroke_width
-            ):
+            if not isinstance(event, PathPaintingEvent):
+                continue
+            bbox = getattr(event, "bbox", None)
+            if event.stroke and 0 < event.line_width < self.narrow_stroke_width:
                 page_num = event.page_num
                 if page_num not in candidates:
                     candidates[page_num] = _BarcodeCandidate(page_num)
-                bbox = getattr(event, "bbox", None)
                 candidates[page_num].add_stroke(event.line_width, bbox)
+            elif event.fill and not event.stroke and bbox is not None:
+                bar_w = bbox[2] - bbox[0]
+                bar_h = bbox[3] - bbox[1]
+                # A barcode bar is a tall-narrow rect: width < narrow_stroke_width
+                # and at least 3× taller than it is wide.
+                if 0 < bar_w < self.narrow_stroke_width and bar_h > bar_w * 3:
+                    page_num = event.page_num
+                    if page_num not in candidates:
+                        candidates[page_num] = _BarcodeCandidate(page_num)
+                    candidates[page_num].add_stroke(bar_w, bbox)
 
         # LPDF_BARCODE_001: Flag pages with many narrow strokes
         barcode_pages: list[_BarcodeCandidate] = []
