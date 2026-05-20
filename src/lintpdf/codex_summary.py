@@ -125,6 +125,8 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
             }
 
     dpi_values: list[float] = []
+    actual_dpi_values: list[float] = []
+    seen_xref_keys: set[str] = set()
     below_300 = 0
     largest: tuple[int, int, int] | None = None
     for image in images:
@@ -142,16 +144,29 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
             if isinstance(image.get("effective_resolution_dpi"), dict)
             else None
         )
-        if resolution is None:
-            continue
-        x_dpi = _as_float(resolution.get("x_dpi"))
-        y_dpi = _as_float(resolution.get("y_dpi"))
-        if x_dpi is None or y_dpi is None:
-            continue
-        avg_dpi = (x_dpi + y_dpi) / 2.0
-        dpi_values.append(avg_dpi)
-        if avg_dpi < 300:
-            below_300 += 1
+        if resolution is not None:
+            x_dpi = _as_float(resolution.get("x_dpi"))
+            y_dpi = _as_float(resolution.get("y_dpi"))
+            if x_dpi is not None and y_dpi is not None:
+                avg_dpi = (x_dpi + y_dpi) / 2.0
+                dpi_values.append(avg_dpi)
+                if avg_dpi < 300:
+                    below_300 += 1
+
+        stored = (
+            image.get("stored_resolution_dpi")
+            if isinstance(image.get("stored_resolution_dpi"), dict)
+            else None
+        )
+        if stored is not None:
+            image_id = str(image.get("image_id") or "")
+            xref_key = image_id.rsplit("-", 1)[0] if image_id else image_id
+            if xref_key not in seen_xref_keys:
+                seen_xref_keys.add(xref_key)
+                sx = _as_float(stored.get("x_dpi"))
+                sy = _as_float(stored.get("y_dpi"))
+                if sx is not None and sy is not None:
+                    actual_dpi_values.append((sx + sy) / 2.0)
 
     spot_by_name: dict[str, dict[str, Any]] = {}
     color_space_by_id: dict[str, dict[str, Any]] = {}
@@ -304,6 +319,8 @@ def _base_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "images": {
             "dpi_avg": round(sum(dpi_values) / len(dpi_values), 3) if dpi_values else None,
             "dpi_min": round(min(dpi_values), 3) if dpi_values else None,
+            "actual_dpi_avg": round(sum(actual_dpi_values) / len(actual_dpi_values), 3) if actual_dpi_values else None,
+            "actual_dpi_min": round(min(actual_dpi_values), 3) if actual_dpi_values else None,
             "below_300_dpi": below_300,
             "largest_width_px": largest[0] if largest else None,
             "largest_height_px": largest[1] if largest else None,
