@@ -1,3 +1,3 @@
 """LintPDF — Detection-only PDF preflight engine."""
 
-__version__ = "0.1.0b27"
+__version__ = "0.1.0b28"

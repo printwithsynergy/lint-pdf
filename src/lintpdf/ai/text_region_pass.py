@@ -18,6 +18,10 @@ Multiple downstream consumers read this field:
 
 Ground rules:
 
+* **Primary path**: Claude Haiku 4.5 vision OCR (CPU, no extra infra).
+  Activated on every deploy; requires only ``ANTHROPIC_API_KEY``.
+* **Opt-in GPU path**: PaddleOCR via ``LINTPDF_GPU_INFERENCE_URL`` —
+  higher throughput for high-volume deploys; overrides CPU results when set.
 * On GPU outage (``GPUServiceUnavailableError``) or any unexpected exception,
   leave the field as ``None`` for affected pages and log a warning. Don't fail
   the job — the consumer analyzers all treat ``None`` as "pass not run".
@@ -29,6 +33,7 @@ Ground rules:
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.gpu_client import (
@@ -136,6 +141,78 @@ def _scale_bbox(
     return pdf_box, polygon
 
 
+def _run_claude_ocr_fallback(
+    pdf_bytes: bytes,
+    pages: list[SemanticPage],
+) -> None:
+    """CPU OCR fallback using Claude Haiku 4.5 vision.
+
+    Called when the GPU inference service is not configured. Requires
+    ``ANTHROPIC_API_KEY`` (already a base dependency). Populates
+    ``page.detected_text_regions`` in place; silently skips if the key
+    is absent or the Claude call fails.
+
+    ``OCRTextBlock.bbox`` is already in PDF user-space points (bottom-left
+    origin) so no pixel→point conversion is needed — unlike the GPU path
+    which receives pixel-space bboxes from PaddleOCR.
+    """
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        logger.debug(
+            "text_region_pass: ANTHROPIC_API_KEY not set; CPU OCR fallback skipped"
+        )
+        return
+
+    try:
+        from lintpdf.ai.ocr_claude import ClaudeOCR
+    except ImportError as exc:
+        logger.warning("text_region_pass: claude OCR import failed: %s", exc)
+        return
+
+    try:
+        ocr = ClaudeOCR()
+    except RuntimeError as exc:
+        logger.warning("text_region_pass: claude OCR init failed: %s", exc)
+        return
+
+    page_nums = [p.page_num for p in pages]
+    page_by_num = {p.page_num: p for p in pages}
+
+    try:
+        ocr_results = ocr.extract(pdf_bytes, page_nums)
+    except Exception as exc:
+        logger.warning("text_region_pass: claude OCR extraction failed: %s", exc)
+        return
+
+    for ocr_page in ocr_results:
+        page = page_by_num.get(ocr_page.page_num)
+        if page is None:
+            continue
+        regions: list[DetectedTextRegion] = []
+        for block in ocr_page.blocks:
+            if len(block.bbox) != 4:
+                continue
+            x0, y0, x1, y1 = block.bbox
+            if x1 <= x0:
+                x1 = x0 + 1e-3
+            if y1 <= y0:
+                y1 = y0 + 1e-3
+            regions.append(
+                DetectedTextRegion(
+                    bbox=PdfBox(x0, y0, x1, y1),
+                    text=block.text or None,
+                    confidence=block.confidence,
+                    polygon=None,
+                    source="claude-ocr",
+                )
+            )
+        page.detected_text_regions = regions
+        logger.debug(
+            "text_region_pass: claude-ocr page %d → %d regions",
+            ocr_page.page_num,
+            len(regions),
+        )
+
+
 def run(
     document: SemanticDocument,
     events: list[ContentStreamEvent],
@@ -146,19 +223,36 @@ def run(
     """Mutate ``document`` in place: populate ``page.detected_text_regions``.
 
     Pages that don't pass the trigger heuristic remain at ``None``.
-    Pages that pass but where the GPU call fails also remain at ``None``
+    Pages that pass but where OCR fails also remain at ``None``
     (consumers treat that as "pass not run, can't decide").
-    """
-    # Lazy imports keep this module importable in unit-test sandboxes that
-    # don't have httpx / pillow / paddleocr available.
-    from lintpdf.ai.gpu_client import get_gpu_client
-    from lintpdf.rendering import render_page_to_image
 
+    Execution order:
+    1. Claude Haiku 4.5 vision OCR — **primary CPU path**, no extra infra
+       required (uses ``ANTHROPIC_API_KEY`` already present on all deploys).
+    2. GPU inference (PaddleOCR) — **opt-in**, only used when
+       ``LINTPDF_GPU_INFERENCE_URL`` is set. Higher throughput for
+       high-volume deploys but requires a separate GPU inference service.
+    """
     pages_to_run: list[SemanticPage] = [
         page for page in document.pages if should_run_for_page(page, events)
     ]
     if not pages_to_run:
         return
+
+    # --- Primary: Claude Haiku CPU OCR ---
+    # Used by default on all deploys. Falls through to GPU path only
+    # when LINTPDF_GPU_INFERENCE_URL is explicitly set AND the CPU pass
+    # has not already populated a page's regions.
+    _run_claude_ocr_fallback(pdf_bytes, pages_to_run)
+
+    # --- Opt-in: GPU PaddleOCR (overrides Claude results when configured) ---
+    if not os.environ.get("LINTPDF_GPU_INFERENCE_URL"):
+        return
+
+    # Lazy imports keep this module importable in unit-test sandboxes that
+    # don't have httpx / pillow / paddleocr available.
+    from lintpdf.ai.gpu_client import get_gpu_client
+    from lintpdf.rendering import render_page_to_image
 
     try:
         gpu = get_gpu_client()
@@ -219,3 +313,4 @@ def run(
             )
 
         page.detected_text_regions = regions
+

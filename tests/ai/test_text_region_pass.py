@@ -5,9 +5,8 @@ Covers:
 * ``DetectedTextRegion`` shape + default values.
 * ``should_run_for_page`` heuristic on synthetic events.
 * ``_scale_bbox`` pixel→points conversion (with y-axis flip).
-* ``run`` end-to-end with a mocked GPU client — pages selected by the
-  trigger heuristic get populated; pages that don't are left ``None``.
-* ``run`` graceful handling when the GPU client raises an unavailable error.
+* ``run`` end-to-end — Claude Haiku CPU primary path and opt-in GPU path.
+* ``run`` graceful handling when OCR is unavailable.
 """
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from unittest.mock import MagicMock, patch
 
 from lintpdf.ai import text_region_pass
 from lintpdf.ai.gpu_client import GPUServiceUnavailableError
+from lintpdf.ai.ocr_types import OCRPage, OCRTextBlock
 from lintpdf.semantic.events import (
     ImagePlacedEvent,
     PathPaintingEvent,
@@ -154,8 +154,8 @@ class TestScaleBbox:
 class TestRunPass:
     @staticmethod
     def test_populates_qualifying_pages_only() -> None:
-        # Page 1 is path-heavy, page 2 is text-only. Only page 1 should get
-        # populated.
+        # Page 1 is path-heavy (qualifies), page 2 is text-only (does not).
+        # Primary CPU path (ClaudeOCR) should populate page 1 only.
         page1 = _make_page(1)
         page2 = _make_page(2)
         doc = _make_doc([page1, page2])
@@ -175,36 +175,32 @@ class TestRunPass:
             for i in range(20)
         ]
 
-        gpu = MagicMock()
-        gpu.detect_outlines.return_value = {
-            "text_regions": [
-                {
-                    "text": "OUTLINED",
-                    "confidence": 0.92,
-                    "bbox": {"x1": 10, "y1": 10, "x2": 200, "y2": 40},
-                }
-            ],
-            "image_width": 612,
-            "image_height": 792,
-        }
+        ocr_result = [
+            OCRPage(
+                page_num=1,
+                blocks=[OCRTextBlock(text="OUTLINED", bbox=[10.0, 752.0, 200.0, 782.0], confidence=0.92)],
+            )
+        ]
+
+        import os
 
         with (
-            patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
-            patch(
-                "lintpdf.rendering.render_page_to_image",
-                return_value=b"\x89PNG\r\n\x1a\n",
-            ),
+            patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}, clear=False),
+            patch("lintpdf.ai.ocr_claude.ClaudeOCR.extract", return_value=ocr_result),
         ):
             text_region_pass.run(doc, events, b"%PDF-1.7\n%fake\n")
 
         assert page1.detected_text_regions is not None
         assert len(page1.detected_text_regions) == 1
         assert page1.detected_text_regions[0].text == "OUTLINED"
+        assert page1.detected_text_regions[0].source == "claude-ocr"
         # Untriggered pages stay None.
         assert page2.detected_text_regions is None
 
     @staticmethod
-    def test_gpu_unavailable_leaves_field_none() -> None:
+    def test_gpu_opt_in_overrides_claude_results() -> None:
+        # When LINTPDF_GPU_INFERENCE_URL is set, GPU path runs after Claude
+        # and overwrites results for processed pages.
         page = _make_page(1)
         doc = _make_doc([page])
         events: list = [
@@ -212,23 +208,71 @@ class TestRunPass:
             for i in range(60)
         ]
 
+        ocr_result = [
+            OCRPage(
+                page_num=1,
+                blocks=[OCRTextBlock(text="CLAUDE_TEXT", bbox=[0.0, 0.0, 100.0, 20.0], confidence=0.5)],
+            )
+        ]
+
         gpu = MagicMock()
-        gpu.detect_outlines.side_effect = GPUServiceUnavailableError("circuit open")
+        gpu.detect_outlines.return_value = {
+            "text_regions": [
+                {
+                    "text": "GPU_TEXT",
+                    "confidence": 0.99,
+                    "bbox": {"x1": 10, "y1": 10, "x2": 200, "y2": 40},
+                }
+            ],
+            "image_width": 612,
+            "image_height": 792,
+        }
+
+        import os
 
         with (
-            patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
-            patch(
-                "lintpdf.rendering.render_page_to_image",
-                return_value=b"\x89PNG\r\n\x1a\n",
+            patch.dict(
+                os.environ,
+                {"ANTHROPIC_API_KEY": "test-key", "LINTPDF_GPU_INFERENCE_URL": "http://gpu"},
+                clear=False,
             ),
+            patch("lintpdf.ai.ocr_claude.ClaudeOCR.extract", return_value=ocr_result),
+            patch("lintpdf.ai.gpu_client.get_gpu_client", return_value=gpu),
+            patch("lintpdf.rendering.render_page_to_image", return_value=b"\x89PNG\r\n\x1a\n"),
         ):
             text_region_pass.run(doc, events, b"%PDF-1.7\n%fake\n")
+
+        # GPU result overwrites Claude result.
+        assert page.detected_text_regions is not None
+        assert page.detected_text_regions[0].text == "GPU_TEXT"
+        assert page.detected_text_regions[0].source == "paddleocr"
+
+    @staticmethod
+    def test_ocr_unavailable_leaves_field_none() -> None:
+        # When Claude OCR fails (no API key) and GPU is not configured,
+        # detected_text_regions stays None.
+        page = _make_page(1)
+        doc = _make_doc([page])
+        events: list = [
+            PathPaintingEvent(operator="f", page_num=1, operator_index=i, fill=True, stroke=False)
+            for i in range(60)
+        ]
+
+        import os
+
+        with patch.dict(os.environ, {}, clear=False):
+            # Ensure no API key and no GPU URL in the environment.
+            env = os.environ.copy()
+            env.pop("ANTHROPIC_API_KEY", None)
+            env.pop("LINTPDF_GPU_INFERENCE_URL", None)
+            with patch.dict(os.environ, env, clear=True):
+                text_region_pass.run(doc, events, b"%PDF-1.7\n%fake\n")
 
         assert page.detected_text_regions is None
 
     @staticmethod
-    def test_no_pages_qualify_skips_gpu_call_entirely() -> None:
-        # Clean text-only document — should never call get_gpu_client.
+    def test_no_pages_qualify_skips_ocr_entirely() -> None:
+        # Clean text-only document — should never call ClaudeOCR or GPU.
         page = _make_page(1)
         doc = _make_doc([page])
         events: list = [
@@ -244,9 +288,14 @@ class TestRunPass:
             for i in range(20)
         ]
 
+        ocr_factory = MagicMock()
         gpu_factory = MagicMock()
-        with patch("lintpdf.ai.gpu_client.get_gpu_client", gpu_factory):
+        with (
+            patch("lintpdf.ai.ocr_claude.ClaudeOCR", ocr_factory),
+            patch("lintpdf.ai.gpu_client.get_gpu_client", gpu_factory),
+        ):
             text_region_pass.run(doc, events, b"%PDF-1.7\n")
 
         assert page.detected_text_regions is None
+        ocr_factory.assert_not_called()
         gpu_factory.assert_not_called()
