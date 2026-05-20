@@ -192,6 +192,9 @@ class _Walker:
         "page",
         "page_num",
         "path_pts",
+        "op_non_stroking",
+        "op_stroking",
+        "opm",
         "path_start",
         "pikepdf",
         "rendering_mode",
@@ -221,6 +224,9 @@ class _Walker:
         self.fill_vals: tuple[float, ...] = (0.0,)
         self.stroke_opacity = 1.0
         self.fill_opacity = 1.0
+        self.op_stroking = False
+        self.op_non_stroking = False
+        self.opm = 0
 
         self.path_pts: list[tuple[float, float]] = []
         self.path_start: tuple[float, float] | None = None
@@ -269,6 +275,9 @@ class _Walker:
                 "fv": self.fill_vals,
                 "so": self.stroke_opacity,
                 "fo": self.fill_opacity,
+                "ops": self.op_stroking,
+                "opn": self.op_non_stroking,
+                "opm": self.opm,
             }
         )
 
@@ -287,6 +296,9 @@ class _Walker:
         self.fill_vals = s["fv"]
         self.stroke_opacity = s["so"]
         self.fill_opacity = s["fo"]
+        self.op_stroking = s["ops"]
+        self.op_non_stroking = s["opn"]
+        self.opm = s["opm"]
 
     # ------------------------------------------------------------------
     # Path helpers
@@ -353,6 +365,22 @@ class _Walker:
             return None
         return (x0, y0, x1, y1)
 
+    def _emit_color(self, op: str, op_idx: int, *, stroking: bool) -> None:
+        from lintpdf.semantic.events import ColorChangedEvent
+
+        cs = self.stroke_cs if stroking else self.fill_cs
+        vals = self.stroke_vals if stroking else self.fill_vals
+        self.events.append(
+            ColorChangedEvent(
+                operator=op,
+                page_num=self.page_num,
+                operator_index=op_idx,
+                color_space=cs,
+                color_values=vals,
+                stroking=stroking,
+            )
+        )
+
     def _emit_text(self, text_len: int, op_idx: int, raw_text: str = "") -> None:
         if not self.in_text or self.font_size <= 0:
             return
@@ -413,24 +441,51 @@ class _Walker:
                 self.stroke_opacity = _f(gs["CA"], 1.0)
             if "ca" in gs:
                 self.fill_opacity = _f(gs["ca"], 1.0)
+            # Emit OverprintChangedEvent when OP/op/OPM appear in the dict.
+            if "OP" in gs or "op" in gs or "OPM" in gs:
+                from lintpdf.semantic.events import OverprintChangedEvent
 
-        # colour
+                new_ops = bool(gs["OP"]) if "OP" in gs else self.op_stroking
+                new_opn = bool(gs["op"]) if "op" in gs else self.op_non_stroking
+                new_opm = int(gs["OPM"]) if "OPM" in gs else self.opm
+                self.op_stroking = new_ops
+                self.op_non_stroking = new_opn
+                self.opm = new_opm
+                self.events.append(
+                    OverprintChangedEvent(
+                        operator="gs",
+                        page_num=self.page_num,
+                        operator_index=idx,
+                        overprint_stroking=new_ops,
+                        overprint_non_stroking=new_opn,
+                        overprint_mode=new_opm,
+                    )
+                )
+
+        # colour — update state and emit ColorChangedEvent so overprint
+        # analyzers (LPDF_OVER_001/004/006/008) can see color transitions.
         elif op == "g" and ops:
             self.fill_cs, self.fill_vals = "DeviceGray", (_f(ops[0]),)
+            self._emit_color(op, idx, stroking=False)
         elif op == "G" and ops:
             self.stroke_cs, self.stroke_vals = "DeviceGray", (_f(ops[0]),)
+            self._emit_color(op, idx, stroking=True)
         elif op == "rg" and len(ops) >= 3:
             self.fill_cs = "DeviceRGB"
             self.fill_vals = tuple(_f(v) for v in ops[:3])
+            self._emit_color(op, idx, stroking=False)
         elif op == "RG" and len(ops) >= 3:
             self.stroke_cs = "DeviceRGB"
             self.stroke_vals = tuple(_f(v) for v in ops[:3])
+            self._emit_color(op, idx, stroking=True)
         elif op == "k" and len(ops) >= 4:
             self.fill_cs = "DeviceCMYK"
             self.fill_vals = tuple(_f(v) for v in ops[:4])
+            self._emit_color(op, idx, stroking=False)
         elif op == "K" and len(ops) >= 4:
             self.stroke_cs = "DeviceCMYK"
             self.stroke_vals = tuple(_f(v) for v in ops[:4])
+            self._emit_color(op, idx, stroking=True)
         elif op == "cs" and ops:
             cs = _name(ops[0])
             self.fill_cs = self.cs_to_spot.get(cs, cs)
@@ -439,8 +494,10 @@ class _Walker:
             self.stroke_cs = self.cs_to_spot.get(cs, cs)
         elif op in ("sc", "scn"):
             self.fill_vals = tuple(_f(v) for v in ops if isinstance(v, (int, float)))
+            self._emit_color(op, idx, stroking=False)
         elif op in ("SC", "SCN"):
             self.stroke_vals = tuple(_f(v) for v in ops if isinstance(v, (int, float)))
+            self._emit_color(op, idx, stroking=True)
 
         # path construction
         elif op == "m" and len(ops) >= 2:
@@ -561,6 +618,7 @@ def _extgstate(page: Any) -> dict[str, dict[str, Any]]:
                 ("/ca", float),
                 ("/OP", bool),
                 ("/op", bool),
+                ("/OPM", int),
             ):
                 v = val.get(k)
                 if v is not None:

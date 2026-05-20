@@ -68,35 +68,44 @@ class FontAnalyzer(BaseAnalyzer):
         # detection: emit one ADVISORY per page that has 0 declared
         # fonts AND a non-trivial path-painting count (proxy for
         # outlined glyph paths).
-        findings.extend(self._check_outlined_verify(document))
+        findings.extend(self._check_outlined_verify(document, events))
 
         return findings
 
     @staticmethod
-    def _check_outlined_verify(document: SemanticDocument) -> list[Finding]:
+    def _check_outlined_verify(
+        document: SemanticDocument,
+        events: list[ContentStreamEvent],
+    ) -> list[Finding]:
         """LPDF_FONT_NONE_DECLARED — advisory for pages with no fonts
         but heavy vector content (likely outlined-text artwork).
 
         Conservative trigger: page declares 0 fonts AND its content
-        stream is non-empty AND the document's catalog suggests it's
-        meant for print (any color spaces declared). Capped at one
-        finding per page so we don't double-fire on multi-page
-        outlined documents.
+        stream is non-empty (or the page has path-painting events on the
+        codex path where content_stream=b""). Capped at one finding per
+        page so we don't double-fire on multi-page outlined documents.
         """
+        from lintpdf.semantic.events import PathPaintingEvent
+
+        # Pages that have path painting events — used as fallback on
+        # the codex path where content_stream is always b"".
+        pages_with_paths: set[int] = {
+            e.page_num for e in events if isinstance(e, PathPaintingEvent)
+        }
+
         out: list[Finding] = []
         for page in getattr(document, "pages", None) or []:
             page_fonts = getattr(page, "fonts", None) or {}
             if page_fonts:
                 continue  # at least one font declared — analyzed above
             content = getattr(page, "content_stream", None)
-            if not content:
+            size = (
+                len(content) if isinstance(content, (bytes, bytearray)) else len(str(content))
+            ) if content else 0
+            has_stream = size >= 1024
+            has_events = page.page_num in pages_with_paths
+            if not (has_stream or has_events):
                 continue  # truly empty page; not an outlined-art case
-            # Heuristic: a content stream of more than ~1KB with no
-            # fonts is suspicious. Outlined art is path-heavy; an
-            # empty page would barely register.
-            size = len(content) if isinstance(content, (bytes, bytearray)) else len(str(content))
-            if size < 1024:
-                continue
             out.append(
                 Finding(
                     inspection_id="LPDF_FONT_NONE_DECLARED",
