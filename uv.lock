@@ -418,7 +418,7 @@ wheels = [
 
 [[package]]
 name = "codex-pdf"
-version = "1.17.0"
+version = "1.18.0"
 source = { editable = "../codex-pdf" }
 dependencies = [
     { name = "fastapi" },
@@ -451,6 +451,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.8" },
     { name = "pylibdmtx", marker = "extra == 'ai-barcodes'", specifier = ">=0.1.10" },
     { name = "pymupdf", specifier = ">=1.24" },
+    { name = "pytesseract", marker = "extra == 'ai'", specifier = ">=0.3.10" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "pyzbar", marker = "extra == 'ai-barcodes'", specifier = ">=0.1.9" },
     { name = "redis", marker = "extra == 'redis'", specifier = ">=5.0" },
@@ -1129,7 +1130,7 @@ wheels = [
 
 [[package]]
 name = "lint-pdf"
-version = "0.1.0b27"
+version = "0.1.0b29"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },

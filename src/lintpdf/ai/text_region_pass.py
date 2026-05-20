@@ -1,46 +1,37 @@
 """Shared OCR text-region detection pass.
 
 Single responsibility: for each page that the trigger heuristic selects,
-render at the configured DPI, ask the GPU client for OCR text regions,
-convert pixel-space bboxes to PDF-point coordinates, and stash the result
-on ``SemanticPage.detected_text_regions``.
+delegate to ``codex_pdf.extract.text_regions`` (in-process) and map the
+results onto ``SemanticPage.detected_text_regions``.
 
-Multiple downstream consumers read this field:
+OCR is Codex's responsibility — this module is a thin adapter that reads
+Codex's output. Codex uses PyMuPDF for selectable text and Tesseract
+(CPU, no external service) for pages where PyMuPDF finds nothing (outlined
+or rasterized text). No LLM calls and no GPU services are made here.
+
+Multiple downstream consumers read ``SemanticPage.detected_text_regions``:
 
 * ``ai.analyzers.spatial_analysis.safe_zone_violations`` — text-near-edge
-  detection (DINO call drops ``text.`` from the prompt).
+  detection.
 * ``analyzers.legibility_composite`` + ``analyzers.hairline`` —
-  measured-glyph-height signal alongside ``TextRenderedEvent.font_size_pt``.
-* ``ai.analyzers.color_analysis.{color_cast,banding,skin_tone}`` — text mask
-  to exclude from sample regions.
-* ``ai.analyzers.text_analysis.text_as_outlines`` — replaces its private OCR
-  call with a read of this field.
+  glyph-height signal.
+* ``ai.analyzers.color_analysis.{color_cast,banding,skin_tone}`` — text mask.
+* ``ai.analyzers.text_analysis.text_as_outlines`` — outlined-text detection.
 
 Ground rules:
 
-* **Primary path**: Claude Haiku 4.5 vision OCR (CPU, no extra infra).
-  Activated on every deploy; requires only ``ANTHROPIC_API_KEY``.
-* **Opt-in GPU path**: PaddleOCR via ``LINTPDF_GPU_INFERENCE_URL`` —
-  higher throughput for high-volume deploys; overrides CPU results when set.
-* On GPU outage (``GPUServiceUnavailableError``) or any unexpected exception,
-  leave the field as ``None`` for affected pages and log a warning. Don't fail
-  the job — the consumer analyzers all treat ``None`` as "pass not run".
-* Reuse the existing ``check_cap_or_raise`` cost-cap pattern around the
-  ``"ocr"`` AI feature. PR2 deliberately does not introduce a new
-  ``detect_text_regions`` feature flag — the metering line is the same.
+* Delegates entirely to ``codex_pdf.extract.text_regions`` (in-process,
+  no HTTP). If the package is not importable the field stays ``None`` and
+  consumer analyzers skip gracefully.
+* Pages that don't pass the trigger heuristic are never processed.
+* Any per-page failure is logged and skipped; the job never fails here.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING
 
-from lintpdf.ai.gpu_client import (
-    GPUServiceNotConfiguredError,
-    GPUServiceRateLimitedError,
-    GPUServiceUnavailableError,
-)
 from lintpdf.semantic.events import ImagePlacedEvent, PathPaintingEvent, TextRenderedEvent
 from lintpdf.semantic.model import DetectedTextRegion, PdfBox
 
@@ -50,9 +41,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DPI = 200
+_DEFAULT_DPI = 150
 
-# Trigger thresholds, mirrored from text_as_outlines.py:
+# Trigger thresholds — same heuristic as text_as_outlines.py:
 _PATH_HEAVY_THRESHOLD = 50
 _TEXT_LIGHT_THRESHOLD = 10
 _PLACED_IMAGE_AREA_RATIO = 0.25
@@ -63,8 +54,7 @@ def should_run_for_page(page: SemanticPage, events: list[ContentStreamEvent]) ->
 
     Two qualifying conditions:
 
-    * **Image-heavy:** placed-image area > 25% of page area (RGB scans,
-      photo-product layouts where image content can hide outlined captions).
+    * **Image-heavy:** placed-image area > 25% of page area.
     * **Path-heavy / text-light:** ≥50 path events AND ≤10 extractable text
       characters — the same heuristic ``text_as_outlines`` already used.
     """
@@ -82,7 +72,6 @@ def should_run_for_page(page: SemanticPage, events: list[ContentStreamEvent]) ->
             continue
         if isinstance(event, ImagePlacedEvent):
             ctm = event.ctm
-            # Approximate placed footprint via the CTM scaling factors.
             scale_x = abs(getattr(ctm, "a", 1.0))
             scale_y = abs(getattr(ctm, "d", 1.0))
             image_area += scale_x * scale_y
@@ -101,8 +90,9 @@ def _scale_bbox(
 ) -> tuple[PdfBox, tuple[tuple[float, float], ...] | None]:
     """Convert pixel-space {x1,y1,x2,y2,polygon} to PDF points.
 
-    Pixel space has origin top-left; PDF user space has origin bottom-left.
-    Mirrors the pattern used in ``safe_zone_violations.py``.
+    Retained for callers that still pass pixel-space bbox dicts (e.g. the
+    codex HTTP path via ``codex_client.populate_text_regions_via_codex``).
+    Not used by the primary in-process codex path.
     """
     page_w_pt = page.media_box.width
     page_h_pt = page.media_box.height
@@ -116,7 +106,6 @@ def _scale_bbox(
 
     x0_pt = x0_px * sx
     x1_pt = x1_px * sx
-    # Flip the y axis so the bbox lands in PDF user-space (origin bottom-left).
     y0_pt = page_h_pt - (y1_px * sy)
     y1_pt = page_h_pt - (y0_px * sy)
     if x1_pt <= x0_pt:
@@ -141,78 +130,6 @@ def _scale_bbox(
     return pdf_box, polygon
 
 
-def _run_claude_ocr_fallback(
-    pdf_bytes: bytes,
-    pages: list[SemanticPage],
-) -> None:
-    """CPU OCR fallback using Claude Haiku 4.5 vision.
-
-    Called when the GPU inference service is not configured. Requires
-    ``ANTHROPIC_API_KEY`` (already a base dependency). Populates
-    ``page.detected_text_regions`` in place; silently skips if the key
-    is absent or the Claude call fails.
-
-    ``OCRTextBlock.bbox`` is already in PDF user-space points (bottom-left
-    origin) so no pixel→point conversion is needed — unlike the GPU path
-    which receives pixel-space bboxes from PaddleOCR.
-    """
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        logger.debug(
-            "text_region_pass: ANTHROPIC_API_KEY not set; CPU OCR fallback skipped"
-        )
-        return
-
-    try:
-        from lintpdf.ai.ocr_claude import ClaudeOCR
-    except ImportError as exc:
-        logger.warning("text_region_pass: claude OCR import failed: %s", exc)
-        return
-
-    try:
-        ocr = ClaudeOCR()
-    except RuntimeError as exc:
-        logger.warning("text_region_pass: claude OCR init failed: %s", exc)
-        return
-
-    page_nums = [p.page_num for p in pages]
-    page_by_num = {p.page_num: p for p in pages}
-
-    try:
-        ocr_results = ocr.extract(pdf_bytes, page_nums)
-    except Exception as exc:
-        logger.warning("text_region_pass: claude OCR extraction failed: %s", exc)
-        return
-
-    for ocr_page in ocr_results:
-        page = page_by_num.get(ocr_page.page_num)
-        if page is None:
-            continue
-        regions: list[DetectedTextRegion] = []
-        for block in ocr_page.blocks:
-            if len(block.bbox) != 4:
-                continue
-            x0, y0, x1, y1 = block.bbox
-            if x1 <= x0:
-                x1 = x0 + 1e-3
-            if y1 <= y0:
-                y1 = y0 + 1e-3
-            regions.append(
-                DetectedTextRegion(
-                    bbox=PdfBox(x0, y0, x1, y1),
-                    text=block.text or None,
-                    confidence=block.confidence,
-                    polygon=None,
-                    source="claude-ocr",
-                )
-            )
-        page.detected_text_regions = regions
-        logger.debug(
-            "text_region_pass: claude-ocr page %d → %d regions",
-            ocr_page.page_num,
-            len(regions),
-        )
-
-
 def run(
     document: SemanticDocument,
     events: list[ContentStreamEvent],
@@ -222,16 +139,13 @@ def run(
 ) -> None:
     """Mutate ``document`` in place: populate ``page.detected_text_regions``.
 
-    Pages that don't pass the trigger heuristic remain at ``None``.
-    Pages that pass but where OCR fails also remain at ``None``
-    (consumers treat that as "pass not run, can't decide").
+    Delegates to ``codex_pdf.extract.text_regions.extract_text_regions_for_page``
+    (in-process, no HTTP). Codex handles both selectable text (PyMuPDF) and
+    outlined/rasterized text (Tesseract CPU fallback) so no OCR happens in lint.
 
-    Execution order:
-    1. Claude Haiku 4.5 vision OCR — **primary CPU path**, no extra infra
-       required (uses ``ANTHROPIC_API_KEY`` already present on all deploys).
-    2. GPU inference (PaddleOCR) — **opt-in**, only used when
-       ``LINTPDF_GPU_INFERENCE_URL`` is set. Higher throughput for
-       high-volume deploys but requires a separate GPU inference service.
+    Pages that don't pass the trigger heuristic remain at ``None``.
+    Pages where extraction fails also remain at ``None`` — consumers treat
+    that as "pass not run, can't decide".
     """
     pages_to_run: list[SemanticPage] = [
         page for page in document.pages if should_run_for_page(page, events)
@@ -239,78 +153,49 @@ def run(
     if not pages_to_run:
         return
 
-    # --- Primary: Claude Haiku CPU OCR ---
-    # Used by default on all deploys. Falls through to GPU path only
-    # when LINTPDF_GPU_INFERENCE_URL is explicitly set AND the CPU pass
-    # has not already populated a page's regions.
-    _run_claude_ocr_fallback(pdf_bytes, pages_to_run)
-
-    # --- Opt-in: GPU PaddleOCR (overrides Claude results when configured) ---
-    if not os.environ.get("LINTPDF_GPU_INFERENCE_URL"):
-        return
-
-    # Lazy imports keep this module importable in unit-test sandboxes that
-    # don't have httpx / pillow / paddleocr available.
-    from lintpdf.ai.gpu_client import get_gpu_client
-    from lintpdf.rendering import render_page_to_image
-
     try:
-        gpu = get_gpu_client()
-    except Exception as exc:
-        logger.warning("text_region_pass: cannot init GPU client: %s", exc)
+        from codex_pdf.extract.text_regions import extract_text_regions_for_page
+    except ImportError:
+        logger.debug("text_region_pass: codex_pdf not importable; pass skipped")
         return
-
-    # NOTE: cost-cap metering — the orchestrator caller is expected to wrap
-    # this function with ``check_cap_or_raise(db, tenant_id)`` since that
-    # signature requires a DB session this module doesn't have. The pass
-    # piggybacks on the existing ``ocr`` AI feature in
-    # ``TenantAIConfig.ai_features`` rather than introducing a new flag.
 
     for page in pages_to_run:
         try:
-            png = render_page_to_image(pdf_bytes, page_num=page.page_num, dpi=dpi)
-        except (RuntimeError, OSError) as exc:
-            logger.debug("text_region_pass: rendering failed for page %d: %s", page.page_num, exc)
-            continue
-
-        try:
-            result = gpu.detect_outlines(png)
-        except (
-            GPUServiceUnavailableError,
-            GPUServiceNotConfiguredError,
-            GPUServiceRateLimitedError,
-        ) as exc:
-            logger.warning("text_region_pass: GPU unavailable on page %d: %s", page.page_num, exc)
-            continue
+            codex_regions = extract_text_regions_for_page(
+                pdf_bytes, page.page_num - 1, dpi=dpi
+            )
         except Exception as exc:
-            logger.warning("text_region_pass: GPU error on page %d: %s", page.page_num, exc)
+            logger.warning(
+                "text_region_pass: codex extraction failed for page %d: %s",
+                page.page_num,
+                exc,
+            )
             continue
-
-        text_regions_raw = (result or {}).get("text_regions") or []
-        # PaddleOCR doesn't surface image dims directly — the caller has the
-        # rendered PNG, so we read its size from the metadata or assume a
-        # safe default tied to the DPI we requested.
-        image_width = float(result.get("image_width") or page.media_box.width * dpi / 72.0)
-        image_height = float(result.get("image_height") or page.media_box.height * dpi / 72.0)
 
         regions: list[DetectedTextRegion] = []
-        for raw in text_regions_raw:
-            bbox_raw = raw.get("bbox")
-            if not isinstance(bbox_raw, dict):
-                continue
-            try:
-                pdf_box, polygon = _scale_bbox(bbox_raw, image_width, image_height, page)
-            except Exception:
-                continue
+        for cr in codex_regions:
+            b = cr.bbox
+            x0, y0, x1, y1 = float(b.x0), float(b.y0), float(b.x1), float(b.y1)
+            if x1 <= x0:
+                x1 = x0 + 1e-3
+            if y1 <= y0:
+                y1 = y0 + 1e-3
+            polygon: tuple[tuple[float, float], ...] | None = None
+            if cr.polygon and len(cr.polygon) >= 3:
+                polygon = tuple((float(pt[0]), float(pt[1])) for pt in cr.polygon)
             regions.append(
                 DetectedTextRegion(
-                    bbox=pdf_box,
-                    text=(raw.get("text") or None),
-                    confidence=float(raw.get("confidence") or 0.0),
+                    bbox=PdfBox(x0, y0, x1, y1),
+                    text=cr.text or None,
+                    confidence=float(cr.confidence),
                     polygon=polygon,
-                    source="paddleocr",
+                    source=str(cr.source),
                 )
             )
 
         page.detected_text_regions = regions
-
+        logger.debug(
+            "text_region_pass: page %d → %d regions (via codex)",
+            page.page_num,
+            len(regions),
+        )
