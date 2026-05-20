@@ -208,59 +208,58 @@ class LegibilityCompositeAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _scan_outlined_small_text(document: SemanticDocument) -> list[Finding]:
-        """Walk ``page.detected_text_regions`` and emit one ADVISORY
-        per page where outlined glyphs measure below the legibility
-        threshold. Capped at one finding per page to keep volume
-        manageable on busy ingredient panels — surface the smallest
-        glyph height observed on that page in details."""
+        """Walk ``page.detected_text_regions`` and emit one ADVISORY per
+        offending outlined-text region with its bbox so Lens can circle
+        each instance on the canvas. Capped at 5 per page to keep the
+        findings panel manageable on dense ingredient panels."""
+        max_per_page = 5
         out: list[Finding] = []
         for page in getattr(document, "pages", None) or []:
             regions = getattr(page, "detected_text_regions", None)
             if not regions:
                 continue
-            below: list[float] = []
-            min_text: str = ""
-            min_h = float("inf")
+            emitted = 0
             for region in regions:
-                bbox = getattr(region, "bbox", None)
-                if bbox is None:
+                if emitted >= max_per_page:
+                    break
+                bbox_obj = getattr(region, "bbox", None)
+                if bbox_obj is None:
                     continue
                 try:
-                    h = float(bbox.y1) - float(bbox.y0)
+                    x0 = float(bbox_obj.x0)
+                    y0 = float(bbox_obj.y0)
+                    x1 = float(bbox_obj.x1)
+                    y1 = float(bbox_obj.y1)
+                    h = y1 - y0
                 except (AttributeError, TypeError, ValueError):
                     continue
-                # Apparent glyph height ≈ bbox height (PaddleOCR fits a
-                # tight box around the text). Sub-pixel-height regions
-                # are scanner noise, not text.
+                # Sub-pixel regions are scanner noise.
                 if h < 1.0:
                     continue
-                if h < _MIN_LEGIBLE_PT:
-                    below.append(h)
-                    if h < min_h:
-                        min_h = h
-                        min_text = (getattr(region, "text", None) or "")[:60]
-            if not below:
-                continue
-            out.append(
-                Finding(
-                    inspection_id="LPDF_TEXT_OUTLINED_SMALL",
-                    severity=Severity.ADVISORY,
-                    message=(
-                        f"{len(below)} outlined-text region(s) below {_MIN_LEGIBLE_PT:.0f} pt "
-                        f"on page {page.page_num} (smallest ≈{min_h:.1f} pt). "
-                        "Outlined glyphs at this size are a press-side legibility risk; "
-                        "verify against the panel's regulatory minimums "
-                        "(FDA/CFIA: 1.0-1.6 mm x-height for ingredients)."
-                    ),
-                    page_num=page.page_num,
-                    details={
-                        "outlined_regions_below": len(below),
-                        "min_apparent_height_pt": round(min_h, 2),
-                        "min_legible_pt": _MIN_LEGIBLE_PT,
-                        "smallest_text_preview": min_text,
-                    },
-                    category="text",
-                    object_type="text",
+                if h >= _MIN_LEGIBLE_PT:
+                    continue
+                text_preview = (getattr(region, "text", None) or "")[:60]
+                out.append(
+                    Finding(
+                        inspection_id="LPDF_TEXT_OUTLINED_SMALL",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Outlined text ≈{h:.1f} pt on page {page.page_num} "
+                            f"is below the {_MIN_LEGIBLE_PT:.0f} pt legibility threshold"
+                            + (f' — "{text_preview}"' if text_preview else "")
+                            + ". Verify against FDA/CFIA minimums (≈ 1.5 mm x-height)."
+                        ),
+                        page_num=page.page_num,
+                        details={
+                            "apparent_height_pt": round(h, 2),
+                            "min_legible_pt": _MIN_LEGIBLE_PT,
+                            "text_preview": text_preview,
+                            "source": "ocr",
+                        },
+                        category="text",
+                        object_type="text",
+                        bbox=(x0, y0, x1, y1),
+                    )
                 )
-            )
+                emitted += 1
         return out

@@ -597,6 +597,10 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                         "min_bleed_pts": self.min_bleed_pts,
                     },
                     iso_clause="GWG 2022 6.1",
+                    # TrimBox rectangle: shows the cut line in Lens so
+                    # the viewer can draw the bleed-gap outline on canvas.
+                    bbox=trim_box.as_tuple(),
+                    object_type="page",
                 )
             )
 

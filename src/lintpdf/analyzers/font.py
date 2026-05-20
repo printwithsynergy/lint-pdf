@@ -100,8 +100,10 @@ class FontAnalyzer(BaseAnalyzer):
                 continue  # at least one font declared — analyzed above
             content = getattr(page, "content_stream", None)
             size = (
-                len(content) if isinstance(content, (bytes, bytearray)) else len(str(content))
-            ) if content else 0
+                (len(content) if isinstance(content, (bytes, bytearray)) else len(str(content)))
+                if content
+                else 0
+            )
             has_stream = size >= 1024
             has_events = page.page_num in pages_with_paths
             if not (has_stream or has_events):

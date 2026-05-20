@@ -161,9 +161,7 @@ def run(
 
     for page in pages_to_run:
         try:
-            codex_regions = extract_text_regions_for_page(
-                pdf_bytes, page.page_num - 1, dpi=dpi
-            )
+            codex_regions = extract_text_regions_for_page(pdf_bytes, page.page_num - 1, dpi=dpi)
         except Exception as exc:
             logger.warning(
                 "text_region_pass: codex extraction failed for page %d: %s",

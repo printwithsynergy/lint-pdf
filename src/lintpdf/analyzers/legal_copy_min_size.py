@@ -118,54 +118,54 @@ class LegalCopyMinSizeAnalyzer(BaseAnalyzer):
             )
 
         # PR-GG: outlined-fixture coverage. ``detected_text_regions``
-        # is populated by the shared OCR pass (PR #295) on outlined /
-        # image-heavy pages. PaddleOCR fits a tight bbox around each
-        # text region — apparent glyph height ≈ ``bbox.height`` in PDF
-        # points. The legibility threshold is the same; the per-page
-        # dedupe key uses an ``ocr`` source tag so we don't collide
-        # with the live-text bucket above.
+        # is populated by the shared OCR pass on outlined / image-heavy
+        # pages. Emit one finding per offending region with its bbox so
+        # Lens can circle each instance on the canvas. Capped at 5 per
+        # page to keep the findings panel manageable on dense panels.
+        max_per_page = 5
         for page in getattr(document, "pages", None) or []:
             regions = getattr(page, "detected_text_regions", None) or []
-            min_h_seen = float("inf")
-            below_count = 0
+            emitted = 0
             for region in regions:
-                bbox = getattr(region, "bbox", None)
-                if bbox is None:
+                if emitted >= max_per_page:
+                    break
+                bbox_obj = getattr(region, "bbox", None)
+                if bbox_obj is None:
                     continue
                 try:
-                    h = float(bbox.y1) - float(bbox.y0)
+                    x0 = float(bbox_obj.x0)
+                    y0 = float(bbox_obj.y0)
+                    x1 = float(bbox_obj.x1)
+                    y1 = float(bbox_obj.y1)
+                    h = y1 - y0
                 except (AttributeError, TypeError, ValueError):
                     continue
                 if h < _DEGENERATE_PT:
                     continue
                 if h >= _LEGAL_MIN_PT:
                     continue
-                below_count += 1
-                if h < min_h_seen:
-                    min_h_seen = h
-            if below_count == 0:
-                continue
-            findings.append(
-                Finding(
-                    inspection_id="LPDF_LEGALCOPY_001",
-                    severity=Severity.ADVISORY,
-                    message=(
-                        f"{below_count} OCR-detected text region(s) on page "
-                        f"{page.page_num} measure below {_LEGAL_MIN_PT:.0f} pt "
-                        f"(smallest ≈ {min_h_seen:.1f} pt). On outlined artwork "
-                        "the apparent glyph height comes from the OCR bbox; "
-                        "confirm the panel is at or above the FDA 21 CFR 101.2 "
-                        "/ CFIA SOR/2003-11 §B.01.012 minimum (≈ 1.5 mm x-height)."
-                    ),
-                    page_num=page.page_num,
-                    details={
-                        "ocr_regions_below": below_count,
-                        "min_apparent_height_pt": round(min_h_seen, 2),
-                        "min_legal_pt": _LEGAL_MIN_PT,
-                        "source": "ocr",
-                    },
-                    category="text",
-                    object_type="text",
+                text_preview = (getattr(region, "text", None) or "")[:60]
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_LEGALCOPY_001",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Outlined text ~{h:.1f} pt on page {page.page_num}"
+                            f" is below FDA / CFIA minimum of {_LEGAL_MIN_PT:.0f} pt"
+                            + (' — "' + text_preview + '"' if text_preview else "")
+                            + ". Confirm FDA 21 CFR 101.2 / CFIA SOR/2003-11."
+                        ),
+                        page_num=page.page_num,
+                        details={
+                            "apparent_height_pt": round(h, 2),
+                            "min_legal_pt": _LEGAL_MIN_PT,
+                            "text_preview": text_preview,
+                            "source": "ocr",
+                        },
+                        category="text",
+                        object_type="text",
+                        bbox=(x0, y0, x1, y1),
+                    )
                 )
-            )
+                emitted += 1
         return findings
