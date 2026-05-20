@@ -66,13 +66,14 @@ class TestOutlinedSmallText:
         assert len(findings) == 1
         f = findings[0]
         assert f.severity.value == "advisory"
-        assert "outlined-text region" in f.message.lower()
-        assert f.details["min_apparent_height_pt"] == 4.0
-        assert f.details["outlined_regions_below"] == 1
+        assert "outlined text" in f.message.lower()
+        # Per-region finding carries the individual height and bbox.
+        assert f.details["apparent_height_pt"] == 4.0
+        assert f.bbox == (100.0, 100.0, 300.0, 104.0)
 
     @staticmethod
-    def test_one_finding_per_page_with_multiple_below() -> None:
-        # 3 small regions on one page → 1 finding total.
+    def test_one_finding_per_region_with_multiple_below() -> None:
+        # 3 small regions on one page → 3 findings (one per region, capped at 5).
         doc = _doc_with_regions(
             DetectedTextRegion(bbox=PdfBox(0, 0, 100, 4), text="a"),
             DetectedTextRegion(bbox=PdfBox(0, 100, 100, 105), text="b"),
@@ -83,9 +84,12 @@ class TestOutlinedSmallText:
             for f in LegibilityCompositeAnalyzer().analyze(doc, [])
             if f.inspection_id == "LPDF_TEXT_OUTLINED_SMALL"
         ]
-        assert len(findings) == 1
-        assert findings[0].details["outlined_regions_below"] == 3
-        assert findings[0].details["min_apparent_height_pt"] == 3.0
+        assert len(findings) == 3
+        # Each finding must carry a distinct bbox.
+        bboxes = [f.bbox for f in findings]
+        assert len(set(bboxes)) == 3
+        heights = sorted(f.details["apparent_height_pt"] for f in findings)
+        assert heights == [3.0, 4.0, 5.0]
 
     @staticmethod
     def test_sub_pixel_height_skipped_as_noise() -> None:
