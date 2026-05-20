@@ -72,7 +72,7 @@ dependencies = [
     # Canonical PDF facts + render engine. lint-pdf consumes codex
     # for parse + raster surfaces; exports remain in lint as one-off
     # assets (see codex_render.py + reports/markup_pdf_report.py).
-    "codex-pdf>=1.19.0",
+    "codex-pdf>=1.18.0",
 ]
 
 [project.scripts]
